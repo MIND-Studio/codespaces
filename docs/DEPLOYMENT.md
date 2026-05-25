@@ -32,22 +32,14 @@ rsync -avzn --delete \
   ./ mind-codespaces:/opt/mind-codespaces/   # `-n` = dry run; shows drift
 ```
 
-**Critical caveat — there is no git remote.** The repo isn't under git
-locally and isn't on GitHub. The canonical state lives in two places:
-
-1. **Your laptop** (`~/develop/mind/mind-prototypes/mind-codespaces-v0/`) — where edits happen.
-2. **The VM** (`/opt/mind-codespaces/`) — where what's running came from.
-
-If your laptop dies, pull from the VM:
+**Repo:** [`MIND-Studio/codespaces`](https://github.com/MIND-Studio/codespaces) (private). Origin is set on the laptop checkout:
 
 ```bash
-rsync -avz \
-  --exclude='.git-data/' --exclude='.registry-data/' --exclude='.css-data/' \
-  --exclude='.env' --exclude='node_modules/' --exclude='.next/' \
-  mind-codespaces:/opt/mind-codespaces/ ~/develop/mind/mind-prototypes/mind-codespaces-v0/
+git remote -v   # → git@github.com:MIND-Studio/codespaces.git
+git pull        # always pull before editing — CI deploys from tags
 ```
 
-To make this safer, put the prototype in a git repo (private GitHub or self-hosted) — see "What is NOT done yet" below. Until then, the docs you're reading + the laptop + the VM are the only three copies of the codebase.
+The VM at `/opt/mind-codespaces/` is **not** a git checkout — it's an rsync snapshot from before the repo existed. Until the first CI deploy fires, it'll stay out of git's view. After the first successful `git tag v0.x.y && git push --tags`, the CI workflow at `.github/workflows/deploy.yml` will (a) build the bridge image on GHA, (b) push to `ghcr.io/mind-studio/codespaces-bridge:<sha>`, (c) SSH into the VM and pull the digest-pinned image, and the VM stops being a divergent snapshot.
 
 ### One-time loose ends to close before stepping away
 
@@ -211,7 +203,8 @@ These are the bugs we fixed while bringing the alpha up; they're now baked into 
 
 These are tracked in `PRODUCTION-READINESS.md` and remain open even though the alpha is live:
 
-- **No GitHub repo + no CI** — the `deploy.yml` workflow exists but isn't wired up. Code is rsync'd manually from the laptop. To switch on CI: push this repo to GitHub, add `DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` secrets, tag `v0.x.y`. The bootstrap script's snapshot path remains as a recovery option.
+- **First CI deploy hasn't fired yet.** Repo is at `MIND-Studio/codespaces`, deploy.yml is wired, all 5 repo secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`, `DEPLOY_DIR`, `DEPLOY_SSH_KEY`) are set, and the CI SSH key (`~/.ssh/id_ed25519_mind_codespaces_ci` on your laptop) is in the deploy user's `authorized_keys` on the VM. To trigger the first run: `git tag v0.1.0 && git push --tags`. The VM will switch from "image built locally" to "image pulled from `ghcr.io/mind-studio/codespaces-bridge@sha256:...`" on first successful workflow run.
+- **Orphan personal repo** — `https://github.com/huhn511/mind-codespaces-v0` was created during setup before the org was identified. It's empty of useful history (one commit, same as `MIND-Studio/codespaces`). Delete via web UI: Settings → "Delete this repository". The gh CLI token lacks `delete_repo` scope so this has to be a manual click.
 - **Image digests not pinned** — `caddy:2-alpine`, `solidproject/community-server:7`, etc. are floating tags. Run `infra/prod/scripts/pin-image-digests.sh` after the next image bump.
 - **Offsite backups not scheduled** — manual `tar` via the snippet above is the only path. Consider rclone → S3/Backblaze in cron.
 - **Workflow runner image (`node:22-alpine`) pulled lazily** — pre-pulled during bootstrap, but if you redeploy from scratch on a different host, pre-pull again.
