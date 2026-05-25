@@ -110,11 +110,8 @@ export default async function PeoplePage({
           </button>
         </form>
         <p className="mt-3 text-xs text-[color:var(--ink-faint)]">
-          Tip: this works for any WebID whose document is public-read. The
-          local seeded pair are{" "}
-          <code className="kbd">http://localhost:3011/alice/profile/card#me</code>{" "}
-          and{" "}
-          <code className="kbd">http://localhost:3011/mind/profile/card#me</code>.
+          Tip: this works for any WebID whose document is public-read — the
+          bridge dereferences the URL with no auth.
         </p>
       </Section>
     </div>

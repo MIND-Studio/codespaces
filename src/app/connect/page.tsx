@@ -4,14 +4,22 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_ISSUER = "http://localhost:3011/";
 
-const ISSUER_PRESETS = [
-  { url: "http://localhost:3011/", label: "Local demo" },
-  { url: "https://solidcommunity.net/", label: "solidcommunity.net" },
-  { url: "https://login.inrupt.com/", label: "Inrupt" },
-];
+function isLoopback(url: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])(:|\/|$)/.test(url);
+}
+
+function buildIssuerPresets(base: string) {
+  const ownLabel = isLoopback(base) ? "Local demo" : "This bridge's pod";
+  return [
+    { url: base, label: ownLabel },
+    { url: "https://solidcommunity.net/", label: "solidcommunity.net" },
+    { url: "https://login.inrupt.com/", label: "Inrupt" },
+  ];
+}
 
 export default function ConnectPage() {
   const defaultIssuer = process.env.POD_BASE_URL ?? DEFAULT_ISSUER;
+  const ISSUER_PRESETS = buildIssuerPresets(defaultIssuer);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-10 sm:py-16">

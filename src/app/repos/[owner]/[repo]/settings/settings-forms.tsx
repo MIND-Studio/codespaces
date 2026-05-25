@@ -232,7 +232,7 @@ export function PagesForm({
           value={targetContainer}
           onChange={(e) => setTargetContainer(e.target.value)}
           disabled={busy}
-          placeholder="http://localhost:3011/alice/public/sites/hello/"
+          placeholder="https://your-pod.example/public/sites/hello/"
           className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />

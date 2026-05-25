@@ -33,7 +33,8 @@ export default async function RepoDetailPage({ params }: PageProps) {
   if (!repo) notFound();
   const pages = getPagesConfig(repo.id);
   const tokens = listPushTokens(repo.id);
-  const cloneUrl = `http://localhost:3010/api/git/${repo.owner}/${repo.name}.git`;
+  const bridgeBase = process.env.BRIDGE_PUBLIC_URL ?? "http://localhost:3010";
+  const cloneUrl = `${bridgeBase}/api/git/${repo.owner}/${repo.name}.git`;
   const publishedUrl =
     pages?.enabled && pages.targetContainer
       ? `${pages.targetContainer}${pages.targetContainer.endsWith("/") ? "" : "/"}index.html`

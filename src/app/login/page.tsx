@@ -6,11 +6,19 @@ import { LoginPage } from "./login-page";
 export const dynamic = "force-dynamic";
 
 const DEFAULT_ISSUER = "http://localhost:3011/";
-const ISSUER_PRESETS = [
-  { url: "http://localhost:3011/", label: "Local demo" },
-  { url: "https://solidcommunity.net/", label: "solidcommunity.net" },
-  { url: "https://login.inrupt.com/", label: "Inrupt" },
-];
+
+function isLoopback(url: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])(:|\/|$)/.test(url);
+}
+
+function buildIssuerPresets(base: string) {
+  const ownLabel = isLoopback(base) ? "Local demo" : "This bridge's pod";
+  return [
+    { url: base, label: ownLabel },
+    { url: "https://solidcommunity.net/", label: "solidcommunity.net" },
+    { url: "https://login.inrupt.com/", label: "Inrupt" },
+  ];
+}
 
 export default async function Login({
   searchParams,
@@ -28,6 +36,7 @@ export default async function Login({
   const safeReturnTo = sanitizeReturnTo(returnTo);
   const signupEnabled = process.env.BRIDGE_ENABLE_SIGNUP === "1";
   const defaultIssuer = process.env.POD_BASE_URL ?? DEFAULT_ISSUER;
+  const ISSUER_PRESETS = buildIssuerPresets(defaultIssuer);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-12 sm:px-6 sm:py-20">

@@ -123,7 +123,7 @@ export function TokenManager({
           <p className="mt-2 text-[color:var(--ink)]">
             Push with:{" "}
             <code className="kbd">
-              git push http://USER:{plaintext}@localhost:3010/api/git/{owner}/{repo}.git
+              git push {pushUrl(plaintext, owner, repo)}
             </code>
           </p>
         </div>
@@ -161,4 +161,13 @@ export function TokenManager({
 
 function formatDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 16).replace("T", " ");
+}
+
+function pushUrl(token: string, owner: string, repo: string): string {
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "http://localhost:3010";
+  const u = new URL(`/api/git/${owner}/${repo}.git`, origin);
+  u.username = "USER";
+  u.password = token;
+  return u.toString();
 }
