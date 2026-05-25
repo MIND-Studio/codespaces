@@ -334,12 +334,12 @@ function RegisterPanel({
         <input
           type="text"
           required
-          // The CSS slug rule accepts a-z0-9 + . _ - up to 64 chars, but
-          // the HTML pattern attribute is validated under the /v RegExp
-          // flag in some browsers, where `{0,63}` inside a character
-          // class can throw a syntax error. Loosen to a simple form;
-          // strict validation lives server-side anyway.
-          pattern="[a-z0-9][a-z0-9._-]*"
+          // HTML pattern is parsed with the /v RegExp flag in modern
+          // Chrome/Safari, which rejects `[a-z0-9._-]` because the `_-`
+          // suffix is parsed as a reverse range (codepoint of `-` is
+          // less than `_`). Putting `-` at the start of the class is
+          // universally safe across legacy and /v flag.
+          pattern="[a-z0-9][-a-z0-9._]*"
           maxLength={64}
           value={podName}
           onChange={(e) => setPodName(e.target.value)}

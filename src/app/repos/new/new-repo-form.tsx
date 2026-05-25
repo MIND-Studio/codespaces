@@ -89,7 +89,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           type="text"
           required
           maxLength={64}
-          pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}"
+          pattern="[a-zA-Z0-9][-a-zA-Z0-9._]{0,63}"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="hello-world"

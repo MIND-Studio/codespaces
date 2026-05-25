@@ -88,19 +88,43 @@ function stripFragment(url: string): string {
 }
 
 /**
- * Verify that `candidate` matches one of the `pim:storage` locations
- * advertised by the WebID's profile document. Without this check, the
- * `ownerPodRoot` field at repo creation is attacker-controlled — they
- * can register a pod they control alongside someone else's WebID.
+ * Verify that `candidate` is genuinely a Solid pod root owned by the
+ * holder of `webId`. Without this check the `ownerPodRoot` field at
+ * repo creation is attacker-controlled — they can register a pod they
+ * control alongside someone else's WebID.
  *
- * Returns `{ ok: false, reason }` when the profile cannot be fetched
- * (offline pods, ACL issues) so the caller can decide whether to fail
- * open in dev or hard-fail in prod. See P0-S5 in the readiness doc.
+ * Two paths:
+ *
+ * 1. **Strict (preferred):** the WebID profile document carries a
+ *    `pim:storage` triple matching the candidate. Any production pod
+ *    onboarded via /connect or a curated profile-writer hits this path.
+ *
+ * 2. **Spec fallback:** CSS v7 sign-ups produce WebID profiles that
+ *    only carry `solid:oidcIssuer` and `a foaf:Person` — no
+ *    `pim:storage`. For those we fall back to two Solid-spec checks:
+ *      a) the candidate URL advertises itself as `pim:space#Storage`
+ *         via an HTTP `Link: rel="type"` header (i.e. it really is a
+ *         pod root, not an arbitrary container or webpage); AND
+ *      b) the WebID document URL is hosted *inside* the candidate
+ *         (same origin, candidate URL is a prefix). This is what
+ *         pins the pod to the WebID: only the pod's owner can write
+ *         a profile card inside the pod.
+ *
+ *    Both together close the obvious bypasses: (a) without (b) lets
+ *    an attacker claim someone else's pod; (b) without (a) lets them
+ *    claim a non-pod container.
+ *
+ * Returns `{ ok: false, reason }` when neither path succeeds, so the
+ * caller can decide whether to fail open in dev or hard-fail in prod.
+ * See P0-S5 in the readiness doc.
  */
 export async function verifyPodRootForWebId(
   webId: string,
   candidate: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const norm = (u: string) => (u.endsWith("/") ? u : `${u}/`);
+  const candidateN = norm(candidate);
+
   let dataset;
   try {
     dataset = await getSolidDataset(stripFragment(webId));
@@ -114,20 +138,56 @@ export async function verifyPodRootForWebId(
   if (!thing) {
     return { ok: false, reason: "WebID profile contains no thing for the WebID" };
   }
+
+  // Path 1: pim:storage triple matches.
   const storages = getUrlAll(thing, `${PIM}storage`);
-  if (storages.length === 0) {
-    return {
-      ok: false,
-      reason: "WebID profile advertises no pim:storage; cannot verify podRoot",
-    };
-  }
-  const norm = (u: string) => (u.endsWith("/") ? u : `${u}/`);
-  const candidateN = norm(candidate);
   for (const s of storages) {
     if (norm(s) === candidateN) return { ok: true };
   }
-  return {
-    ok: false,
-    reason: `podRoot not in advertised pim:storage set [${storages.join(", ")}]`,
-  };
+
+  // Path 2: Solid-spec fallback. The pod root advertises itself via
+  // the `pim:space#Storage` Link rel, and the WebID document is hosted
+  // inside that pod root. CSS-issued WebIDs always satisfy this even
+  // when the profile lacks pim:storage.
+  const webIdDoc = stripFragment(webId);
+  if (!webIdDoc.startsWith(candidateN)) {
+    return {
+      ok: false,
+      reason:
+        storages.length === 0
+          ? `WebID profile has no pim:storage and WebID document ${webIdDoc} is not inside candidate ${candidateN}`
+          : `podRoot not in advertised pim:storage set [${storages.join(", ")}]`,
+    };
+  }
+
+  let headResp: Response;
+  try {
+    headResp = await fetch(candidateN, { method: "HEAD" });
+  } catch (e) {
+    return {
+      ok: false,
+      reason: `failed to HEAD candidate pod root: ${(e as Error).message}`,
+    };
+  }
+  if (!headResp.ok) {
+    return {
+      ok: false,
+      reason: `HEAD ${candidateN} returned ${headResp.status}; not a live pod root`,
+    };
+  }
+  // Look for Link: <http://www.w3.org/ns/pim/space#Storage>; rel="type"
+  // Multiple Link headers are typically returned; the `link` value on
+  // fetch() joins them with `, ` per the Web spec, so parse with a
+  // regex that tolerates that.
+  const link = headResp.headers.get("link") ?? "";
+  const isStorage = /<\s*http:\/\/www\.w3\.org\/ns\/pim\/space#Storage\s*>\s*;\s*rel\s*=\s*"?type"?/i.test(
+    link,
+  );
+  if (!isStorage) {
+    return {
+      ok: false,
+      reason: `candidate ${candidateN} does not advertise pim:space#Storage via Link rel="type"`,
+    };
+  }
+  return { ok: true };
 }
