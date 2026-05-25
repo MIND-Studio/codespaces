@@ -85,11 +85,18 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
         >
           Repository name
         </span>
+        {/*
+          No `pattern=` attribute: the /v RegExp flag is stricter than legacy
+          regex parsing about character classes (e.g. `-` ordering with `.`
+          and `_`), and the simple slug pattern we want kept tripping it.
+          Server-side validateName() in src/lib/registry/repos.ts rejects
+          bad input and surfaces a clean error inline, so the client-side
+          hint is unnecessary.
+        */}
         <input
           type="text"
           required
           maxLength={64}
-          pattern="[a-zA-Z0-9][-a-zA-Z0-9._]{0,63}"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="hello-world"

@@ -272,6 +272,7 @@ function RegisterPanel({
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
+        connectUrl?: string;
       };
       if (!res.ok || data.error) {
         setError(data.error ?? `signup failed (HTTP ${res.status})`);
@@ -294,7 +295,13 @@ function RegisterPanel({
         setBusy(false);
         return;
       }
-      router.push(returnTo);
+      // Route the user straight to /connect so they authorize the bridge
+      // as a Solid-OIDC client. Without this, the bridge can't write
+      // pod-side Turtle metadata (repo descriptions, Mind Pages targets)
+      // and every repo creation fails silently at the pod-write step.
+      // The signup response carries a pre-baked URL with WebID + issuer
+      // already filled; fall back to /connect if it's missing.
+      router.push(data.connectUrl ?? "/connect");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "signup failed");
@@ -334,12 +341,11 @@ function RegisterPanel({
         <input
           type="text"
           required
-          // HTML pattern is parsed with the /v RegExp flag in modern
-          // Chrome/Safari, which rejects `[a-z0-9._-]` because the `_-`
-          // suffix is parsed as a reverse range (codepoint of `-` is
-          // less than `_`). Putting `-` at the start of the class is
-          // universally safe across legacy and /v flag.
-          pattern="[a-z0-9][-a-z0-9._]*"
+          // No `pattern=` attribute: the /v RegExp flag rejects the
+          // character classes we want (any ordering of `-` `.` `_`
+          // triggers "Invalid character in character class"). Server
+          // validation in /api/signup catches bad slugs cleanly, so
+          // the client-side hint isn't worth the console-error noise.
           maxLength={64}
           value={podName}
           onChange={(e) => setPodName(e.target.value)}

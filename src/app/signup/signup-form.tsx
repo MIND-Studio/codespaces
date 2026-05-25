@@ -69,10 +69,10 @@ export function SignupForm() {
         <span className="block text-[color:var(--ink-soft)] mb-1">
           Pod name (URL slug; lower-case, alphanumeric)
         </span>
+        {/* No `pattern=` — see new-repo-form.tsx for the /v-flag rationale. */}
         <input
           type="text"
           required
-          pattern="[a-z0-9][-a-z0-9._]{0,63}"
           value={podName}
           onChange={(e) => setPodName(e.target.value)}
           className="w-full rounded border border-[color:var(--ink-faint)] bg-transparent px-3 py-2"
