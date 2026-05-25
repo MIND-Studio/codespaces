@@ -70,8 +70,34 @@ function renderTurtle(repo: Repo, pages: PagesConfig | null): string {
  * Write the repo's metadata Turtle into the owner's pod. Best-effort —
  * the caller catches & logs failures rather than failing the user-facing
  * operation, since the pod might be temporarily offline.
+ *
+ * Retries once on a 401 because the Inrupt SDK's storage settles
+ * asynchronously after the auth callback returns — the first fetch
+ * issued by a freshly authorized session occasionally sends
+ * unauthenticated. A second `getOwnerFetch` after a short delay reads
+ * a fully-settled session and works. See bridge log
+ * `unexpected response checking container ... 401` for the symptom.
  */
 export async function writeRepoMetadata(
+  repo: Repo,
+  pages: PagesConfig | null,
+): Promise<{ url: string; mode: "delegated" | "seeded" }> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await writeRepoMetadataOnce(repo, pages);
+    } catch (e) {
+      const msg = (e as Error)?.message ?? "";
+      const isFreshSession401 = attempt === 0 && /(:\s*401\b|401\s+Unauthorized)/.test(msg);
+      if (!isFreshSession401) throw e;
+      // SDK storage race — wait briefly and try again with a fresh
+      // session. One retry only; persistent 401 means the user really
+      // can't authenticate.
+      await new Promise((r) => setTimeout(r, 750));
+    }
+  }
+}
+
+async function writeRepoMetadataOnce(
   repo: Repo,
   pages: PagesConfig | null,
 ): Promise<{ url: string; mode: "delegated" | "seeded" }> {
