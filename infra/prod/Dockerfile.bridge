@@ -26,7 +26,7 @@ RUN apt-get update \
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-COPY tsconfig.json next.config.ts postcss.config.mjs next-env.d.ts ./
+COPY tsconfig.json next.config.ts postcss.config.mjs ./
 COPY src ./src
 
 # Ensure `public/` exists so the runtime-stage COPY doesn't fail. Most
@@ -34,6 +34,9 @@ COPY src ./src
 # empty case at runtime fine.
 RUN mkdir -p public
 
+# `next-env.d.ts` is gitignored (Next regenerates it on every build /
+# dev start), so it isn't in the build context from a CI `actions/checkout`.
+# `next build` auto-creates it during type-checking, so no separate step.
 RUN npm run build
 
 # --- Stage 2: docker CLI ---------------------------------------------------
