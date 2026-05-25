@@ -154,7 +154,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
       </header>
 
       <dl
-        className="mt-8 grid gap-x-8 gap-y-3 border-t border-[color:var(--ink-trace)] pt-6 text-xs sm:grid-cols-[max-content_1fr]"
+        className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-3 border-t border-[color:var(--ink-trace)] pt-6 text-xs sm:grid-cols-[max-content_minmax(0,1fr)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         <DataRow label="WebID">

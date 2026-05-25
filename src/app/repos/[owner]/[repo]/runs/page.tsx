@@ -4,6 +4,7 @@ import { getRepo } from "@/lib/registry/repos";
 import { listRunsForRepo, type WorkflowRun } from "@/lib/registry/runs";
 import { RelativeTime } from "@/components/relative-time";
 import { formatDuration } from "@/lib/format";
+import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,8 @@ export default async function RunsPage({ params }: PageProps) {
       >
         latest 50 · newest first
       </p>
+
+      <RepoTabs owner={owner} name={name} active="runs" />
 
       <hr className="hairline my-8" />
 

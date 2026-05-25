@@ -1,252 +1,291 @@
-# Mind Codespaces — Solid Git Bridge + Mind Pages MVP PRD
+# Mind Codespaces — vision, architecture, verdict
 
-_(Developers `git push` to a thin bridge. The bridge keeps the bare repository on disk and publishes the configured branch into the developer's own Solid Pod as a plain static website. Identity, ownership, and the published artifact all live in the user's pod. The "platform" shrinks to a protocol translator and a directory.)_
+A standalone-readable account of what `mind-codespaces-v0` is, why it exists,
+how it's shaped, and an honest read on whether it's worth turning into a
+product. Replaces the original milestone-centric PRD now that the milestone
+list is itself an artefact — see [`CHANGELOG.md`](./CHANGELOG.md) for the
+iteration-by-iteration record and [`PRODUCTION-READINESS.md`](./PRODUCTION-READINESS.md)
+for what's still open.
 
-## What this MVP proves
+## TL;DR
 
-Three claims, all testable end-to-end:
+A **Git Smart HTTP bridge** that sits between `git push` and a **Solid Pod**,
+plus a **workflow runner** that can build the pushed source in a sandboxed
+Docker container before publishing the output to the pod as a static site,
+plus an **agents module** that responds to issue events (triager, scribe,
+optional opencode-backed engineer). Identity is via Solid-OIDC delegation —
+the bridge acts on the user's pod with the user's permissions.
 
-1. **A pod can be your developer surface.** The same Solid Pod that holds a person's marketplace listings (see `mind-market-v0`) can also hold their published website — the *artifact* of `git push` is something the user owns, served from a URL under their pod.
-2. **Git stays Git.** We don't reinvent the Git object model on top of Solid. Bare repositories remain bare repositories on disk; the bridge speaks Git Smart HTTP. Solid handles identity, metadata, and publishing — the things the user actually owns.
-3. **A bridge is enough.** A small TypeScript service can sit between a Git client and a Solid Pod and produce a working "GitHub Pages" equivalent where the page lives at a Pod URL controlled by the user.
+Runs end-to-end locally; runs in production behind Caddy on a Hetzner CX33;
+crosses from "closed beta" toward "managed multi-user" per the audit. About
+~22 000 lines of TypeScript / React across 140-odd source files.
 
-This is the smallest thing that's a *real* GitHub-Pages-style workflow — backed by user-owned data — not a demo.
+## The thesis
+
+**Your pod is your platform.** The user's Solid Pod holds their WebID
+(identity), their issues as Turtle, their repository metadata as Turtle, and
+the published artifact (the static site). The bridge is replaceable plumbing.
+
+This is the same idea `mind-market-v0` explores from a different angle. Mind
+Codespaces is the developer-tooling test of it: if a pod can host a working
+"GitHub Pages + issues + CI" surface, the thesis is more than a slide.
 
 ## The model in one sentence
 
-A developer creates a repo on the bridge, `git push`es their site to a configured branch, and a static copy appears at a Solid container they own; `git clone` and `git fetch` work normally over HTTP because the bridge delegates to the system `git http-backend`.
+A developer creates a repo on the bridge, `git push`es their source to a
+configured branch, an optional `.mind/workflow.yml` builds it inside an
+ephemeral container, and a static copy lands at a Solid container the
+developer owns; `git clone` and `git fetch` work normally over HTTP because
+the bridge delegates to the system `git http-backend`.
 
-## The asymmetry between the bridge and the pod (important design choice)
+## The asymmetry between the bridge and the pod (the load-bearing design choice)
 
-- **The bridge** holds bare Git repositories on disk and translates protocols. It is *not* the source of truth for the published site, nor for the user's identity. If the bridge is replaced, the user's pod and its published site survive.
-- **The pod** holds the user's WebID (identity), the published artifact (the site), and — in later milestones — the repository's public metadata as Linked Data (`solidgit:Repository`). The pod is what the user owns; everything else can be reconstructed.
+- **The bridge** holds bare Git repositories on disk, translates protocols,
+  runs workflow containers, and orchestrates agents. It is *not* the source
+  of truth for the published site or the user's identity. If the bridge is
+  replaced, the pod and its published site survive.
+- **The pod** holds the WebID, the published artifact, the repo metadata
+  (`solidgit:Repository` Turtle), and issues/comments. The pod is what the
+  user owns; everything else can be reconstructed from a fresh `git push`.
 
-Compare GitHub Pages, where both the repository *and* the published site live on platform-owned infrastructure under a platform-owned domain. Here, the artifact's canonical home is the pod.
-
-## Scope: what's in
-
-### Developer side
-
-- A pod (provisioned on the local CommunitySolidServer instance for the prototype; any Solid pod the user already has, in principle)
-- Create a repository via the bridge's HTTP API: `POST /api/repos { owner, name, ownerWebId, ownerPodRoot, visibility }`
-- A real bare Git repository created on disk under `.git-data/repos/{owner}/{name}.git/`
-- `git clone http://localhost:3010/api/git/{owner}/{name}.git` — works
-- `git push http://localhost:3010/api/git/{owner}/{name}.git main` — works
-- Configure Mind Pages per repository: `PUT /api/repos/{owner}/{name}/pages { enabled, sourceBranch, sourcePath, targetContainer }`
-- A push to the configured source branch triggers a publish: the bridge checks out that branch into a temp directory, walks the source path, and `PUT`s each file to the configured Solid container with the correct MIME type
-- After a successful publish, the site is reachable at the configured Solid Pod URL, e.g. `http://localhost:3011/alice/public/sites/my-site/`
-- A minimal web landing page on the bridge that explains what the prototype is
-
-### Solid Pod side
-
-- A single CommunitySolidServer instance with one demo user `alice`
-- Three containers per user established by the bridge's pod-setup step:
-  - `/public/sites/` — public-read, where Mind Pages publishes
-  - `/codespaces/` — public-read, reserved for repo metadata (stretch — see milestones)
-  - default ACL inheritance for everything else
-- ACL configured so the demo user has Write/Control on `/public/sites/`, and anyone can Read
-
-### Shared (the thin bridge)
-
-- **Repo registry**: a tiny SQLite registry of known repositories. Holds the mapping `owner/name → disk path`, ownership info (WebID, pod root), default branch, visibility, and the Pages config. Does *not* hold the source of truth for the *site* — that's the pod.
-- **Git Smart HTTP**: delegated to the system `git http-backend` CGI binary. The bridge spawns it as a child process and pipes stdin/stdout through Next.js Route Handler streams.
-- **Pages Publisher**: a small piece of glue code that, on receipt of a `post-receive` hook callback, checks out the configured branch and uploads it to the configured Solid container using `@inrupt/solid-client-authn-node` for authentication.
-- **Authentication for the publisher**: the prototype holds the seeded demo user's credentials in env vars and uses them to authenticate uploads. Real OIDC delegation is out of scope.
-
-## Scope: deliberately out
-
-- Pull requests, code review, issues, discussions. No collaboration surface beyond `git push`.
-- CI/CD, build pipelines, custom build steps. The publisher uploads exactly what's in the source path; you build before you push.
-- Git LFS, packfile optimization, gc tuning. The bridge is the system `git` binary, and we take its defaults.
-- Branch protection rules, required reviewers, status checks.
-- A real Solid-OIDC integration where the *user* authenticates and the *bridge* acts on their behalf via a delegated token. The MVP uses a seeded credential.
-- Per-repo push tokens, HTTP Basic auth, fine-grained permissions. Stretch milestone, not MVP.
-- Pod-side Linked Data metadata (`solidgit:Repository` Turtle on the pod). Stretch milestone.
-- Custom domains for published sites — the site lives at the pod URL.
-- A polished web dashboard. Stretch milestone; for MVP the API is the surface.
-- Multi-user, multi-host federation. One CSS instance, one demo user.
-- Cleanup of stale files on republish (a republish overwrites; files removed from the source path stay on the pod until manually deleted). Acceptable for prototype.
+Compare GitHub Pages, where both the repository and the published site live
+on platform-owned infrastructure. Here, the artefact's canonical home is the
+pod.
 
 ## Architecture
 
 ```
-   Developer's machine                                  Solid Pod (CSS)
-   ┌──────────────┐                                     ┌──────────────────┐
-   │  git client  │                                     │  alice's pod     │
-   └──────┬───────┘                                     │  http://:3011/   │
-          │                                             │  alice/          │
-          │ git clone / push                            │   ├── /profile/  │
-          │ (HTTP Smart Protocol)                       │   ├── /codespaces│
-          │                                             │   │     /…/      │
-          ▼                                             │   │  (metadata,  │
-   ┌─────────────────────────────────────────┐          │   │   stretch)   │
-   │  mind-codespaces-v0 bridge (Next.js)    │          │   └── /public/   │
-   │  http://localhost:3010                  │          │       /sites/    │
-   │                                         │          │         {repo}/  │
-   │  /api/git/{owner}/{repo}/...      ──────┼──spawn──▶│         index.html
-   │    │                                    │  git     │         style.css│
-   │    │   ┌─────────────────┐              │  http-   │         …        │
-   │    └──▶│ git http-backend│              │  backend │                  │
-   │        │   (CGI)         │              │          └──────────────────┘
-   │        └────────┬────────┘              │                  ▲
-   │                 ▼                       │                  │ PUT
-   │     .git-data/repos/{owner}/{repo}.git/ │                  │ authenticated
-   │     (bare repository)                   │                  │ as seeded user
-   │       │                                 │                  │
-   │       │ post-receive hook fires         │                  │
-   │       ▼                                 │                  │
-   │  /api/git/internal/post-receive  ──────────▶ PagesPublisher (server-side)
-   │       │                                 │       │
-   │  Registry (SQLite)                      │       └─ git checkout branch
-   │   ┌────────────────────┐                │           to temp dir
-   │   │ repos              │                │           walk files
-   │   │ pages_configs      │                │           PUT each one
-   │   │ push_tokens        │                │
-   │   └────────────────────┘                │
-   └─────────────────────────────────────────┘
+   ┌──────────────┐                                       ┌──────────────────┐
+   │  git client  │                                       │   Solid Pod      │
+   └──────┬───────┘                                       │   (CSS at :3011) │
+          │                                               │  alice/          │
+          │ Git Smart HTTP  (push-token gated)            │   ├── profile/   │
+          │                                               │   ├── codespaces/│
+          ▼                                               │   │    {repo}/   │
+   ┌────────────────────────────────────────────┐         │   │    ├ index.ttl
+   │  Mind Codespaces bridge (Next.js)          │  spawn  │   │    └ issues/ │
+   │  :3010 (in prod: behind Caddy on :443)     │ git http│   │              │
+   │                                            │ -backend│   └── public/    │
+   │  ┌──────────────────────────────────────┐  │────────▶│       sites/     │
+   │  │ Git Smart HTTP route + CGI           │  │         │         {repo}/  │
+   │  ├──────────────────────────────────────┤  │         │         index.html
+   │  │ Workflow runner (auto: docker│native)│  │         │                  │
+   │  │   native:  sh -c                     │  │         └────────▲─────────┘
+   │  │   docker:  node:22-alpine ephemeral, │  │                  │
+   │  │            --network=none + Verdaccio│  │  authenticated   │
+   │  ├──────────────────────────────────────┤  │  PUT (delegated  │
+   │  │ Pages publisher                      │  │  refresh token,  │
+   │  │   checkout → walk → PUT → prune      │──┼──or seeded creds)┘
+   │  │   publish-lock + reconciler          │  │
+   │  ├──────────────────────────────────────┤  │
+   │  │ Agents dispatch                      │  │
+   │  │   echo │ openrouter │ coder (opt-in) │  │
+   │  ├──────────────────────────────────────┤  │
+   │  │ Session auth · CSRF · rate limit ·   │  │
+   │  │ CORS allowlist · response size cap   │  │
+   │  ├──────────────────────────────────────┤  │
+   │  │ Observability                        │  │
+   │  │   NDJSON log + correlation IDs       │  │
+   │  │   /api/metrics (Prometheus, bearer)  │  │
+   │  ├──────────────────────────────────────┤  │
+   │  │ Registry (SQLite, 13 migrations)     │  │
+   │  │   repos · pages_configs · push_tokens│  │
+   │  │   identities · identity_storage      │  │
+   │  │   issues · pulls · workflow_runs     │  │
+   │  │   agent_runs · users · ai_providers  │  │
+   │  └──────────────────────────────────────┘  │
+   └────────────────────────────────────────────┘
+         │
+         │ (prod only) docker API via socket-proxy sidecar — bridge never
+         │ sees /var/run/docker.sock directly
+         ▼
+   docker daemon (host) — runs workflow + coder containers
 ```
 
-**Key properties:**
+Three durable principles:
 
-- The **source of truth for the repository** is the bare Git repo on disk under `.git-data/`. The pod does not hold Git objects — that would fight the way Git uses pack files, locking, and gc.
-- The **source of truth for the published site** is the pod container. The bridge's temp checkout is throwaway; the pod has the canonical, addressable copy.
-- **There is no central message store, no buyer/seller distinction, no chat.** This prototype is about publishing.
-- The bridge is the smallest possible central piece: a protocol translator and a directory. Its source code, registry schema, and disk layout are public.
+1. **Keep Git as Git.** The bridge never reimplements Git on top of pods.
+   Bare repos live on disk where Git's consistency rules (packfiles, refs,
+   locks, gc) work normally. The pod holds the *output*.
+2. **The bridge is replaceable.** Anyone can run another bridge against the
+   same pod. A single `git push` from any client recreates the bare repo.
+3. **The pod is authoritative.** Identity, repo metadata, issues, and the
+   published artifact all live on the pod. If the bridge goes away, the URLs
+   survive.
 
-## The full developer flow — annotated for ownership
+## What's in (today)
 
-1. **Get a pod.** For the prototype, the CSS instance has a demo user `alice` (`dev-only-do-not-use-in-prod`) provisioned by `seed.json`. In a real deployment, the user brings any Solid pod.
-2. **Tell the bridge about a repo.** A `POST /api/repos` registers the repo, creates a bare repository on disk, and records ownership in the registry. *No data leaves the user's machine yet — this is just bookkeeping on a server they trust.*
-3. **Configure Mind Pages.** A `PUT /api/repos/{owner}/{name}/pages` declares: when a push lands on `sourceBranch`, treat `sourcePath` as the site root, and `PUT` it to `targetContainer` (a URL under the user's pod). The target container is *the user's*, not the bridge's.
-4. **Push.** `git push http://localhost:3010/api/git/alice/my-site.git main`. The bridge speaks Git Smart HTTP via `git http-backend`. The push lands in the bare repo on disk.
-5. **The post-receive hook fires.** The hook installed at repo-creation time `curl`s `POST /api/git/internal/post-receive` (loopback-only) with the updated ref. The bridge logs `repo.updated` and, if the ref matches the Pages source branch, kicks off `PagesPublisher.publish(repoId)`.
-6. **The publisher publishes.** It clones the bare repo (single-branch, shallow) into a temp directory, walks the configured source path, and for each file:
-   - Resolves a target URL under the user's pod
-   - Reads bytes from disk
-   - Looks up the MIME type from the extension
-   - `PUT`s the file to the pod using a `fetch` authenticated as the seeded demo user
-   - Skips forbidden files (`/.git`, `.env`, `node_modules/`, dotfiles whitelist-by-default)
-7. **The site is live.** The user's `index.html` is reachable at the pod URL configured in the Pages config. The bridge has nothing further to do until the next push.
-8. **Iterate.** Edit, commit, push again. The publisher overwrites. (No prune in MVP — stale files stay until manually deleted.)
+- **Git Smart HTTP** bridge with `git http-backend` CGI delegation. Push
+  tokens (HTTP Basic) gate every push and every clone of a private repo.
+- **Mind Pages publisher** — walks the source path (forbidden-list applied,
+  symlinks skipped, 50 MB per-file cap), `PUT`s files with the right MIME,
+  re-asserts public-read ACL, prunes stale files, records
+  `last_published_sha`. A reconciler boots from `instrumentation.ts` and
+  catches missed publishes every 5 minutes.
+- **Pod-side repo metadata** — `solidgit:Repository` Turtle written on every
+  repo or Pages-config change.
+- **Workflow runner** for `.mind/workflow.yml` — native + Docker, auto-detected.
+  Docker mode defaults to `--network=none` with optional Verdaccio mirror;
+  `--read-only --cap-drop ALL --pids-limit=512 --ulimit nofile=1024:1024`;
+  log-cap; stuck-run reaper at boot.
+- **Agents** — `triager`, `engineer`, `scribe` roles; `echo`/`openrouter`/`coder`
+  driver ladder; `coder` is opt-in via `MIND_ENABLE_ENGINEER_AGENT=1`.
+- **Issues + comments** — pod-native Turtle + SQLite index. Pull requests
+  in SQLite only (Turtle for PRs is pending).
+- **Auth** — session cookie (HMAC-signed, 32-byte key), readable `mc-csrf`
+  mirror for double-submit CSRF, `requireSession` / `requireOwner` on every
+  mutating route. Solid-OIDC delegation via `/connect` with refresh tokens
+  AES-256-GCM-encrypted at rest. Password login against seeded CSS users at
+  `/login` (dev convenience).
+- **Multi-user** — `users` table, `/signup` (gated on `BRIDGE_ENABLE_SIGNUP=1`),
+  per-owner quotas (repos / tokens / runs-per-day / disk-per-repo).
+- **BYOK AI** — `/profile/ai-providers` lets users bring OpenRouter / OpenAI /
+  Anthropic / Google keys for the agents that act on their behalf.
+- **Dashboard + repo detail + code browser + runs list + people directory**.
+  Editorial UI (serif display + monospace eyebrows) with light/dark/neo themes.
+- **Observability** — NDJSON logger with WebID scrubbing and correlation IDs;
+  Prometheus metrics endpoint; real `/api/health`; cheap `/api/livez` for
+  liveness probes.
+- **Production deployment** — `infra/prod/`: Dockerfile, compose (caddy +
+  bridge + css + socket-proxy + verdaccio), Caddyfile, env example, bootstrap
+  script, pin-image-digests helper. Live on Hetzner CX33 at
+  `codespaces.duckdns.org`. See [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
-There is no payout, no DNS, no platform-owned domain. The published URL lives in the user's pod. If the user changes pod providers, they take the URL space with them — provided they bring the same `/public/sites/` container layout.
+## What's deliberately out / next
 
-## Data model — every field justified
+The list of remaining gaps is the OPEN section of
+[`PRODUCTION-READINESS.md`](./PRODUCTION-READINESS.md). The strategic
+hold-outs:
 
-**Bridge registry (SQLite, the smallest possible bookkeeping):**
+- **No deletion API.** Repos can be created but not destroyed via the API
+  (P2).
+- **Pod-canonical reconciler for issues/comments** — today every write goes to
+  SQLite first and the pod mirror is best-effort. A restore from an old DB
+  backup silently orphans pod-side issues (§3.7).
+- **No multi-host federation.** OIDC issuer allowlist is per-deployment;
+  cross-host pods would need it parameterised.
+- **No pull-request Turtle on the pod.** PRs are SQLite-only — they aren't
+  portable across bridges yet.
+- **Agent budgets** — no per-repo / per-owner / per-day token cap on agent
+  calls. Combined with the engineer role's blast radius (§6 of
+  PRODUCTION-READINESS), this is the gate on enabling `coder` for anyone you
+  don't trust.
+- **Tests** — 8 unit tests pass; integration tests (Smart HTTP round-trip,
+  live-CSS publish, OIDC, concurrent push, reconciler) are still to do.
 
-- `repos`: `id, owner, name, owner_webid, owner_pod_root, default_branch, visibility, created_at` — what we need to find a repo's bare path on disk and know whose pod to publish into.
-- `pages_configs`: `repo_id, enabled, source_branch, source_path, target_container, last_published_at` — declarative description of "when X branch lands, copy Y subtree to Z pod container."
-- `push_tokens` *(stretch / M9)*: `repo_id, token_hash, label, created_at` — placeholder schema for per-repo bearer tokens. Not used in MVP.
+## What was learned
 
-**Bridge disk:**
+Carry-forward observations from the build:
 
-- `.git-data/repos/{owner}/{name}.git/` — a real bare Git repository created by `git init --bare`. Owned by the bridge process. Contains a `hooks/post-receive` that calls back into the bridge.
+- **WebVM is the wrong shape for a server-side runner.** CheerpX is
+  proprietary and browser-only. WASM more broadly still can't credibly
+  replace Docker for full Node build chains in 2026. Per-build Docker
+  remains the boring-correct answer for arbitrary `npm` workflows.
+  Wasmer Edge.js is worth a 1-day spike in 2027, not now.
+- **Streaming `git http-backend` through Next.js 16 Route Handlers works
+  first try** once the spawn type signature is right (`env: NodeJS.ProcessEnv`
+  so the overload resolves to `ChildProcessWithoutNullStreams`; don't set
+  `stdio: ["pipe","pipe","pipe"]` explicitly — it breaks inference).
+- **Public-read ACL has to be re-asserted on every publish.** Setting it
+  once at pod-setup time is fragile to admin tools or other bridges narrowing
+  it later. The cost is one extra small PATCH per publish.
+- **Tailwind v4's preflight strips list-style and font-weight.** Both have to
+  be restored explicitly in `.markdown-body` styles to render READMEs.
+- **Turbopack's CSS hot-reload caches stale bundles.** `rm -rf .next` is the
+  only reliable way to pick up CSS changes during dev. Documented in
+  `AGENTS.md` after losing 15 minutes to it.
+- **YAML plain-scalar colons are a footgun.** `sh -c 'echo expected: 42; ...'`
+  parses as a mapping; wrap the whole scalar in double quotes.
+- **The publisher's prune-on-republish had three bugs in a row.** Turtle
+  parsing with `[^;.]+?` broke on dots inside filenames; CSS returns relative
+  URIs; the prune walk needed proper container recursion. Rewriting the
+  parser as an imperative `<URI>`-token scanner between `ldp:contains` and
+  `;`/`.` made it bulletproof. **Still the most fragile module in the
+  codebase** and the strongest candidate for a real integration test.
+- **Two-column repo detail (main + sidebar)** turned out to be the highest-
+  impact UI change of the whole prototype. The page is a dashboard, not an
+  editorial article.
+- **Editorial UI (serif display + monospace eyebrows + restrained palette)**
+  survived three iteration rounds without redesign. The visual language is
+  right for a dashboard that sells a thesis. The neo theme is for developer
+  hours, not marketing.
 
-**User's pod (the source of truth for what the user publishes):**
+## Would it be a good Mind product?
 
-- `/public/sites/{name}/` — the published static site. Public-read ACL. Owned by the user.
-- `/codespaces/{name}/index.ttl` *(stretch / M8)* — `solidgit:Repository` Linked Data describing name, owner, default branch, visibility, remote URL. Lets other Solid-aware tools discover the repository through the pod.
+The honest answer: **a strong wedge, not a standalone product yet.**
 
-Notice what isn't there: no central database of *file contents*, no central message store, no commit log copied into the pod. The site files in the pod are the publishable artifact; the bare repo on disk is the version-controlled artifact. Two stores, each fit for purpose.
+**Where it's compelling.** It proves the Mind thesis end-to-end — `git push`
+→ build → publish → URL on your pod, with the bridge replaceable. The
+workflow runner is non-trivial (real Docker isolation, real auto-detect,
+honest sandbox-vs-network trade-off). The agentic-coding-course framing — small,
+focused milestones, working end-to-end after each — was the right shape and
+the prototype's source is readable.
 
-## Privacy and ownership guarantees specific to the MVP
+**Where it's thin.** The audience intersection (Solid users ∩ self-hosted
+Git ∩ not-GitHub) is small. The non-Solid competition (Cloudflare Pages,
+Vercel, Netlify, Fleek) dominates "free static hosting + git push" on UX,
+edges, and team features. The collaboration story is shallow — pulls without
+pod Turtle, no notifications, no review queues. The two-sided operational
+cost (someone runs the bridge AND someone hosts the pod) needs the pod-host
+market to mature.
 
-Promised in the README, enforced in code:
+**What it would take to ship as a product**, in rough order of cost:
 
-1. The bridge holds only the bookkeeping it needs: repository names, owner identifiers, Pages configuration. It does not hold buyer or chat data because there are no buyers or chats here.
-2. The *published artifact* lives in the user's pod. Replacing the bridge does not destroy any published site.
-3. There is no third-party SaaS in the data path. No analytics, no CDN, no GitHub API. The bridge runs on a single box; the pod runs on a single box.
-4. The bridge does not run user-provided build commands. The publisher only copies bytes. (Build pipelines are explicitly out of scope.)
-5. The publisher refuses to upload `/.git/`, `.env`, `node_modules/`, and a small forbidden list — to prevent accidentally publishing secrets or vendored dependencies. This is enforced before the first `PUT`, not as a server-side filter on the pod.
-6. The bridge's registry schema and disk layout are public; the prototype is single-tenant, single-host, and easy to inspect.
+1. **Pull-request Turtle on the pod** so PRs are portable. ~2 days.
+2. **Agent budgets + branch-target restrictions** so the engineer role is
+   safe to enable for external users. ~3 days.
+3. **Pod-canonical reconciler for issues/comments** so restore-from-backup
+   doesn't orphan pod state. ~3 days.
+4. **Integration test suite** (Smart HTTP round-trip, live-CSS publish,
+   OIDC) so refactors stop being scary. ~1 week.
+5. **Hosted pod offering or tight partnership.** The BYO-pod model only
+   works for a small expert audience. Quarter-scale work.
+6. **A reason for non-ideologues to use it** — speed, price, integration
+   with other Mind products, a feature competitors can't match. Open-ended.
 
-## Build phases / milestones
+That's ~1 month of fixes from a credible alpha to a credible private beta;
+the productisation question (items 5–6) is what determines whether to spend
+the next quarter on it.
 
-This is **an agentic-course prototype**, intended to be built in small, agent-friendly steps. M0–M7 are the MVP target; M8–M11 were originally stretch goals and all shipped in subsequent iterations (see `docs/CHANGELOG.md`).
+### Verdict
 
-**M0 — PRD authored**
-*(this document)*
+The prototype's highest-value uses are:
 
-**M1 — Scaffolding**
-Next.js 16 + TypeScript + Tailwind project copied from `mind-market-v0`'s skeleton, retitled, listening on `:3010`. `/api/health` returns `{ok: true}`.
+1. **As a building block in the larger Mind ecosystem story.** Paired with
+   `mind-market-v0` and any future pod-native products, it makes "your pod
+   is your platform" a category, not a slogan.
+2. **As an educational asset for the agentic-coding course.** Small,
+   end-to-end, exercises every layer (Git, HTTP, Solid OIDC, Docker, SQLite,
+   React, Tailwind), iterative milestone structure worked.
+3. **As a proof that the Solid stack can host real developer tooling**,
+   which is a non-obvious result worth knowing even if this specific product
+   never ships.
 
-**M2 — Single CSS Docker instance**
-One CommunitySolidServer on `:3011` with seeded user `alice`. `curl http://localhost:3011/alice/profile/card` returns a WebID profile.
+It is probably **not** a standalone product. If forced to choose: invest the
+next quarter in items 1 and 2 (course + ecosystem narrative), not 5–6
+(productisation), unless the product question gets a clear "yes."
 
-**M3 — Repo registry**
-SQLite registry with `repos`, `pages_configs`, `push_tokens` tables. CRUD endpoints under `/api/repos`. Strict name validation, path-traversal-proof.
+## Privacy and ownership guarantees specific to the current build
 
-**M4 — Bare Git repo creation**
-`POST /api/repos` triggers `git init --bare` under `.git-data/repos/{owner}/{name}.git/`. Rollback the registry row if Git fails.
+Enforced in code:
 
-**M5 — Git Smart HTTP delegation**
-`/api/git/{owner}/{repo}/[...path]` route spawns `git http-backend` as a CGI, streams the request body in, parses CGI-style headers out, streams the rest of stdout back. `git clone` and `git push` against the bridge succeed.
-
-**M6 — Post-receive event**
-A `post-receive` hook installed at repo-creation time `curl`s `POST /api/git/internal/post-receive` (loopback-only). Handler logs `repo.updated` and triggers `PagesPublisher.publish(repoId)` if the ref matches the Pages source branch.
-
-**M7 — Pages publisher (MVP done)**
-Checkout the source branch to a temp dir; walk source path; `PUT` files to the configured Solid container using a `fetch` authenticated as the seeded demo user. End-to-end: `git push` → site live at a pod URL.
-
-**M8 — Repo metadata on the pod (shipped)**
-Writes `solidgit:Repository` Turtle to `{podRoot}/codespaces/{name}/index.ttl` at repo creation, on PATCH, and on PUT /pages. Best-effort: pod-side failures log but don't fail the API call.
-
-**M9 — Per-repo push tokens (shipped)**
-HTTP Basic auth on `git-receive-pack` (always) and on `git-upload-pack` (when `visibility=private`), against `sha256`-hashed tokens in `push_tokens`. 401 + `WWW-Authenticate: Basic realm="owner/repo"`. Username is ignored — any holder of a valid token wins.
-
-**M10 — Dashboard + seed-demo (shipped)**
-`/repos` list page (server-rendered) + `/repos/{o}/{r}` detail page with read-only Pages config and a client-side token manager. `scripts/seed-demo.ts` creates `alice/bakery` and `alice/notes` end-to-end (token mint → push → wait for publish).
-
-**M11 — Real Solid-OIDC delegation (shipped)**
-`/connect` page kicks off a Solid-OIDC authorization-code flow against the pod's OIDC issuer (dynamic client registration as "Mind Codespaces"). Tokens persisted to SQLite via a custom `IStorage` backing the Inrupt Node SDK. The publisher prefers delegated tokens, falling back to seeded credentials only for WebIDs that haven't authorized yet. `/identities` lists connected pods and supports disconnect.
-
-## Tech stack
-
-- **Bridge runtime:** Node.js + TypeScript (strict). Next.js 16 App Router (same as `mind-market-v0`).
-- **HTTP:** Next.js Route Handlers. Streaming via `ReadableStream` for Git Smart HTTP. If streaming Route Handlers don't behave under the chunked-encoding edge cases of `git push`, the contingency plan is a small dedicated `http`-module server proxied behind Next.js.
-- **Git:** the system `git` binary. `child_process.spawn` for `git init --bare`, `git http-backend` (CGI), and `git clone` for the Pages checkout.
-- **Pod server:** [CommunitySolidServer](https://github.com/CommunitySolidServer/CommunitySolidServer) v7 via Docker. One instance on `:3011` with a seeded `alice` user.
-- **Solid client:** `@inrupt/solid-client-authn-node` for both the seeded-credential fallback and the M11 OIDC delegation (Session API + `getSessionFromStorage` + custom `IStorage`). Container/ACL setup is hand-rolled Turtle PUTs in `src/lib/solid/containers.ts` (we don't need the higher-level `@inrupt/solid-client` for that surface).
-- **Registry:** `better-sqlite3`. Migration system ported from `mind-market-v0/src/lib/indexer/db.ts`.
-- **Styling:** Tailwind CSS 4.
-- **Scripts:** `tsx` for one-shot scripts. No separate test framework for the prototype (matches `mind-market-v0`'s approach).
-
-Everything in this stack is FOSS and self-hostable. No third-party SaaS.
-
-## Risks worth naming
-
-- **Git Smart HTTP streaming.** The Smart HTTP protocol uses chunked-encoded request bodies, sensitive headers (`Content-Type: application/x-git-{upload,receive}-pack-request`), and demands the response is streamed back without buffering — `git push` will hang if the server collects the body and responds at the end. Mitigation: delegate everything to `git http-backend` and stream both directions. Contingency: a small dedicated `http`-module server proxied behind Next.js if Route Handlers misbehave.
-- **Streaming Route Handlers under Next.js 16.** Next.js 16 App Router supports `ReadableStream` in responses and `Request#body` as a stream, but the prototype is on an unfamiliar Next.js version (see `AGENTS.md`). We'll verify with real `git clone` early; if it fails, we fall back to the dedicated-server contingency.
-- **Path traversal.** The bridge takes `{owner}`, `{repo}` from the URL and uses them to construct disk paths. Mitigation: strict regex on names (`/^[a-z0-9][a-z0-9._-]*$/i`, length ≤ 64, no `..`, no leading/trailing dots) plus a `path.resolve` boundary check that asserts the resolved repo path starts with the data directory.
-- **Publishing secrets.** A naïve walk of the working tree would happily `PUT` `.env`, `secrets.json`, `node_modules/`. Mitigation: hardcoded forbidden list applied during the walk, before any `PUT`.
-- **Authenticating to the pod.** ~~Real Solid-OIDC requires a multi-step flow that's awkward in a prototype.~~ Resolved in M11: `/connect` runs the full Inrupt SDK authorization-code flow against the pod's issuer; refresh tokens persist to SQLite via a custom `IStorage`; `getOwnerFetch(webId)` prefers delegated tokens and falls back to the seeded credential only if no identity is stored. The fallback is convenient for the demo but should be removed for any non-local deployment.
-- **Port collision with `mind-market-v0`.** Both prototypes use CSS on `:3011`. Mitigation: not a real risk for an agentic course (demo-once-at-a-time), but the README will document it. The bridge itself listens on `:3010` to leave `:3000` free for `mind-market-v0`.
-- **No deletion on republish.** Files removed from the source between pushes will linger on the pod. Mitigation: accept for MVP; document. A prune step is M11+ work.
-- **The Next.js used here is *not* the Next.js most agents know.** Per `mind-market-v0/AGENTS.md`, breaking changes vs. older Next.js docs are expected. Mitigation: read the in-tree `node_modules/next/dist/docs/` before assuming the older App Router API still applies.
-
-## What's still open (post-shipped-stretch)
-
-M0–M11 are done. The remaining ideas, in roughly increasing effort:
-
-1. **Deletion-on-republish.** The current publisher overwrites but does not prune — files removed from the source between pushes linger on the pod. A diff step that lists existing files in the target container and DELETEs the ones no longer in the source would close this. Optional allow-list of paths to preserve (hand-edited additions).
-2. **Drop the seeded-credential fallback.** Now that OIDC delegation works, the `POD_USER_PASSWORD` env var only matters until a user runs through `/connect`. Removing the fallback is mostly a config + docs change; the seed-demo script would gain a one-time OIDC step.
-3. **Cross-prototype demo.** Share a single CSS instance between `mind-codespaces-v0` and `mind-market-v0` so alice's pod hosts both her marketplace listings AND her bakery site. Concretely: align ports/data dirs and document the combined story.
-4. **Build pipelines.** Sandboxed builds for static-site generators (Vite, Astro, Hugo, …). The interesting design question is sandboxing: containers per build, no network egress except to the pod, time/memory limits.
-5. **Multi-host federation.** A repo on one bridge can publish to a pod on another host; the publisher follows the user's WebID to discover the right storage. Mostly an extension of the OIDC flow to accept any issuer, not just the local CSS.
-6. **Pull request equivalent.** Lightweight collaboration via pod-to-pod inboxes (the `mind-market-v0` inbox/request pattern, repurposed for code review).
-7. **Production deploy story.** Dockerfile for the bridge, `docker-compose.prod.yml` with Caddy in front, secret-handling guidance — `mind-market-v0` has this shape, this prototype doesn't yet.
-8. **Tests.** No automated test suite exists. End-to-end verification has been by `curl` + `git` + Playwright through the dashboard.
-
-Each of these is additive, not a rewrite. The shipped surface is deliberately the floor.
-
-## Demo scenario
-
-`alice` is a baker who already runs a `mind-market-v0`-style marketplace listing for her bakery. She now wants a small website with her opening hours and the week's bread menu, hosted out of the same pod.
-
-1. She points the bridge at her pod: `POST /api/repos { owner: "alice", name: "bakery-site", ownerWebId: "http://localhost:3011/alice/profile/card#me", ownerPodRoot: "http://localhost:3011/alice/", visibility: "public" }`.
-2. She configures Mind Pages: `PUT /api/repos/alice/bakery-site/pages { enabled: true, sourceBranch: "main", sourcePath: "/", targetContainer: "http://localhost:3011/alice/public/sites/bakery-site/" }`.
-3. From a local working directory, she pushes a hand-written `index.html`, `style.css`, and a banner image.
-4. She opens `http://localhost:3011/alice/public/sites/bakery-site/index.html` and sees her site.
-
-The pod that already holds her marketplace listings now also holds her website. *Same pod, more uses.*
+1. The bridge holds only the bookkeeping it needs: repository names, owner
+   identifiers, Pages configuration, push tokens (sha256 at rest), issues /
+   pulls / workflow / agent rows. No third-party SaaS in the data path.
+2. The *published artifact* lives in the user's pod. Replacing the bridge
+   does not destroy any published site.
+3. The bridge does not run user-provided build commands without isolation
+   when Docker is available (the default in prod). Native-shell fallback is
+   for dev only and is logged on every run.
+4. The publisher refuses to upload anything in the forbidden list (`.git/`,
+   `.env*`, `node_modules/`, `.aws`, `.ssh`, `id_*`, `*.pem`, `*.key`,
+   `.netrc`, `.npmrc`, …), skips symlinks via lstat, and caps files at
+   50 MB.
+5. Refresh tokens stored in `identity_storage` are AES-256-GCM-encrypted
+   with `IDENTITY_ENCRYPTION_KEY`. Session cookies are HMAC-signed with
+   `BRIDGE_SESSION_SECRET`. Post-receive hook callbacks are HMAC-signed with
+   `BRIDGE_HOOK_SECRET`. The bridge refuses to start in production without
+   any of these.
+6. The bridge's registry schema is in `src/lib/registry/migrations/`; the
+   disk layout is documented in `README.md`. The prototype is open to
+   inspection.

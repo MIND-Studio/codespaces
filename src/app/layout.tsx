@@ -2,16 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DM_Sans, Fraunces, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { PageTransition } from "@/components/page-transition";
 import { AuthCtaServer } from "@/components/auth-cta-server";
+import { MainNav } from "@/components/main-nav";
+import { readSession } from "@/lib/auth/session";
 
 /**
- * Sets data-theme="dark" on <html> BEFORE first paint by reading the
- * user's stored preference (mc:theme) or the OS preference. Inlined
- * to dodge the flash-of-wrong-theme problem.
+ * Sets data-theme on <html> BEFORE first paint. Default is "dark"; the
+ * user can change it from /profile (persisted to localStorage as
+ * `mc:theme`). Inlined to dodge the flash-of-wrong-theme problem.
  */
-const THEME_INIT = `(function(){try{var s=localStorage.getItem("mc:theme");var p=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var t=s||(p?"dark":"light");if(t==="dark"||t==="neo")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+const THEME_INIT = `(function(){try{var s=localStorage.getItem("mc:theme");var t=s||"dark";if(t==="dark"||t==="neo")document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
 
 const fontDisplay = Fraunces({
   variable: "--font-display",
@@ -52,9 +53,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col overflow-x-hidden">
         <Masthead />
-        <main className="flex flex-1 flex-col">
+        <main className="flex flex-1 flex-col min-w-0">
           <PageTransition>{children}</PageTransition>
         </main>
         <Colophon />
@@ -64,46 +65,29 @@ export default function RootLayout({
 }
 
 async function Masthead() {
+  const session = await readSession();
   return (
     <header className="border-b border-[color:var(--ink-trace)] bg-[color:var(--paper)]">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 sm:gap-8 sm:px-10 sm:py-5">
-        <Link href="/" className="flex items-baseline gap-3">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-3 sm:gap-8 sm:px-10 sm:py-5">
+        <Link href="/" className="flex shrink-0 items-baseline gap-3">
           <span
-            className="display text-xl tracking-tight sm:text-2xl"
+            className="display whitespace-nowrap text-lg tracking-tight sm:text-2xl"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Mind <em>Codespaces</em>
           </span>
-          <span className="hidden text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] sm:inline">
+          <span className="hidden whitespace-nowrap text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] lg:inline">
             <span className="text-[color:var(--accent)]">●</span> solid git bridge
           </span>
         </Link>
-        <nav
-          className="-mx-4 flex w-full items-center gap-1 overflow-x-auto px-4 text-[11px] uppercase tracking-[0.18em] sm:mx-0 sm:w-auto sm:flex-wrap sm:gap-2 sm:overflow-visible sm:px-0"
-          aria-label="Main"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          <Link
-            href="/repos"
-            className="whitespace-nowrap px-2 py-1 text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
-          >
-            Repos
-          </Link>
-          <Link
-            href="/how-it-works"
-            className="whitespace-nowrap px-2 py-1 text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
-          >
-            How it works
-          </Link>
-          <Link
-            href="/people"
-            className="whitespace-nowrap px-2 py-1 text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
-          >
-            People
-          </Link>
-          <ThemeToggle />
+        <div className="flex items-center gap-1.5 sm:gap-4">
+          <MainNav signedIn={!!session} />
+          <span
+            aria-hidden
+            className="hidden h-5 w-px bg-[color:var(--ink-trace)] sm:inline-block"
+          />
           <AuthCtaServer />
-        </nav>
+        </div>
       </div>
     </header>
   );
@@ -112,28 +96,60 @@ async function Masthead() {
 function Colophon() {
   return (
     <footer className="mt-16 border-t border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)]">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-10 sm:py-10">
-        <p
-          className="display text-2xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Mind <em>Codespaces</em>
-        </p>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          A prototype bridge between Git and Solid Pods. Git stays Git; the pod
-          owns identity, metadata, and the published site.
-        </p>
-        <p
-          className="mt-6 text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-start sm:justify-between sm:px-10 sm:py-10">
+        <div className="max-w-md">
+          <p
+            className="display text-2xl"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Mind <em>Codespaces</em>
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-[color:var(--ink-soft)]">
+            A prototype bridge between Git and Solid Pods. Git stays Git; the pod
+            owns identity, metadata, and the published site.
+          </p>
+        </div>
+        <nav
+          aria-label="Footer"
+          className="flex flex-col gap-1 text-[11px] uppercase tracking-[0.18em]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          Sibling of <span className="italic" style={{ fontFamily: "var(--font-display)" }}>Mind Market</span> · No third-party analytics · No cookies set beyond strictly necessary ·{" "}
+          <span className="text-[10px] tracking-[0.22em] text-[color:var(--ink-faint)]">
+            // learn
+          </span>
+          <Link
+            href="/how-it-works"
+            className="text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
+          >
+            How it works
+          </Link>
+          <Link
+            href="/"
+            className="text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
+          >
+            Quickstart
+          </Link>
           <Link
             href="/api/health"
-            className="text-[color:var(--ink-faint)] underline decoration-[color:var(--ink-trace)] underline-offset-2 hover:text-[color:var(--accent)] hover:decoration-[color:var(--accent)]"
+            className="text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
           >
-            health
+            Health
           </Link>
+        </nav>
+      </div>
+      <div className="mx-auto max-w-5xl px-4 pb-8 sm:px-10 sm:pb-10">
+        <p
+          className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Sibling of{" "}
+          <span
+            className="italic"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Mind Market
+          </span>{" "}
+          · No third-party analytics · No cookies set beyond strictly necessary
         </p>
       </div>
     </footer>

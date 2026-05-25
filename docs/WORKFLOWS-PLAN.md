@@ -1,9 +1,10 @@
-# Workflows — planning
+# Workflows — design rationale
 
-A planning document, not a spec. Captures the design space for adding
-"git actions / CI" to Mind Codespaces, the tradeoffs around WASM as an
-execution sandbox, and a tiered implementation path. Step 1 is the only
-piece committed for now.
+Captures the design space for "git actions / CI" on Mind Codespaces, the
+tradeoffs around WASM as an execution sandbox, and the tiered path that
+shipped. Steps 1, 2a, and most of 2b are in production; Steps 3 and 4 are
+explicitly future work. Sections marked ✓ describe shipped behaviour; the
+rest is forward-looking.
 
 ## The motivating use case
 
@@ -68,7 +69,7 @@ are unmatched. Worth doing once the prototype graduates past single-user.
 The schema we choose for `.mind/workflow.yml` is reusable across all
 four. Build them in this order:
 
-### Step 1 — Native, sandbox-free workflow runner
+### Step 1 — Native, sandbox-free workflow runner ✓ shipped
 
 - Repo ships `.mind/workflow.yml` declaring a `run:` array and (optional)
   `publish:` directory.
@@ -79,43 +80,53 @@ four. Build them in this order:
   existing Pages publisher uploads the named directory to the configured
   pod container.
 - Status (queued/running/success/failed/error) + exit code + truncated
-  log tail persisted in a new `workflow_runs` table.
-- Repo detail page gets a "Latest build" panel.
-- Threat model: single-tenant local dev. The operator pushes their own
-  repos. No sandbox beyond the timeout. Document this explicitly.
+  log tail persisted in `workflow_runs`.
+- "Latest build" panel on `/repos/{o}/{r}`; full history at `/runs`; manual
+  rerun button.
 
-**Cost:** ~2h. **Value:** end-to-end autodeploy for any build chain that
-runs locally today (vite, astro, hugo, …).
+Native mode is now the fallback when Docker isn't reachable; force with
+`MIND_RUNNER=native`. Threat model: same as before (single-tenant; the
+operator pushes their own repos; no sandbox beyond timeout). The runner
+logs `[runner: native]` on every run so the absence of sandbox is visible.
 
 ### Step 2 — Containerized hardening
 
-When Mind Codespaces wants to host repos for someone other than the
-operator, wrap each run in a Docker container.
+**Step 2a (shipped 2026-05-23): minimal containerization. ✓**
+Single ephemeral `docker run` per workflow — all `run:` commands chained
+with `&&` inside one shell invocation so `node_modules` and tool caches
+carry across steps. The host bind-mounts the temp checkout as `/work`;
+the container runs as the host UID so the publish step (which runs back
+on the host after the container exits) can read the output. Resource
+caps (`--memory`, `--cpus`) and wallclock timeout enforced by killing
+the host-side `docker` process. Auto-detected at startup; falls back to
+native if Docker isn't available.
 
-**Step 2a (shipped 2026-05-23): minimal containerization.** Single
-ephemeral `docker run` per workflow — all `run:` commands chained with
-`&&` inside one shell invocation so `node_modules` and tool caches carry
-across steps. The host bind-mounts the temp checkout as `/work`, and the
-container runs as the host UID so the publish step (which runs back on
-the host, after the container exits) can read the produced output.
-Resource caps (`--memory`, `--cpus`) and a wallclock timeout enforced by
-killing the host-side `docker` process. Auto-detected at startup; falls
-back to native if Docker isn't available. **No network restrictions
-yet** — `npm ci` needs the registry.
+**Step 2b (mostly shipped, parts open):** the hardening that justifies
+multi-tenant hosting.
 
-**Step 2b (not yet): the hardening that justifies multi-tenant hosting.**
-- Pod-write target accessible via a small sidecar proxy (the container
-  doesn't get the bridge's pod credentials directly) — currently moot
-  because the publish step runs outside the container.
-- No network egress except to: the pod-write proxy, optionally an
-  allowlisted package mirror (npm-proxy, GitHub Container Registry, …).
-- Per-repo container image selection via `image:` field in workflow.yml.
-- cgroups: explicit CPU + memory + wallclock + PID + open-file limits.
-
-**Step 2a cost:** ~3h, mostly the auto-detect/fallback + matching the
-native runner's behavior 1:1 (timeout, stdout/stderr capture, exit code).
-**Step 2b cost:** real ops engineering; deferred until multi-tenant is
-on the table.
+- ✓ **No network egress by default.** `--network=${MIND_WORKFLOW_NETWORK}`
+  defaults to `none` (`src/lib/workflows/docker.ts`). The prod compose
+  provisions a `mind-workflows` user-defined network with a Verdaccio
+  sidecar; workflow containers join only that network and get
+  `MIND_NPM_REGISTRY=http://verdaccio:4873/` injected as
+  `npm_config_registry`. Egress is "Verdaccio only" — closes the
+  "workflow can call home" hole.
+- ✓ **Per-workflow image selection** via the `image:` field
+  (default `node:22-alpine`).
+- ✓ **cgroups / hardening** on every workflow container:
+  `--read-only --tmpfs /tmp:size=512m,exec --security-opt no-new-privileges
+  --cap-drop ALL --pids-limit=512 --ulimit nofile=1024:1024 --memory=2g
+  --cpus=2`.
+- ✓ **Log-capture cap** at `MIND_WORKFLOW_LOG_LIMIT` (default 5 MB) to
+  defuse `printf` bombs.
+- ✓ **Stuck-run reaper** at boot (`reapStuckRuns` in
+  `src/lib/registry/runs.ts`) force-finalises orphaned `running` rows.
+- _Open:_ pod-write proxy so the container holds delegated credentials
+  directly (currently moot — the publish step still runs on the host
+  after the container exits). Hard-fail when Docker is unavailable in
+  prod (today's silent native-fallback is acceptable because the prod
+  compose pins `MIND_RUNNER=docker`, but a build-time refusal would be
+  safer).
 
 ### Step 3 — Server WASM for narrow builders
 
@@ -241,7 +252,10 @@ CREATE INDEX idx_workflow_runs_repo ON workflow_runs (repo_id, started_at DESC);
 | 2026-05-22 | Skip WASM entirely for step 1 | WASM doesn't reduce effort for the autodeploy goal. Embedded wasmtime helps later (step 3) but adds nothing at step 1. |
 | 2026-05-22 | No sandbox at step 1 | Threat model is single-tenant operator who pushes their own repos. Adding Docker is real work and outranks the value of "first end-to-end autodeploy demo". |
 | 2026-05-22 | Reuse Pages publisher | The publisher already takes (sourceDir → targetContainer). Workflow.yml just renames `sourcePath` to `publish:` semantically. |
-| 2026-05-23 | WebVM/CheerpX rejected for the runner | CheerpX is proprietary and browser-only (no server embedding). WebVM itself (Apache-2.0) is just the demo shell — there is no headless Node host we can call into. Not viable for a server-side build sandbox. |
+| 2026-05-23 | WebVM/CheerpX rejected for the runner | CheerpX is proprietary and browser-only (no server embedding). WebVM itself (Apache-2.0) is just the demo shell — no headless Node host we can call into. |
 | 2026-05-23 | WASM still not credible for full Node builds in 2026 | WasmEdge runs QuickJS (not Node). Wasmer Edge.js (MIT, Mar 2026) is the one promising candidate — claims headless Node v24 + npm/pnpm — but pre-1.0 and unproven on native deps (esbuild/sharp/swc). Worth a 1-day spike in 2027, not now. |
-| 2026-05-23 | Step 2 = Docker, single container per workflow | One `docker run` chains all commands so `node_modules` carries across steps. Bind-mount the checkout, run as host UID so the host publisher can read the output. Network stays on (npm ci needs it); an offline/mirror story is step 2b. |
-| 2026-05-23 | Auto-detect Docker, fall back to native | The prototype must keep working without Docker installed. If `docker info` succeeds at startup, container mode is the default. Otherwise log a warning and run native. Operator can force either with `MIND_RUNNER=docker\|native`. |
+| 2026-05-23 | Step 2 = Docker, single container per workflow | One `docker run` chains all commands so `node_modules` carries across steps. Bind-mount the checkout, run as host UID so the host publisher can read the output. |
+| 2026-05-23 | Auto-detect Docker, fall back to native | The prototype must keep working without Docker installed. Operator can force with `MIND_RUNNER=docker\|native`. |
+| 2026-05-24 | Network default flipped from `bridge` to `none` | The Verdaccio mirror in `infra/prod/` gives `npm ci` what it needs without giving the container the public internet. Closes the workflow exfil path. |
+| 2026-05-24 | Per-workflow `image:` selection | Cheap to implement once the docker driver was in place; lets a repo pin its own base image (`node:20`, `python:3.12`, …). |
+| 2026-05-24 | Log capture cap (`MIND_WORKFLOW_LOG_LIMIT`, default 5 MB) | A `printf` bomb in a build could OOM the bridge. Truncate as we go; surface "[log truncated]" in the UI. |

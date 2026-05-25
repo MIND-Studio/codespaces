@@ -164,22 +164,25 @@
    through. Stacking: every interactive surface sits in its own context
    above the canvas (z-index 1+) so the rain never overlaps text. */
 
-[data-theme="neo"] header,
-[data-theme="neo"] main,
-[data-theme="neo"] footer {
+/* Global stacking baseline: header sits ABOVE main so dropdowns and
+   popovers anchored in the masthead (user menu, search results) paint
+   above page content. Without this, the page hero's h1 ghosts straight
+   through the dropdown — most visible in Safari and in any theme whose
+   main creates its own stacking context. Setting header to z:50 keeps
+   it comfortably above main's z:1 while staying well below any modal /
+   overlay layer. Applies to every theme. */
+header,
+main,
+footer {
   position: relative;
   z-index: 1;
 }
 
-/* Header sits ABOVE main so dropdowns / popovers anchored in the
-   masthead (user menu, search results, etc.) paint above page content.
-   Without this the page hero's h1 ghosts straight through the dropdown
-   in any theme that gives main its own stacking context — most
-   visible in neo because of the chromatic-aberration text-shadow on
-   .display. Setting header to z:50 keeps it comfortably above main's
-   z:1 while staying well below any modal/overlay layer. */
-[data-theme="neo"] header {
+header {
   z-index: 50;
+}
+
+[data-theme="neo"] header {
   background-color: color-mix(in srgb, var(--paper) 80%, transparent) !important;
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -360,6 +363,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* iOS Safari zooms inputs on focus if their computed font-size is < 16px.
+   Force 16px on all form controls below the sm: breakpoint so taps don't
+   trigger the page-zoom dance. Above 640px we let Tailwind text-sm win. */
+@media (max-width: 639.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Page transition — each top-level section of the new page materializes
    one after another: opacity 0→1, translateY 10px→0, blur 4px→0.
    Selector targets grandchildren so the page's outer wrapper div passes
@@ -381,6 +395,17 @@ body {
 .mc-page-transition > * > * {
   animation: mc-build-in 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   will-change: opacity, transform, filter;
+}
+
+/* Force the route-segment's outer wrapper to take the page-transition's
+   full width. Without this, when wide intrinsic-content descendants (a
+   diff, a code blob, a long Turtle dump) bubble their min-content up the
+   flex chain, the page wrapper itself can grow past the viewport. Belt
+   to the body's overflow-x-hidden suspenders. */
+.mc-page-transition > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mc-page-transition > * > *:nth-child(1) { animation-delay: 0ms; }
@@ -455,6 +480,8 @@ body {
   background: var(--paper-sunk);
   border: 1px solid var(--ink-trace);
   color: var(--ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .codeblock {
@@ -468,6 +495,8 @@ body {
   overflow-x: auto;
   white-space: pre;
   color: var(--ink);
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .link {

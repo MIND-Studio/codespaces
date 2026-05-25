@@ -109,8 +109,8 @@ export default async function ProfilePage() {
                   </p>
                   {a.detail ? (
                     <p
-                      className="mt-1 text-xs text-[color:var(--ink-soft)]"
-                      style={{ fontFamily: "var(--font-mono-src)" }}
+                      className="mt-1 text-xs text-[color:var(--ink-soft)] break-words"
+                      style={{ fontFamily: "var(--font-mono-src)", overflowWrap: "anywhere" }}
                     >
                       {a.detail}
                     </p>

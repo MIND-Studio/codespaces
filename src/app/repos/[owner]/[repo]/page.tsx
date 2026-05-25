@@ -746,8 +746,8 @@ function LatestBuild({
             Log tail
           </summary>
           <pre
-            className="m-0 p-3 overflow-x-auto text-[0.78rem] leading-[1.55] whitespace-pre bg-[color:var(--paper-sunk)] text-[color:var(--ink)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
+            className="m-0 p-3 overflow-x-auto text-[0.78rem] leading-[1.55] whitespace-pre bg-[color:var(--paper-sunk)] text-[color:var(--ink)] max-w-full"
+            style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
           >
             {run.logTail}
           </pre>
@@ -841,8 +841,8 @@ function CloneUrlBlock({ url }: { url: string }) {
         <CopyButton value={url} />
       </div>
       <pre
-        className="m-0 px-3 py-2 overflow-x-auto text-[0.78rem] leading-[1.5] whitespace-pre bg-[color:var(--paper)]"
-        style={{ fontFamily: "var(--font-mono-src)" }}
+        className="m-0 px-3 py-2 overflow-x-auto text-[0.78rem] leading-[1.5] whitespace-pre bg-[color:var(--paper)] max-w-full"
+        style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
       >
         {url}
       </pre>

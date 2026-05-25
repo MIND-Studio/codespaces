@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import { MatrixRain } from "@/components/matrix-rain";
 
 // -----------------------------------------------------------------------
 // General — visibility + default branch
@@ -331,14 +330,7 @@ export function DangerZone({ owner, name }: { owner: string; name: string }) {
             fontFamily: "var(--font-mono-src)",
           }}
         >
-          {busy ? (
-            <>
-              <MatrixRain width={88} height={22} cellSize={11} trailLength={6} />
-              <span>dropping</span>
-            </>
-          ) : (
-            <span>Delete repository</span>
-          )}
+          <span>{busy ? "dropping…" : "Delete repository"}</span>
         </button>
       </div>
       {error ? (
@@ -400,14 +392,7 @@ function FormFooter({
         className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        {busy ? (
-          <>
-            <MatrixRain width={88} height={22} cellSize={11} trailLength={6} />
-            <span>saving</span>
-          </>
-        ) : (
-          <span>{label}</span>
-        )}
+        <span>{busy ? "saving…" : label}</span>
       </button>
       {!dirty && !error ? (
         <span

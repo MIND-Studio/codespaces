@@ -21,10 +21,10 @@ export function DiffView({
   // render a phantom row at the bottom.
   if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
   return (
-    <div className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-sunk)] overflow-hidden">
+    <div className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-sunk)] overflow-hidden min-w-0 max-w-full">
       <pre
-        className="m-0 max-h-[600px] overflow-auto p-0 text-[12px] leading-relaxed"
-        style={{ fontFamily: "var(--font-mono-src)" }}
+        className="m-0 max-h-[600px] overflow-auto p-0 text-[12px] leading-relaxed max-w-full"
+        style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
       >
         {lines.map((line, i) => {
           const kind = classify(line);

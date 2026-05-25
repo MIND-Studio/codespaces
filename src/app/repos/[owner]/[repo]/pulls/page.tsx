@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
 import { listPullRequests, type PullStatus } from "@/lib/registry/pulls";
 import { RelativeTime } from "@/components/relative-time";
+import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,8 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
       >
         Pull requests
       </h1>
+
+      <RepoTabs owner={owner} name={name} active="pulls" />
 
       <FilterBar owner={owner} repo={name} current={filter} />
 

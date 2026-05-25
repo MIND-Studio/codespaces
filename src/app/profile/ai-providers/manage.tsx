@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import { MatrixRain } from "@/components/matrix-rain";
 import type {
   ProviderSpec,
   ProviderName,
@@ -148,7 +147,7 @@ function DefaultSelector({
               }
             }}
             disabled={busy}
-            className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+            className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             <option value="">— bridge default —</option>
@@ -173,7 +172,7 @@ function DefaultSelector({
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     disabled={busy}
-                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
                     style={{ fontFamily: "var(--font-mono-src)" }}
                   >
                     {selectedSpec.models.map((m) => (
@@ -189,7 +188,7 @@ function DefaultSelector({
                     onChange={(e) => setModel(e.target.value)}
                     placeholder={selectedSpec.models[0]?.id ?? "model-id"}
                     disabled={busy}
-                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
                     style={{ fontFamily: "var(--font-mono-src)" }}
                   />
                 )}
@@ -199,7 +198,7 @@ function DefaultSelector({
                     setCustom((c) => !c);
                     if (custom) setModel(selectedSpec.models[0]?.id ?? "");
                   }}
-                  className="self-start text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+                  className="inline-flex min-h-[40px] items-center self-start rounded px-2 -mx-2 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
                   style={{ fontFamily: "var(--font-mono-src)" }}
                 >
                   {custom ? "← pick from list" : "use custom model id →"}
@@ -219,17 +218,10 @@ function DefaultSelector({
           <button
             type="submit"
             disabled={busy || !dirty}
-            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
-            {busy ? (
-              <>
-                <MatrixRain width={88} height={22} cellSize={11} trailLength={6} />
-                <span>saving</span>
-              </>
-            ) : (
-              <span>Save default</span>
-            )}
+            <span>{busy ? "saving…" : "Save default"}</span>
           </button>
           {!dirty && !error ? (
             <span
@@ -357,7 +349,7 @@ function ProviderCard({
 
       {open ? (
         <form onSubmit={save} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="flex flex-1 min-w-[20rem] flex-col gap-1">
+          <label className="flex w-full flex-1 flex-col gap-1 sm:min-w-[18rem]">
             <span
               className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
               style={{ fontFamily: "var(--font-mono-src)" }}
@@ -376,24 +368,17 @@ function ProviderCard({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               disabled={busy}
-              className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+              className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
               style={{ fontFamily: "var(--font-mono-src)" }}
             />
           </label>
           <button
             type="submit"
             disabled={busy || apiKey.trim().length < 8}
-            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] disabled:opacity-40"
+            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] disabled:opacity-40"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
-            {busy ? (
-              <>
-                <MatrixRain width={88} height={22} cellSize={11} trailLength={6} />
-                <span>saving</span>
-              </>
-            ) : (
-              <span>Save key</span>
-            )}
+            <span>{busy ? "saving…" : "Save key"}</span>
           </button>
           <button
             type="button"
@@ -402,7 +387,7 @@ function ProviderCard({
               setApiKey("");
               setError(null);
             }}
-            className="rounded border border-[color:var(--ink-trace)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+            className="rounded border border-[color:var(--ink-trace)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             Cancel
@@ -413,7 +398,7 @@ function ProviderCard({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="rounded border border-[color:var(--accent)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]"
+            className="rounded border border-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             {configured ? "Replace key" : "Add key"}
@@ -423,7 +408,7 @@ function ProviderCard({
               type="button"
               onClick={remove}
               disabled={busy}
-              className="rounded border border-[color:var(--status-bad)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--status-bad)] hover:bg-[color:var(--status-bad)] hover:text-[color:var(--paper)] disabled:opacity-40"
+              className="rounded border border-[color:var(--status-bad)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--status-bad)] hover:bg-[color:var(--status-bad)] hover:text-[color:var(--paper)] disabled:opacity-40"
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
               Remove

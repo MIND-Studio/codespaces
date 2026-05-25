@@ -5,6 +5,7 @@ import { repoPath } from "@/lib/git/backend";
 import { listBranches, readBlob } from "@/lib/git/objects";
 import { Breadcrumbs } from "@/app/repos/[owner]/[repo]/tree/[[...path]]/page";
 import { BranchPicker } from "@/components/branch-picker";
+import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +51,10 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
           className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          branch {ref} · {formatBytes(blob.totalSize)}
+          {formatBytes(blob.totalSize)}
           {blob.truncated ? " · truncated" : ""}
           {blob.isBinary ? " · binary" : ""}
+          {branches.length <= 1 ? ` · ${ref}` : ""}
         </p>
         {branches.length > 1 ? (
           <BranchPicker
@@ -62,6 +64,8 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
           />
         ) : null}
       </div>
+
+      <RepoTabs owner={owner} name={name} active="code" />
 
       <div className="mt-6">
         <Breadcrumbs
@@ -91,13 +95,13 @@ function TextBlob({ content, truncated }: { content: string; truncated: boolean 
   if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
   const width = String(lines.length).length;
   return (
-    <div className="border border-[color:var(--ink-trace)] rounded overflow-hidden bg-[color:var(--paper-sunk)]">
+    <div className="border border-[color:var(--ink-trace)] rounded overflow-hidden bg-[color:var(--paper-sunk)] min-w-0 max-w-full">
       <pre
-        className="overflow-x-auto text-[0.8125rem] leading-[1.5] p-0 m-0"
-        style={{ fontFamily: "var(--font-mono-src)" }}
+        className="overflow-x-auto text-[0.8125rem] leading-[1.5] p-0 m-0 max-w-full"
+        style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
       >
         {lines.map((line, i) => (
-          <div key={i} className="grid grid-cols-[auto_1fr]">
+          <div key={i} className="grid grid-cols-[auto_minmax(0,1fr)]">
             <span
               className="px-3 pr-4 select-none text-right text-[color:var(--ink-faint)] border-r border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)]"
               style={{ minWidth: `${width + 2}ch` }}

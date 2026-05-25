@@ -2,11 +2,16 @@
 
 _Synthesis of four parallel audits (security, reliability, deployment/ops, code quality) over the v0 codebase. Each finding cites `file:line` so a fix can land without re-doing the analysis. Use the priority headers (P0/P1/P2/P3) to schedule the work; the P0 list is the smallest set that must land before exposing the bridge to anyone who is not the developer running it locally._
 
-> **Status snapshot (2026-05-25, second pass — managed-multi-user shape).** Entire P0 floor closed (S1–S9, R1–R7, D1–D5, D6 first half). P1 mostly closed: rate limiting + CORS allowlist + JSON response size cap (S8 full), HEAD-vs-published-SHA reconciler (R4 full), structured logging + metrics + correlation IDs (§3.1), workflows network isolation via Verdaccio + `--network none` default + stuck-run reaper + log-capture cap (§3.4), per-user quotas + signup flow (§4), first real test suite (§3.2 priority items 1, 2, 5 + quotas — 8 tests passing). Image digest pinning is operator-driven via `infra/prod/scripts/pin-image-digests.sh`. Open: §3.2 tests 3/4/6–10 (auth-gate matrix, git Smart HTTP round-trip, end-to-end Pages publish against live CSS, registry migrations, OIDC delegation, concurrent push, hook reconciler integration), §3.3 unified error envelope, §3.6 push-token expiry/rotation, P2 items (CI/CD, repo deletion, graceful shutdown, `pod_sync_status`).
+> **Status snapshot (2026-05-25, managed-multi-user pass).**
+>
+> - **P0 floor: closed.** S1–S9, R1–R7, D1–D5, D6 first half all shipped.
+> - **P1: mostly closed.** Rate limiting + CORS allowlist + JSON response cap (S8), HEAD↔published-SHA reconciler (R4), structured logging + metrics + correlation IDs (§3.1), workflow network isolation via Verdaccio + `--network none` default + stuck-run reaper + log-cap (§3.4), per-user quotas + signup flow (§4), first test suite (§3.2 items 1/2/5 + quotas — 8 vitest passing).
+> - **Operator-driven:** `infra/prod/scripts/pin-image-digests.sh` for floating tags.
+> - **Open:** §3.2 integration tests (3/4/6/8–10), §3.3 unified error envelope, §3.5 agent budget caps + branch-target restriction, §3.6 push-token expiry/rotation, §3.7 pod-canonical reconciler for issues/comments, P2 items (CI test gate, repo deletion, graceful shutdown).
 >
 > **Verifiable signals.** `npx tsc --noEmit` clean · `npm run build` succeeds · `npm run smoke:db` 9/9 passing · `npm test` 8/8 passing.
 >
-> **Honest verdict.** With this second pass the prototype crosses from "closed beta with trusted operators" to "deployable for managed multi-user public signup IF the operator is willing to accept the remaining gaps as known limits, not silent risks." The §3.2 unit tests cover the highest-impact regression surfaces (path traversal, token lifecycle, publisher walk, quotas) — the integration tests (3, 4, 6, 8–10) are what's needed before scaling beyond a few hundred users. P0/P1 security holes are closed; what remains is verification harness, ergonomics, and operator-facing polish.
+> **Honest verdict.** The prototype crosses from "closed beta with trusted operators" to "deployable for managed multi-user public signup IF the operator accepts the remaining gaps as known limits, not silent risks." The 8 unit tests cover the highest-impact regression surfaces (path traversal, token lifecycle, publisher walk, quotas); the integration tests in §3.2 are what's needed before scaling beyond a few hundred users. P0/P1 security holes are closed; what remains is verification harness, ergonomics, and operator-facing polish.
 
 ---
 

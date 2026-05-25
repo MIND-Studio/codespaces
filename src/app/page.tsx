@@ -7,12 +7,10 @@ import {
   type WorkflowRun,
 } from "@/lib/registry/runs";
 import { RelativeTime } from "@/components/relative-time";
-import { CopyButton } from "@/components/copy-button";
+import { readSession } from "@/lib/auth/session";
+import { getUserByWebId } from "@/lib/registry/users";
 
 export const dynamic = "force-dynamic";
-
-const POD_BASE = "http://localhost:3011/";
-const BRIDGE_BASE = "http://localhost:3010";
 
 type DemoConfig = {
   owner: string;
@@ -28,7 +26,7 @@ type DemoConfig = {
  * Hand-picked demos to surface from seed:demo + seed:workflows. Each
  * entry is rendered only if the corresponding repo actually exists in
  * the registry — fresh installs see an empty demo list and the
- * quickstart instead.
+ * walk-through instead.
  */
 const DEMOS: DemoConfig[] = [
   {
@@ -59,7 +57,12 @@ const DEMOS: DemoConfig[] = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await readSession();
+  const signedIn = !!session;
+  const user = session ? getUserByWebId(session.webId) : null;
+  const ownerSlug = user?.ownerSlug ?? null;
+
   const repos = listRepos();
   const runCount = countAllRuns();
   const latestRun = getLatestRunOverall();
@@ -86,6 +89,14 @@ export default function LandingPage() {
     return [{ demo, live }];
   });
 
+  // Returning-user shortcut: surface the most recently-touched repo this
+  // WebID owns so the hero can offer "pick up where you left off".
+  const myLatestRepo = signedIn
+    ? repos
+        .filter((r) => r.ownerWebId === session!.webId)
+        .sort((a, b) => b.createdAt - a.createdAt)[0] ?? null
+    : null;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-10 sm:py-16">
       <p className="section-mark">Prototype · v0</p>
@@ -99,70 +110,66 @@ export default function LandingPage() {
         className="mt-4 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        Your code · <span style={{ color: "var(--accent)" }}>your context</span> · your pod.
+        Your code · <span style={{ color: "var(--accent)" }}>your context</span>{" "}
+        · your pod.
       </p>
       <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
         Mind Codespaces is an AI-native Git platform built around your own
-        Solid Pod. You <span className="kbd">git push</span> code, file
-        issues, and let an agent draft pull requests — and the artifacts,
-        history, and AI memory stay under <em>your</em> WebID, in{" "}
-        <em>your</em> pod. The bridge translates protocols; it doesn&apos;t
-        own your project.
+        Solid Pod. Push code, file issues, let an agent draft pull requests —
+        and the artifacts, history, and AI memory stay under <em>your</em>{" "}
+        WebID. The bridge translates protocols; it doesn&apos;t own your
+        project.
       </p>
 
-      <FlowDiagram />
-
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <Link
-          href="/repos"
-          className="inline-block rounded border border-[color:var(--accent)] bg-transparent px-4 py-2 text-sm text-[color:var(--accent)] transition-colors hover:bg-[color:var(--accent)] hover:text-[color:var(--paper)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Open the dashboard →
-        </Link>
-        {livingDemos[0] ? (
-          <Link
-            href={`/repos/${livingDemos[0].demo.owner}/${livingDemos[0].demo.name}`}
-            className="inline-block rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            See a live demo →
-          </Link>
-        ) : null}
-      </div>
+      <HeroCtas
+        signedIn={signedIn}
+        ownerSlug={ownerSlug}
+        myLatestRepo={
+          myLatestRepo
+            ? { owner: myLatestRepo.owner, name: myLatestRepo.name }
+            : null
+        }
+      />
 
       <hr className="hairline my-12" />
 
-      <Section title="Live in this bridge">
-        <div className="grid grid-cols-3 gap-3 sm:gap-8">
-          <Stat label="repos" value={repos.length.toString()} />
-          <Stat label="runs" value={runCount.toString()} />
-          <Stat
-            label="last activity"
-            value={latestRun ? <RelativeTime ts={latestRun.startedAt} /> : "—"}
-          />
-        </div>
-        {recentRuns.length > 0 ? (
-          <RunSparkline runs={recentRuns} />
-        ) : null}
-        {latestRun && latestRunRepo ? (
-          <p className="mt-4 text-sm text-[color:var(--ink-soft)]">
-            Latest:{" "}
-            <Link
-              href={`/repos/${latestRunRepo.owner}/${latestRunRepo.name}/runs/${latestRun.id}`}
-              className="link"
-            >
-              {latestRunRepo.owner}/{latestRunRepo.name} run #{latestRun.id}
-            </Link>{" "}
-            <RunStatusInline status={latestRun.status} />
-          </p>
-        ) : null}
-      </Section>
+      <Pillars />
+
+      {seeded ? (
+        <>
+          <hr className="hairline my-12" />
+          <Section title="Live in this bridge">
+            <div className="grid grid-cols-3 gap-3 sm:gap-8">
+              <Stat label="repos" value={repos.length.toString()} />
+              <Stat label="runs" value={runCount.toString()} />
+              <Stat
+                label="last activity"
+                value={
+                  latestRun ? <RelativeTime ts={latestRun.startedAt} /> : "—"
+                }
+              />
+            </div>
+            {recentRuns.length > 0 ? <RunSparkline runs={recentRuns} /> : null}
+            {latestRun && latestRunRepo ? (
+              <p className="mt-4 text-sm text-[color:var(--ink-soft)]">
+                Latest:{" "}
+                <Link
+                  href={`/repos/${latestRunRepo.owner}/${latestRunRepo.name}/runs/${latestRun.id}`}
+                  className="link"
+                >
+                  {latestRunRepo.owner}/{latestRunRepo.name} run #{latestRun.id}
+                </Link>{" "}
+                <RunStatusInline status={latestRun.status} />
+              </p>
+            ) : null}
+          </Section>
+        </>
+      ) : null}
 
       {livingDemos.length > 0 ? (
         <>
           <hr className="hairline my-12" />
-          <Section title="Try these now">
+          <Section title="See it working">
             <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
               Seeded demos pushed to alice&apos;s pod. Click into the repo to
               browse code + runs; the live link opens the page that was
@@ -184,100 +191,324 @@ export default function LandingPage() {
 
       <hr className="hairline my-12" />
 
-      <Section title={seeded ? "API quickstart" : "Get started"}>
-        <p className="mb-4 text-sm text-[color:var(--ink-soft)]">
-          {seeded ? (
-            <>
-              The dashboard does this for you, but the curl flow below is
-              the entire path from <span className="kbd">curl</span> to a
-              site living in alice&apos;s pod. Useful if you want to script
-              repo creation from another tool.
-            </>
-          ) : (
-            <>
-              No repos registered yet. Run{" "}
-              <code className="kbd">npm run seed:demo</code> and{" "}
-              <code className="kbd">npm run seed:workflows</code> to populate
-              the bridge with worked examples, or follow the steps below.
-            </>
-          )}
-        </p>
-
-        <details
-          className="rounded border border-[color:var(--ink-trace)] overflow-hidden"
-          open={!seeded}
-        >
-          <summary
-            className="cursor-pointer px-4 py-2 bg-[color:var(--paper-soft)] border-b border-[color:var(--ink-trace)] text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            Four shell steps
-          </summary>
-          <div className="space-y-6 p-5 bg-[color:var(--paper)]">
-            <QuickstartStep
-              number="01"
-              title="Create a repo"
-              body={`curl -X POST ${BRIDGE_BASE}/api/repos \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-    "owner": "alice",
-    "name": "hello",
-    "ownerWebId": "${POD_BASE}alice/profile/card#me",
-    "ownerPodRoot": "${POD_BASE}alice/",
-    "visibility": "public"
-  }'`}
-            />
-            <QuickstartStep
-              number="02"
-              title="Configure Mind Pages"
-              body={`curl -X PUT ${BRIDGE_BASE}/api/repos/alice/hello/pages \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-    "enabled": true,
-    "sourceBranch": "main",
-    "sourcePath": "/",
-    "targetContainer": "${POD_BASE}alice/public/sites/hello/"
-  }'`}
-            />
-            <QuickstartStep
-              number="03"
-              title="Mint a push token"
-              body={`TOKEN=$(curl -fsS -X POST ${BRIDGE_BASE}/api/repos/alice/hello/tokens \\
-  -H 'Content-Type: application/json' \\
-  -d '{"label":"my laptop"}' \\
-  | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')`}
-            />
-            <QuickstartStep
-              number="04"
-              title="Push a site"
-              body={`mkdir /tmp/hello && cd /tmp/hello
-echo '<!doctype html><h1>Hello from Mind Pages</h1>' > index.html
-git init -b main && git add . && git commit -m init
-git push "${BRIDGE_BASE.replace("http://", "http://me:${TOKEN}@")}/api/git/alice/hello.git" main`}
-            />
-          </div>
-        </details>
-      </Section>
+      <StartHere signedIn={signedIn} seeded={seeded} ownerSlug={ownerSlug} />
 
       <p className="mt-12 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-        Read the{" "}
-        <Link href="/docs/PRD.md" className="link">
-          full PRD
+        Want the deep dive?{" "}
+        <Link href="/how-it-works" className="link">
+          How it works
         </Link>{" "}
-        or the{" "}
-        <a
-          href="https://github.com/CommunitySolidServer/CommunitySolidServer"
-          className="link"
-          target="_blank"
-          rel="noreferrer"
-        >
-          CommunitySolidServer docs
-        </a>{" "}
-        to understand the Solid side.
+        walks through what lives in your pod, what happens on push, and what
+        survives if the bridge disappears. The{" "}
+        <Link href="/docs/PRD.md" className="link">
+          PRD
+        </Link>{" "}
+        has the original spec.
       </p>
     </div>
   );
 }
+
+/* -------------------------------------------------------------------- */
+/* Hero CTAs — session-aware                                            */
+/* -------------------------------------------------------------------- */
+
+function HeroCtas({
+  signedIn,
+  ownerSlug,
+  myLatestRepo,
+}: {
+  signedIn: boolean;
+  ownerSlug: string | null;
+  myLatestRepo: { owner: string; name: string } | null;
+}) {
+  if (!signedIn) {
+    return (
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Link
+          href="/signup"
+          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Create your pod →
+        </Link>
+        <Link
+          href="/login"
+          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Sign in
+        </Link>
+        <Link
+          href="/repos"
+          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Browse repos
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-8 flex flex-wrap items-center gap-3">
+      {myLatestRepo ? (
+        <Link
+          href={`/repos/${myLatestRepo.owner}/${myLatestRepo.name}`}
+          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Resume {myLatestRepo.owner}/{myLatestRepo.name} →
+        </Link>
+      ) : (
+        <Link
+          href="/repos/new"
+          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          + Create your first repo
+        </Link>
+      )}
+      <Link
+        href="/repos"
+        className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        Open dashboard →
+      </Link>
+      {ownerSlug ? (
+        <Link
+          href={`/people/${ownerSlug}`}
+          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Your profile
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------- */
+/* Pillars — what you actually get                                      */
+/* -------------------------------------------------------------------- */
+
+function Pillars() {
+  const items: { kicker: string; title: string; body: React.ReactNode }[] = [
+    {
+      kicker: "01",
+      title: "Pod-native repos",
+      body: (
+        <>
+          A real bare Git repository on the bridge, plus a Turtle description
+          of the project written to <em>your</em> pod under{" "}
+          <code className="kbd">/codespaces/</code>. Move bridges, your repo
+          metadata moves with you.
+        </>
+      ),
+    },
+    {
+      kicker: "02",
+      title: "Conversational dev",
+      body: (
+        <>
+          File an issue and a roster of named agents — triager, engineer,
+          scribe — responds against the same WebID. Their working memory
+          lands back in your pod, not in a vendor database.
+        </>
+      ),
+    },
+    {
+      kicker: "03",
+      title: "Mind Pages",
+      body: (
+        <>
+          A <code className="kbd">git push</code> publishes a static site to a
+          container of your choice on your pod. Visitors hit your pod
+          directly; the bridge is out of the loop after publish.
+        </>
+      ),
+    },
+  ];
+  return (
+    <Section title="What this is">
+      <p className="mb-6 text-sm text-[color:var(--ink-soft)]">
+        Three primitives, all pod-owned. Each can be replaced or rebuilt
+        without losing what matters — because what matters lives in the pod.
+      </p>
+      <ul className="grid gap-4 sm:grid-cols-3">
+        {items.map((item) => (
+          <li
+            key={item.kicker}
+            className="card flex flex-col gap-2"
+            style={{ borderColor: "var(--ink-trace)" }}
+          >
+            <span
+              className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--accent)]"
+              style={{ fontFamily: "var(--font-mono-src)" }}
+            >
+              {item.kicker}
+            </span>
+            <h3
+              className="display text-xl"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {item.title}
+            </h3>
+            <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
+              {item.body}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------- */
+/* Start here — session-aware walkthrough (replaces API quickstart)     */
+/* -------------------------------------------------------------------- */
+
+function StartHere({
+  signedIn,
+  seeded,
+  ownerSlug,
+}: {
+  signedIn: boolean;
+  seeded: boolean;
+  ownerSlug: string | null;
+}) {
+  if (!signedIn) {
+    const steps = [
+      {
+        n: "01",
+        title: "Create a pod",
+        body: "Pick a pod name and an email. The bridge spins up a Community Solid Server account and hands you back a WebID.",
+        cta: { href: "/signup", label: "Sign up →" },
+      },
+      {
+        n: "02",
+        title: "Authorize the bridge",
+        body: "An OIDC redirect to your pod. You approve once; the bridge gets a delegated refresh token it can revoke any time.",
+        cta: { href: "/connect", label: "Connect a pod" },
+      },
+      {
+        n: "03",
+        title: "Create your first repo",
+        body: "Name it, pick public or private, the bridge sets up a bare git repo and writes the metadata into your pod.",
+        cta: { href: "/repos/new", label: "New repo →" },
+      },
+      {
+        n: "04",
+        title: "Push your code",
+        body: "Mint a push token from the repo page, then git push to the bridge URL. Mind Pages publishes the result to your pod.",
+        cta: { href: "/repos", label: "Repo dashboard" },
+      },
+    ];
+    return (
+      <Section title="Start here">
+        <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
+          Four moves from nothing to a live site published from your pod.
+          Everything happens in the app — no curl required.
+          {seeded ? (
+            <>
+              {" "}
+              Or skip ahead and{" "}
+              <Link href="/people/alice" className="link">
+                see what alice did
+              </Link>
+              .
+            </>
+          ) : null}
+        </p>
+        <ol className="grid gap-3 sm:grid-cols-2">
+          {steps.map((s) => (
+            <StepCard key={s.n} {...s} />
+          ))}
+        </ol>
+      </Section>
+    );
+  }
+
+  // Signed in.
+  const steps = [
+    {
+      n: "01",
+      title: "Create a repo",
+      body: "Bare git on the bridge, Turtle description in your pod under /codespaces/{name}/.",
+      cta: { href: "/repos/new", label: "+ New repo" },
+    },
+    {
+      n: "02",
+      title: "Enable Mind Pages",
+      body: "On the repo's settings tab, point it at a container in your pod (e.g. /public/sites/hello/).",
+      cta: { href: "/repos", label: "Pick a repo" },
+    },
+    {
+      n: "03",
+      title: "Push and publish",
+      body: "Mint a token on the repo page, git push, and the bridge publishes the result to your pod.",
+      cta: ownerSlug
+        ? { href: `/people/${ownerSlug}`, label: "Your profile" }
+        : { href: "/repos", label: "Repo dashboard" },
+    },
+  ];
+  return (
+    <Section title="Three moves from here">
+      <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
+        You&apos;ve got a pod and a session. From here it&apos;s repo →
+        pages → push.
+      </p>
+      <ol className="grid gap-3 sm:grid-cols-3">
+        {steps.map((s) => (
+          <StepCard key={s.n} {...s} />
+        ))}
+      </ol>
+    </Section>
+  );
+}
+
+function StepCard({
+  n,
+  title,
+  body,
+  cta,
+}: {
+  n: string;
+  title: string;
+  body: string;
+  cta: { href: string; label: string };
+}) {
+  return (
+    <li className="card flex flex-col gap-2">
+      <span
+        className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--accent)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {n}
+      </span>
+      <h3
+        className="display text-lg"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {title}
+      </h3>
+      <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
+        {body}
+      </p>
+      <Link
+        href={cta.href}
+        className="mt-1 inline-block self-start text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent)] hover:text-[color:var(--accent-deep)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {cta.label}
+      </Link>
+    </li>
+  );
+}
+
+/* -------------------------------------------------------------------- */
+/* Re-used display primitives (untouched from the previous landing)     */
+/* -------------------------------------------------------------------- */
 
 function Section({
   title,
@@ -382,22 +613,6 @@ function RunSparkline({ runs }: { runs: WorkflowRun[] }) {
   );
 }
 
-/**
- * Tiny ascii-flavoured diagram showing the pipeline. Mono, dim, no
- * decoration — sets the tone without competing with the hero.
- */
-function FlowDiagram() {
-  return (
-    <pre
-      aria-hidden
-      className="mt-8 overflow-x-auto text-[11px] leading-snug text-[color:var(--ink-faint)]"
-      style={{ fontFamily: "var(--font-mono-src)" }}
-    >{`  git push ─▶  [bridge :3010]  ─▶  docker build  ─▶  pod /public/sites/...
-              └ smart-http +              └ node:22-alpine   └ owned by your WebID
-                push tokens                 --rm --user $uid`}</pre>
-  );
-}
-
 function DemoCard({
   demo,
   live,
@@ -476,38 +691,5 @@ function DemoCard({
         {demo.blurb}
       </p>
     </li>
-  );
-}
-
-function QuickstartStep({
-  number,
-  title,
-  body,
-}: {
-  number: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="flex items-baseline gap-4">
-          <span
-            className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--accent)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            {number}
-          </span>
-          <h3
-            className="display text-lg"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {title}
-          </h3>
-        </div>
-        <CopyButton value={body} />
-      </div>
-      <pre className="codeblock mt-3">{body}</pre>
-    </div>
   );
 }

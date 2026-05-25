@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { MatrixRain } from "@/components/matrix-rain";
 
 type Preset = { url: string; label: string };
 
@@ -132,9 +131,6 @@ export function ConnectForm({
         >
           {busy ? "Redirecting…" : "Authorize Mind Codespaces"}
         </button>
-        {busy ? (
-          <MatrixRain width={108} height={28} cellSize={9} trailLength={7} />
-        ) : null}
         <p
           className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}

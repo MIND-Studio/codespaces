@@ -68,10 +68,10 @@ export default async function PullDetailPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
+      <div className="mt-3 flex flex-col-reverse items-start gap-3 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between">
         <h1
-          className="display break-words text-2xl sm:text-3xl"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="display min-w-0 break-words text-2xl sm:text-3xl"
+          style={{ fontFamily: "var(--font-display)", overflowWrap: "anywhere" }}
         >
           <span className="text-[color:var(--ink-faint)]">#{pull.number}</span>{" "}
           {pull.title}

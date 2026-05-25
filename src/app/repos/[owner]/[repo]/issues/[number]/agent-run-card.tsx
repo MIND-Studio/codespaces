@@ -207,11 +207,12 @@ function LiveLog({
       </div>
       <pre
         ref={refEl}
-        className="mc-term-body relative m-0 max-h-96 overflow-auto p-4 text-[12px] leading-[1.55]"
+        className="mc-term-body relative m-0 max-h-96 overflow-auto p-4 text-[12px] leading-[1.55] max-w-full"
         style={{
           fontFamily: "var(--font-mono-src)",
           color: "#d8e6d4",
           textShadow: "0 0 1px color-mix(in srgb, var(--accent) 25%, transparent)",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         {!logAvailable && !cleaned ? (
@@ -389,11 +390,12 @@ function CompletedSummary({ summary }: { summary: string }) {
             }}
           >
             <pre
-              className="mc-term-body m-0 max-h-80 overflow-auto p-4 text-[12px] leading-[1.55]"
+              className="mc-term-body m-0 max-h-80 overflow-auto p-4 text-[12px] leading-[1.55] max-w-full"
               style={{
                 fontFamily: "var(--font-mono-src)",
                 color: "#d8e6d4",
                 textShadow: "0 0 1px color-mix(in srgb, var(--accent) 25%, transparent)",
+                WebkitOverflowScrolling: "touch",
               }}
             >
               {cleanedTail}

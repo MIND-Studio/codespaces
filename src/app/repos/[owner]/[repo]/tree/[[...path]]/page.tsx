@@ -9,6 +9,7 @@ import {
   type TreeEntry,
 } from "@/lib/git/objects";
 import { BranchPicker } from "@/components/branch-picker";
+import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -180,20 +181,23 @@ function PageShell({
         Source
       </h1>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-        <p
-          className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          branch {branch}
-        </p>
         {branches.length > 1 ? (
           <BranchPicker
             branches={branches}
             current={branch}
             defaultBranch={defaultBranch}
           />
-        ) : null}
+        ) : (
+          <p
+            className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            branch {branch}
+          </p>
+        )}
       </div>
+
+      <RepoTabs owner={owner} name={name} active="code" />
 
       <div className="mt-6">
         <Breadcrumbs

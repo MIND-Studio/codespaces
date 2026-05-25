@@ -2,7 +2,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import { MatrixRain } from "@/components/matrix-rain";
 
 export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
   const router = useRouter();
@@ -147,9 +146,6 @@ export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
         >
           {submitting ? "Submitting…" : "Submit issue"}
         </button>
-        {submitting ? (
-          <MatrixRain width={108} height={28} cellSize={9} trailLength={7} />
-        ) : null}
         <p
           className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}

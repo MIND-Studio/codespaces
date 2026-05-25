@@ -86,8 +86,8 @@ export default async function RunDetailPage({ params }: PageProps) {
       </h2>
       {run.logTail ? (
         <pre
-          className="mt-3 rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-sunk)] px-4 py-3 text-[0.8125rem] leading-[1.55] overflow-x-auto whitespace-pre"
-          style={{ fontFamily: "var(--font-mono-src)" }}
+          className="mt-3 rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-sunk)] px-4 py-3 text-[0.8125rem] leading-[1.55] overflow-x-auto whitespace-pre max-w-full"
+          style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
         >
 {run.logTail}
         </pre>

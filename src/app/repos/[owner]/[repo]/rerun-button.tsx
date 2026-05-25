@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import { MatrixRain } from "@/components/matrix-rain";
 
 /**
  * Manual workflow re-run trigger. Fires-and-forgets via the runs API,
@@ -48,9 +47,6 @@ export function RerunButton({ owner, repo }: { owner: string; repo: string }) {
       >
         {busy ? "Triggering…" : "Re-run"}
       </button>
-      {busy ? (
-        <MatrixRain width={88} height={22} cellSize={8} trailLength={6} />
-      ) : null}
       {error ? (
         <span className="text-sm text-[color:var(--status-bad)]">{error}</span>
       ) : null}

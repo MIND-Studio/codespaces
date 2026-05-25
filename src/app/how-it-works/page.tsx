@@ -324,11 +324,11 @@ function PushFlow() {
   // line, plus an animated traveling token. The point isn't to teach
   // the architecture — the point is to show: you, then your pod.
   return (
-    <div className="card overflow-x-auto p-6">
+    <div className="card overflow-hidden p-4 sm:p-6">
       <svg
         viewBox="0 0 720 220"
-        className="w-full"
-        style={{ minWidth: 560 }}
+        className="block h-auto w-full max-w-full"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="Flow: laptop pushes to pod; the bridge sits invisibly on the line"
       >

@@ -191,7 +191,7 @@ function DisconnectControl({
         type="button"
         onClick={onArm}
         disabled={busy}
-        className="rounded border border-[color:var(--ink-trace)] px-3 py-1 text-sm text-[color:var(--ink-soft)] hover:border-[color:var(--status-bad)] hover:text-[color:var(--status-bad)] disabled:opacity-50"
+        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--ink-trace)] px-3 py-2 text-sm text-[color:var(--ink-soft)] hover:border-[color:var(--status-bad)] hover:text-[color:var(--status-bad)] disabled:opacity-50"
       >
         Disconnect
       </button>
@@ -199,30 +199,24 @@ function DisconnectControl({
   }
   return (
     <div
-      className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em]"
+      className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.18em]"
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
       <span style={{ color: "var(--ink-soft)" }}>are you sure?</span>
-      <span aria-hidden style={{ color: "var(--ink-faint)" }}>
-        ·
-      </span>
       <button
         type="button"
         onClick={onCancel}
         disabled={busy}
-        className="px-1.5 py-0.5 hover:text-[color:var(--ink)] disabled:opacity-50"
+        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--ink-trace)] px-3 py-2 hover:text-[color:var(--ink)] disabled:opacity-50"
         style={{ color: "var(--ink-soft)" }}
       >
         cancel
       </button>
-      <span aria-hidden style={{ color: "var(--ink-faint)" }}>
-        ·
-      </span>
       <button
         type="button"
         onClick={onConfirm}
         disabled={busy}
-        className="px-1.5 py-0.5 disabled:opacity-50"
+        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--status-bad)] px-3 py-2 disabled:opacity-50"
         style={{ color: "var(--status-bad)" }}
       >
         {busy ? "revoking…" : "revoke"}

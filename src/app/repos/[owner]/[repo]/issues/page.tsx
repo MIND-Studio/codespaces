@@ -8,6 +8,7 @@ import {
   type IssueStatus,
 } from "@/lib/registry/issues";
 import { RelativeTime } from "@/components/relative-time";
+import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export default async function IssuesListPage({
         </h1>
         <NewIssueLink owner={owner} repo={name} />
       </div>
+
+      <RepoTabs owner={owner} name={name} active="issues" />
 
       <FilterBar
         owner={owner}
