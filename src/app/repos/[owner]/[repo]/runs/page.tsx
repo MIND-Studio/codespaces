@@ -78,11 +78,7 @@ function RunsEmptyState() {
         <Link href="/how-it-works" className="link">
           how it works
         </Link>{" "}
-        for the workflow schema, or peek at{" "}
-        <Link href="/repos/alice/built-site" className="link">
-          alice/built-site
-        </Link>{" "}
-        for a repo whose pushes do trigger a run.
+        for the workflow schema.
       </p>
     </section>
   );

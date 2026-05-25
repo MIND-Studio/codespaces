@@ -84,7 +84,13 @@ export default async function RepoDetailPage({ params }: PageProps) {
               readmeHtml={readmeHtml}
             />
           ) : (
-            <EmptyReadme owner={owner} name={name} hasCommits={readme !== null || (await hasAnyCommits(bare))} />
+            <EmptyReadme
+              owner={owner}
+              name={name}
+              hasCommits={readme !== null || (await hasAnyCommits(bare))}
+              cloneUrl={cloneUrl}
+              defaultBranch={repo.defaultBranch}
+            />
           )}
 
           {latestRun ? (
@@ -522,39 +528,97 @@ function EmptyReadme({
   owner,
   name,
   hasCommits,
+  cloneUrl,
+  defaultBranch,
 }: {
   owner: string;
   name: string;
   hasCommits: boolean;
+  cloneUrl: string;
+  defaultBranch: string;
+}) {
+  if (hasCommits) {
+    return (
+      <section className="card text-sm text-[color:var(--ink-soft)]">
+        <p
+          className="display text-xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          No README yet.
+        </p>
+        <p className="mt-2">
+          Add a <code className="kbd">README.md</code> to the default branch
+          and it&apos;ll render here.{" "}
+          <Link href={`/repos/${owner}/${name}/tree`} className="link">
+            Browse code →
+          </Link>
+        </p>
+      </section>
+    );
+  }
+
+  const newRepo = `echo "# ${name}" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M ${defaultBranch}
+git remote add origin ${cloneUrl}
+git push -u origin ${defaultBranch}`;
+
+  const existingRepo = `git remote add origin ${cloneUrl}
+git branch -M ${defaultBranch}
+git push -u origin ${defaultBranch}`;
+
+  return (
+    <section className="card space-y-6 text-sm text-[color:var(--ink-soft)]">
+      <header>
+        <p
+          className="display text-xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Nothing pushed yet.
+        </p>
+        <p className="mt-2">
+          Mint a push token in the sidebar, then run one of these. Git will
+          prompt for credentials — use any username and the token as the
+          password.
+        </p>
+      </header>
+
+      <FirstStepsBlock title="Create a new repository" snippet={newRepo} />
+      <FirstStepsBlock
+        title="Push an existing repository"
+        snippet={existingRepo}
+      />
+    </section>
+  );
+}
+
+function FirstStepsBlock({
+  title,
+  snippet,
+}: {
+  title: string;
+  snippet: string;
 }) {
   return (
-    <section className="card text-sm text-[color:var(--ink-soft)]">
-      <p
-        className="display text-xl"
-        style={{ fontFamily: "var(--font-display)" }}
+    <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
+      <div className="flex items-center justify-between gap-2 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-3 py-1.5">
+        <span
+          className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          {title}
+        </span>
+        <CopyButton value={snippet} />
+      </div>
+      <pre
+        className="m-0 px-3 py-2 overflow-x-auto text-[0.78rem] leading-[1.5] whitespace-pre bg-[color:var(--paper)] max-w-full"
+        style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
       >
-        {hasCommits ? "No README yet." : "Nothing pushed yet."}
-      </p>
-      <p className="mt-2">
-        {hasCommits ? (
-          <>
-            Add a <code className="kbd">README.md</code> to the default branch
-            and it&apos;ll render here.{" "}
-            <Link
-              href={`/repos/${owner}/${name}/tree`}
-              className="link"
-            >
-              Browse code →
-            </Link>
-          </>
-        ) : (
-          <>
-            Clone the repo (see the sidebar) and push your first commit. The
-            README and recent builds will appear here.
-          </>
-        )}
-      </p>
-    </section>
+        {snippet}
+      </pre>
+    </div>
   );
 }
 
@@ -673,10 +737,10 @@ function NoBuildsHint() {
         branch. On push, the bridge checks out your repo into a sandboxed{" "}
         <code className="kbd">node:22-alpine</code> container, runs your{" "}
         <code className="kbd">run:</code> steps, then publishes the result. See{" "}
-        <Link href="/repos/alice/built-site" className="link">
-          built-site demo
+        <Link href="/how-it-works" className="link">
+          how it works
         </Link>{" "}
-        for a minimal example.
+        for the workflow schema.
       </p>
     </section>
   );
