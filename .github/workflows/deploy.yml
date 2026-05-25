@@ -89,10 +89,16 @@ jobs:
       # Resolve to a digest-pinned reference so the VM pulls exact bytes,
       # not a mutable tag. `${{ steps.push.outputs.digest }}` is the
       # sha256 of the manifest the build just pushed.
+      #
+      # Lower-case the image name: Docker enforces lowercase repository
+      # names, and our org name (MIND-Studio) is mixed case. The
+      # metadata-action lowercases for its own outputs but ${{ env.IMAGE_NAME }}
+      # is the raw `${{ github.repository }}-bridge` — pass it through tr.
       - name: Emit digest-pinned image ref
         id: image_ref
         run: |
-          echo "value=${REGISTRY}/${IMAGE_NAME}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          IMAGE_LC="$(echo "${REGISTRY}/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')"
+          echo "value=${IMAGE_LC}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: build
