@@ -26,4 +26,10 @@ services:
     # Replaces the `build:` block from docker-compose.yml.
     image: ${MIND_BRIDGE_IMAGE:?MIND_BRIDGE_IMAGE must be set when using docker-compose.prod.yml}
     build: !reset null
-    pull_policy: always
+    # `pull_policy: always` was tempting here but it makes every
+    # `docker compose up` (including service restarts) re-pull the
+    # image, which requires GHCR credentials on the host. Since
+    # MIND_BRIDGE_IMAGE is digest-pinned (immutable by definition),
+    # an explicit `docker compose pull bridge` in the deploy workflow
+    # is the only pull we ever need. Don't add pull_policy back without
+    # a long-lived credential story for the VM.

@@ -141,13 +141,16 @@ jobs:
               -f docker-compose.prod.yml \
               pull bridge
 
-            # Log out immediately so the token isn't cached.
-            docker logout ghcr.io >/dev/null
-
             docker compose --env-file .env \
               -f docker-compose.yml \
               -f docker-compose.prod.yml \
               up -d --remove-orphans
+
+            # Log out only after `up` is done — if `up` had to re-pull
+            # for any reason (it shouldn't with the digest pin, but the
+            # daemon's behavior here isn't documented), the credentials
+            # still need to be on disk.
+            docker logout ghcr.io >/dev/null
             # Tidy old images so the VM's disk doesn't fill up over
             # many deploys. -f required because we run non-interactively.
             docker image prune -f
