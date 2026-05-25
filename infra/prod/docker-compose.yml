@@ -301,7 +301,14 @@ services:
 networks:
   mind:
     driver: bridge
+  # Pin the literal network name. Compose otherwise prefixes networks
+  # with the project name (e.g. `mind-codespaces_mind-workflows`), but
+  # the bridge spawns workflow containers with `--network=$MIND_WORKFLOW_NETWORK`
+  # passed verbatim. Without `name:` set, that arg referenced a network
+  # that didn't exist and `docker run` died with "network not found",
+  # which silently failed every workflow run on prod.
   mind-workflows:
+    name: mind-workflows
     driver: bridge
     internal: false  # Verdaccio needs internet to upstream; workflow containers
                      # do not have internet directly — they reach the public
