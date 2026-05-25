@@ -114,10 +114,14 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          envs: IMAGE_REF,DEPLOY_DIR,REF
+          # GHCR_TOKEN below is the workflow's GITHUB_TOKEN (already has
+          # packages:write/read since this same workflow pushed the image).
+          # Passed through SSH, used for one `docker login`, then logged
+          # out so it doesn't persist in ~/.docker/config.json.
+          envs: IMAGE_REF,DEPLOY_DIR,REF,GHCR_TOKEN,GHCR_USER
           # The remote shell does not inherit the workflow's env block,
-          # so we pipe the values through `envs:` above and reference
-          # them as $IMAGE_REF / $DEPLOY_DIR / $REF inside the script.
+          # so we pipe values through `envs:` above and reference them
+          # as $IMAGE_REF / $DEPLOY_DIR / $REF / etc. inside the script.
           script_stop: true
           script: |
             set -euo pipefail
@@ -127,10 +131,19 @@ jobs:
             git checkout --quiet "$REF"
             cd infra/prod
             export MIND_BRIDGE_IMAGE="$IMAGE_REF"
+
+            # Auth to GHCR for the pull (private package). The token is
+            # the job-scoped GITHUB_TOKEN — short-lived, never persisted.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
             docker compose --env-file .env \
               -f docker-compose.yml \
               -f docker-compose.prod.yml \
               pull bridge
+
+            # Log out immediately so the token isn't cached.
+            docker logout ghcr.io >/dev/null
+
             docker compose --env-file .env \
               -f docker-compose.yml \
               -f docker-compose.prod.yml \
@@ -144,3 +157,5 @@ jobs:
           IMAGE_REF: ${{ needs.build.outputs.image_ref }}
           DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
           REF: ${{ inputs.ref || github.ref_name }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
