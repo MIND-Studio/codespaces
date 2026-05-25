@@ -1,0 +1,629 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Mind Codespaces — design tokens                                    */
+/*                                                                     */
+/*  Same paper / ink family as mind-market-v0 but the accent shifts    */
+/*  from turquoise to amber to mark "this is the dev surface, not the  */
+/*  marketplace." Fraunces + DM Sans + JetBrains Mono.                 */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /* porcelain canvas */
+  --paper: #fbfaf6;
+  --paper-soft: #f4f1eb;
+  --paper-sunk: #e9e4d9;
+
+  /* ink */
+  --ink: #1f1d1a;
+  --ink-soft: #524d45;
+  --ink-faint: #8a8378;
+  --ink-trace: #d7d1c4;
+
+  /* amber accent — different from mind-market-v0's turquoise */
+  --accent: #c4801d;
+  --accent-soft: #f5e6cf;
+  --accent-deep: #8a570f;
+
+  --status-ok: #2f8c5b;
+  --status-warn: #c68c2e;
+  --status-bad: #d9534a;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-chip: 999px;
+  --hairline: 1px;
+}
+
+[data-theme="dark"] {
+  --paper: #16191a;
+  --paper-soft: #1c2120;
+  --paper-sunk: #232a28;
+
+  --ink: #ecead8;
+  --ink-soft: #b6b1a0;
+  --ink-faint: #7c7868;
+  --ink-trace: #383d39;
+
+  --accent: #e5a44a;
+  --accent-soft: #3b2a13;
+  --accent-deep: #f3c172;
+
+  --status-ok: #6dc18c;
+  --status-warn: #e0a45a;
+  --status-bad: #f47e74;
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Neo — inside the Matrix. Phosphor green + magenta. CRT scanlines,  */
+/*  vignette, glow, chromatic aberration on headlines.                 */
+/* ------------------------------------------------------------------ */
+
+[data-theme="neo"] {
+  --paper: #000000;
+  --paper-soft: #060a07;
+  --paper-sunk: #0a120c;
+
+  --ink: #d6e4d8;
+  --ink-soft: #8fa195;
+  --ink-faint: #5a6960;
+  --ink-trace: #1c2a22;
+
+  --accent: #00ff41;
+  --accent-soft: #082a12;
+  --accent-deep: #6dff8e;
+
+  --status-ok: #00ff41;
+  --status-warn: #ffd600;
+  --status-bad: #ff3860;
+
+  color-scheme: dark;
+}
+
+/* Neo body: the matrix-rain is now a small corner badge, not a wash.
+   Restore a faint dot-grid as ambient texture behind the holo surfaces. */
+[data-theme="neo"] body {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 255, 65, 0.06) 0.6px, transparent 1.4px);
+  background-size: 28px 28px;
+  background-position: 0 0;
+}
+
+[data-theme="neo"] body {
+  font-family: var(--font-mono-src);
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 1px currentColor;
+}
+
+[data-theme="neo"] .display {
+  font-family: var(--font-mono-src);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+  text-shadow:
+    -1px 0 0 color-mix(in srgb, var(--accent) 35%, transparent),
+    1px 0 0 color-mix(in srgb, var(--ink) 35%, transparent),
+    0 0 10px color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+[data-theme="neo"] .display em {
+  font-style: normal;
+  color: var(--accent);
+  text-shadow:
+    -1px 0 0 color-mix(in srgb, var(--ink) 45%, transparent),
+    1px 0 0 color-mix(in srgb, var(--accent) 60%, transparent),
+    0 0 14px color-mix(in srgb, var(--accent) 65%, transparent),
+    0 0 28px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+[data-theme="neo"] .stamp {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 80%, transparent);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+[data-theme="neo"] .kbd {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--paper-sunk));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+[data-theme="neo"] .codeblock,
+[data-theme="neo"] .markdown-body pre {
+  color: var(--ink);
+  border-color: var(--ink-trace);
+  background: var(--paper-soft);
+}
+
+[data-theme="neo"] .markdown-body code {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--paper-sunk));
+  color: var(--accent);
+}
+
+[data-theme="neo"] hr,
+[data-theme="neo"] .hairline,
+[data-theme="neo"] .markdown-body hr {
+  border-top-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* ----- HUD ornaments — corner brackets on cards, list markers, links ----- */
+
+/* Transparent holo-displays — cards, README body, masthead, footer all
+   become translucent glass with backdrop-blur. The matrix rain shows
+   through. Stacking: every interactive surface sits in its own context
+   above the canvas (z-index 1+) so the rain never overlaps text. */
+
+[data-theme="neo"] header,
+[data-theme="neo"] main,
+[data-theme="neo"] footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Header sits ABOVE main so dropdowns / popovers anchored in the
+   masthead (user menu, search results, etc.) paint above page content.
+   Without this the page hero's h1 ghosts straight through the dropdown
+   in any theme that gives main its own stacking context — most
+   visible in neo because of the chromatic-aberration text-shadow on
+   .display. Setting header to z:50 keeps it comfortably above main's
+   z:1 while staying well below any modal/overlay layer. */
+[data-theme="neo"] header {
+  z-index: 50;
+  background-color: color-mix(in srgb, var(--paper) 80%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+[data-theme="neo"] footer {
+  background-color: color-mix(in srgb, var(--paper) 84%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-top-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+[data-theme="neo"] .card,
+[data-theme="neo"] .markdown-body {
+  position: relative;
+  background-color: color-mix(in srgb, var(--paper) 72%, transparent) !important;
+  backdrop-filter: blur(6px) saturate(130%);
+  -webkit-backdrop-filter: blur(6px) saturate(130%);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+[data-theme="neo"] .card::before,
+[data-theme="neo"] .card::after,
+[data-theme="neo"] .markdown-body::before,
+[data-theme="neo"] .markdown-body::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+  pointer-events: none;
+}
+
+[data-theme="neo"] .card::before,
+[data-theme="neo"] .markdown-body::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+[data-theme="neo"] .card::after,
+[data-theme="neo"] .markdown-body::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+[data-theme="neo"] a:hover,
+[data-theme="neo"] .link:hover {
+  color: var(--accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+[data-theme="neo"] .markdown-body ul {
+  list-style: none;
+  padding-left: 0.4rem;
+}
+[data-theme="neo"] .markdown-body ul > li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+[data-theme="neo"] .markdown-body ul > li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+[data-theme="neo"] .section-mark {
+  color: var(--accent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* CRT scanlines + vignette — felt more than seen.
+   These overlay the page as ambient decoration. They MUST sit below
+   interactive UI like modals and dropdowns; previously they were at
+   z:9998/9999 with `mix-blend-mode: screen` on the scanlines, which on
+   Safari ghosts straight through fixed-positioned modal contents
+   regardless of the modal's z-index (WebKit treats mix-blend-mode as
+   crossing stacking contexts in cases Chrome does not). Two changes
+   prevent that:
+     1) Drop mix-blend-mode entirely — the scanlines render as faint
+        green tints over whatever's underneath. The visual loss is
+        negligible (alpha is already 0.045) and Safari now respects
+        z-index normally.
+     2) Move the layers to z:0/1, just below `main`'s z:1. They still
+        cover the viewport because they're position:fixed; they no
+        longer compete with anything UI-level. */
+[data-theme="neo"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 65, 0.045) 0px,
+    rgba(0, 255, 65, 0.045) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+[data-theme="neo"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+[data-theme="neo"] ::selection {
+  background: var(--accent);
+  color: var(--paper);
+  text-shadow: none;
+}
+
+[data-theme="neo"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-theme="neo"] ::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+[data-theme="neo"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+  border: 1px solid var(--ink-trace);
+}
+[data-theme="neo"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-soft);
+  box-shadow: 0 0 6px var(--ink);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-soft: var(--paper-soft);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-trace: var(--ink-trace);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-deep: var(--accent-deep);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono-src);
+  --font-serif: var(--font-display);
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page transition — each top-level section of the new page materializes
+   one after another: opacity 0→1, translateY 10px→0, blur 4px→0.
+   Selector targets grandchildren so the page's outer wrapper div passes
+   through unanimated and its content rows stagger in. CSS-only stagger
+   via :nth-child(N) so there's no JS flash-of-invisible-content. */
+@keyframes mc-build-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.mc-page-transition > * > * {
+  animation: mc-build-in 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: opacity, transform, filter;
+}
+
+.mc-page-transition > * > *:nth-child(1) { animation-delay: 0ms; }
+.mc-page-transition > * > *:nth-child(2) { animation-delay: 55ms; }
+.mc-page-transition > * > *:nth-child(3) { animation-delay: 110ms; }
+.mc-page-transition > * > *:nth-child(4) { animation-delay: 165ms; }
+.mc-page-transition > * > *:nth-child(5) { animation-delay: 220ms; }
+.mc-page-transition > * > *:nth-child(6) { animation-delay: 275ms; }
+.mc-page-transition > * > *:nth-child(7) { animation-delay: 330ms; }
+.mc-page-transition > * > *:nth-child(8) { animation-delay: 385ms; }
+.mc-page-transition > * > *:nth-child(9) { animation-delay: 440ms; }
+.mc-page-transition > * > *:nth-child(10) { animation-delay: 495ms; }
+.mc-page-transition > * > *:nth-child(n+11) { animation-delay: 540ms; }
+
+/* Pages that render the content directly (no outer wrapper) — animate
+   immediate children too as a fallback so they don't pop in unstyled. */
+.mc-page-transition > *:not(:has(> *)) {
+  animation: mc-build-in 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-page-transition > * > *,
+  .mc-page-transition > *:not(:has(> *)) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  line-height: 1.05;
+}
+
+.display em {
+  font-style: italic;
+}
+
+.section-mark {
+  font-family: var(--font-mono-src);
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.hairline {
+  border: 0;
+  border-top: var(--hairline) solid var(--ink-trace);
+}
+
+.card {
+  background: var(--paper-soft);
+  border: var(--hairline) solid var(--ink-trace);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem 1.5rem;
+}
+
+.kbd {
+  font-family: var(--font-mono-src);
+  font-size: 0.8125rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunk);
+  border: 1px solid var(--ink-trace);
+  color: var(--ink);
+}
+
+.codeblock {
+  font-family: var(--font-mono-src);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  background: var(--paper-sunk);
+  border: 1px solid var(--ink-trace);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink);
+}
+
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-faint);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+.link:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-mono-src);
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  padding: 0.35rem 0.6rem 0.3rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Markdown body — used to render repo READMEs server-side via marked */
+/* ------------------------------------------------------------------ */
+
+.markdown-body {
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  font-size: 0.9375rem;
+}
+
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body > :last-child { margin-bottom: 0; }
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  margin: 1.6rem 0 0.6rem 0;
+  color: var(--ink);
+}
+
+.markdown-body h1 { font-size: 1.75rem; }
+.markdown-body h2 { font-size: 1.4rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--ink-trace); }
+.markdown-body h3 { font-size: 1.15rem; }
+.markdown-body h4 { font-size: 1rem; }
+.markdown-body h5 { font-size: 0.9rem; color: var(--ink-soft); }
+.markdown-body h6 { font-size: 0.85rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.markdown-body p {
+  margin: 0 0 0.9rem 0;
+}
+
+.markdown-body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-faint);
+  text-underline-offset: 3px;
+}
+.markdown-body a:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.4rem;
+  margin: 0 0 0.9rem 0;
+}
+/* Tailwind v4 preflight strips list-style; restore it for rendered markdown. */
+.markdown-body ul { list-style-type: disc; }
+.markdown-body ol { list-style-type: decimal; }
+.markdown-body ul ul,
+.markdown-body ol ul { list-style-type: circle; }
+.markdown-body ol ol,
+.markdown-body ul ol { list-style-type: lower-roman; }
+.markdown-body li { margin: 0.2rem 0; }
+.markdown-body li > p { margin: 0; }
+/* And restore the bold default — preflight unsets font-weight on strong/b. */
+.markdown-body strong,
+.markdown-body b { font-weight: 600; }
+.markdown-body em,
+.markdown-body i { font-style: italic; }
+
+.markdown-body blockquote {
+  margin: 0 0 0.9rem 0;
+  padding: 0.1rem 0.9rem;
+  border-left: 3px solid var(--ink-trace);
+  color: var(--ink-soft);
+}
+
+.markdown-body code {
+  font-family: var(--font-mono-src);
+  font-size: 0.86em;
+  background: var(--paper-soft);
+  border: 1px solid var(--ink-trace);
+  border-radius: 3px;
+  padding: 0.08rem 0.32rem;
+}
+
+.markdown-body pre {
+  margin: 0 0 1rem 0;
+  padding: 0.85rem 1rem;
+  background: var(--paper-sunk);
+  border: 1px solid var(--ink-trace);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-family: var(--font-mono-src);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.markdown-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+}
+.markdown-body th,
+.markdown-body td {
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--ink-trace);
+}
+.markdown-body th {
+  font-weight: 600;
+  background: var(--paper-soft);
+}
+
+.markdown-body hr {
+  border: 0;
+  border-top: 1px solid var(--ink-trace);
+  margin: 1.5rem 0;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 3px;
+}

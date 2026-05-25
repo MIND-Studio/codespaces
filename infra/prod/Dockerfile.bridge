@@ -1,0 +1,92 @@
+# syntax=docker/dockerfile:1.7
+#
+# Production image for the mind-codespaces bridge.
+#
+# Three stages:
+#   1. builder    — installs deps (incl. C toolchain for better-sqlite3)
+#                   and runs `next build` to emit .next/standalone.
+#   2. docker-cli — just provides the docker CLI binary that we copy into
+#                   the runtime stage. The bridge does NOT run a daemon;
+#                   it talks to the host daemon via the mounted socket.
+#   3. runtime    — minimal Debian-slim with git + docker-cli + tini.
+#
+# bookworm-slim, not Alpine, because better-sqlite3 needs glibc for the
+# prebuilt binary path; building from source on Alpine is slower and
+# requires apk add make g++ python3 every time.
+
+# --- Stage 1: build --------------------------------------------------------
+FROM node:22-bookworm-slim AS builder
+WORKDIR /app
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential python3 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY tsconfig.json next.config.ts postcss.config.mjs next-env.d.ts ./
+COPY src ./src
+
+# Ensure `public/` exists so the runtime-stage COPY doesn't fail. Most
+# Next.js apps have one; this prototype doesn't, but Next handles the
+# empty case at runtime fine.
+RUN mkdir -p public
+
+RUN npm run build
+
+# --- Stage 2: docker CLI ---------------------------------------------------
+# The official `docker:cli` image ships a statically-built `docker` binary.
+# Pin the major version; the CLI is forward-compatible with newer daemons.
+FROM docker:27-cli AS docker-cli
+
+# --- Stage 3: runtime ------------------------------------------------------
+FROM node:22-bookworm-slim AS runtime
+WORKDIR /app
+
+# Runtime needs:
+#   git              — the coder driver clones the bare repo into workDir.
+#   ca-certificates  — TLS to OpenRouter, Solid pods, OIDC issuers.
+#   tini             — PID 1 so SIGTERM is propagated and zombies reaped.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      git ca-certificates tini \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+
+# node:22-bookworm-slim already provides a non-root `node` user at uid 1000.
+# Pre-create the volume mount points with `node` ownership so that when
+# Docker creates the named volumes for the FIRST time, it copies the
+# image's directory metadata (mode + ownership) onto the empty volume.
+# Without this, the volume is root:root and the bridge (which runs as
+# uid 1000) gets SQLITE_CANTOPEN on the registry DB.
+RUN mkdir -p /var/lib/mind/registry /var/lib/mind/git-data/repos /var/lib/mind/coder-work \
+ && chown -R node:node /var/lib/mind
+
+USER node
+
+# Next.js standalone output: server.js + only the traced node_modules.
+COPY --chown=node:node --from=builder /app/.next/standalone ./
+COPY --chown=node:node --from=builder /app/.next/static ./.next/static
+# `public/` is optional — Next.js handles a missing public dir fine, but
+# COPY refuses to copy something that doesn't exist. We materialise an
+# empty one in the builder before the copy so the COPY succeeds either
+# way. Done above in the builder stage via `mkdir -p public`.
+COPY --chown=node:node --from=builder /app/public ./public
+
+ENV NODE_ENV=production \
+    PORT=3010 \
+    HOSTNAME=0.0.0.0
+
+EXPOSE 3010
+
+# Container-level liveness probe. /api/livez never fails for slow deps,
+# so docker won't restart a healthy process just because CSS is briefly
+# slow. /api/health is the readiness probe Caddy / k8s should hit.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3010/api/livez').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "server.js"]

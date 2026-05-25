@@ -1,0 +1,308 @@
+# mind-codespaces — production stack
+#
+# Four services on one VM:
+#   caddy         → TLS terminator + reverse proxy, only thing on :80/:443
+#   bridge        → the Next.js app (this repo)
+#   css           → CommunitySolidServer hosting public pods
+#   socket-proxy  → tecnativa/docker-socket-proxy. The ONLY container in
+#                   this stack with /var/run/docker.sock mounted. Filters
+#                   the Docker API down to the verbs the bridge actually
+#                   needs (POST /containers/create + start + delete + logs,
+#                   GET /images). Blocks /exec, /build, /volumes,
+#                   /networks, /swarm, /plugins, /system, /secrets. The
+#                   bridge talks to it via DOCKER_HOST=tcp://socket-proxy:2375.
+#                   See infra/prod/README.md "Trust model" for what this
+#                   does and does NOT mitigate.
+#
+# Run from this directory:
+#   docker compose --env-file .env up -d --build
+
+name: mind-codespaces
+
+# ----------------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------------
+volumes:
+  caddy_data:        # Let's Encrypt certs (NEVER delete — issuance is rate-limited)
+  caddy_config:
+  css_data:          # User pod content. The product.
+  bridge_registry:   # SQLite: repos, push tokens, identities, issues, pulls
+  bridge_git_data:   # Bare git repos
+  verdaccio_storage: # Cached npm tarballs — safe to delete; re-fetches lazily
+
+# Note: the coder-work dir is a HOST bind mount, not a named volume,
+# because the path must resolve to the same address on the host (where
+# `docker run -v ${workDir}:/work` is interpreted) AND inside the bridge
+# container (where `fs.mkdtemp` allocates the path). See coder driver
+# docstring for MIND_CODER_WORKROOT.
+
+# ----------------------------------------------------------------------
+# Services
+# ----------------------------------------------------------------------
+services:
+
+  # NOTE on image pinning: floating tags below are convenient for the
+  # demo but a production deployment MUST pin every image by digest
+  # (@sha256:...). The helper script does this in one shot:
+  #
+  #   docker compose pull
+  #   ./scripts/pin-image-digests.sh   # rewrites this file in-place
+  #
+  # Run it on the deploy host (after `docker compose pull`), commit the
+  # resulting diff in your config repo, and re-run after every image
+  # bump. Without digests, a future `docker compose pull` can silently
+  # swap the actual binary running on the host — the supply-chain risk
+  # noted in §6.3 of PRODUCTION-READINESS.md.
+  caddy:
+    image: caddy:2-alpine  # TODO: pin @sha256:
+    container_name: mind-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Substituted into Caddyfile by Caddy's built-in env interpolation.
+      MIND_DOMAIN_BRIDGE: ${MIND_DOMAIN_BRIDGE}
+      MIND_DOMAIN_POD: ${MIND_DOMAIN_POD}
+      ACME_EMAIL: ${ACME_EMAIL}
+    depends_on:
+      - bridge
+      - css
+    networks:
+      - mind
+
+  bridge:
+    build:
+      # Context = repo root so the Dockerfile can see package.json, src/, etc.
+      context: ../..
+      dockerfile: infra/prod/Dockerfile.bridge
+    image: mind-codespaces/bridge:latest
+    container_name: mind-bridge
+    restart: unless-stopped
+    expose:
+      - "3010"
+    environment:
+      NODE_ENV: production
+
+      # Public URLs (Caddy-fronted). Used to build external clone URLs,
+      # post-receive hook callbacks, and OIDC redirect URIs.
+      BRIDGE_PUBLIC_URL: https://${MIND_DOMAIN_BRIDGE}
+      # Internal URL used by the post-receive hook so callbacks don't
+      # traverse Caddy + ACME unnecessarily. The container hostname is
+      # `bridge`; the port is 3010 inside the compose network.
+      BRIDGE_INTERNAL_URL: http://bridge:3010
+      POD_BASE_URL: https://${MIND_DOMAIN_POD}/
+
+      # P0-S1/S3/S4: cookie HMAC, hook HMAC, refresh-token encryption.
+      # The bridge refuses to start in production with any of these
+      # unset. Generate with `openssl rand -hex 32` / `... -hex 24`.
+      BRIDGE_SESSION_SECRET: ${BRIDGE_SESSION_SECRET}
+      BRIDGE_HOOK_SECRET: ${BRIDGE_HOOK_SECRET}
+      IDENTITY_ENCRYPTION_KEY: ${IDENTITY_ENCRYPTION_KEY}
+
+      # Container-internal data paths (mounted volumes below).
+      REGISTRY_DATA_DIR: /var/lib/mind/registry
+      GIT_DATA_DIR: /var/lib/mind/git-data/repos
+
+      # See coder driver: this path MUST exist at the same address on
+      # the host and inside the bridge so the host Docker daemon can
+      # resolve the bind mount the bridge requests.
+      MIND_CODER_WORKROOT: /var/lib/mind/coder-work
+
+      # Agents / coder driver. Leave OPENROUTER_API_KEY blank to disable
+      # the openrouter + coder drivers (echo stub is always available).
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MIND_AGENT_MODEL: ${MIND_AGENT_MODEL:-anthropic/claude-3.5-sonnet}
+      MIND_CODER_IMAGE: ${MIND_CODER_IMAGE:-mind-codespaces/coder:latest}
+      MIND_CODER_TIMEOUT: ${MIND_CODER_TIMEOUT:-600}
+
+      # Workflow runner: force docker mode so workflow steps run in
+      # sandboxed sibling containers, not on the host.
+      MIND_RUNNER: docker
+      # §3.4: workflow containers join the user-defined `mind-workflows`
+      # network where the Verdaccio sidecar lives — and ONLY that network.
+      # The bridge's own `mind` network is unreachable from the build,
+      # which is the property that blocks an attacker-controlled `run:`
+      # command from talking to the CSS pod, the registry SQLite, or
+      # other internal services.
+      MIND_WORKFLOW_NETWORK: mind-workflows
+      MIND_NPM_REGISTRY: http://verdaccio:4873/
+
+      # Route ALL Docker API calls through the socket-proxy service.
+      # The bridge has NO direct access to /var/run/docker.sock. This
+      # is the primary mitigation for the "container with the socket =
+      # host root" exposure (see README.md "Trust model").
+      DOCKER_HOST: tcp://socket-proxy:2375
+
+      # Managed-multi-user + observability envs (all default-empty so
+      # leaving them blank in .env keeps the corresponding endpoint or
+      # feature disabled, which is the safe state).
+      BRIDGE_ADMIN_TOKEN: ${BRIDGE_ADMIN_TOKEN:-}
+      BRIDGE_METRICS_TOKEN: ${BRIDGE_METRICS_TOKEN:-}
+      BRIDGE_ENABLE_SIGNUP: ${BRIDGE_ENABLE_SIGNUP:-}
+      BRIDGE_CORS_ALLOWED_ORIGINS: ${BRIDGE_CORS_ALLOWED_ORIGINS:-}
+      BRIDGE_MAX_JSON_RESPONSE_BYTES: ${BRIDGE_MAX_JSON_RESPONSE_BYTES:-}
+
+      # Per-user / per-repo quotas. Unset = use the hardcoded defaults
+      # from src/lib/registry/quotas.ts (50 repos/owner, 10 tokens/repo,
+      # 500 runs/day, 1 GiB/repo). See infra/prod/.env.example.
+      MAX_REPOS_PER_OWNER: ${MAX_REPOS_PER_OWNER:-}
+      MAX_TOKENS_PER_REPO: ${MAX_TOKENS_PER_REPO:-}
+      MAX_RUNS_PER_OWNER_PER_DAY: ${MAX_RUNS_PER_OWNER_PER_DAY:-}
+      MAX_DISK_PER_REPO_BYTES: ${MAX_DISK_PER_REPO_BYTES:-}
+
+      # Logging / reconciler tunables.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-ndjson}
+      MIND_RECONCILE_INTERVAL_MS: ${MIND_RECONCILE_INTERVAL_MS:-}
+      MIND_WORKFLOW_LOG_LIMIT: ${MIND_WORKFLOW_LOG_LIMIT:-}
+      MIND_ENABLE_ENGINEER_AGENT: ${MIND_ENABLE_ENGINEER_AGENT:-}
+
+      # NOTE: POD_USER_EMAIL and POD_USER_PASSWORD intentionally unset.
+      # The seeded-credential fallback is for local dev only; in prod,
+      # users delegate via Solid-OIDC at /connect.
+    volumes:
+      - bridge_registry:/var/lib/mind/registry
+      - bridge_git_data:/var/lib/mind/git-data
+
+      # Coder work root. Host path = container path (the host Docker
+      # daemon resolves the -v argument; both sides must see the same
+      # absolute path). See coder driver's MIND_CODER_WORKROOT doc.
+      - /var/lib/mind/coder-work:/var/lib/mind/coder-work
+    depends_on:
+      - css
+      - socket-proxy
+    networks:
+      - mind
+
+  # The Docker socket proxy. The ONLY container with the real socket
+  # mounted. Filters the Docker API down to what the bridge actually
+  # needs to spawn sibling containers (coder + workflow runner). All
+  # other endpoints — /exec, /build, /networks, /volumes, /swarm,
+  # /plugins, /secrets, /system — are denied by default-zero envs below.
+  #
+  # Residual risk to be aware of: this proxy filters by URL+verb only;
+  # it does NOT deep-inspect request bodies. A fully compromised bridge
+  # can still issue `POST /containers/create` with `HostConfig.Privileged:
+  # true` or `HostConfig.Binds: ["/:/host"]` and break out. The real
+  # mitigations for that are (a) keep the bridge from being compromised
+  # in the first place — see P0-S1/S2/S3 in PRODUCTION-READINESS.md —
+  # and (b) the rootless-Podman / Sysbox alternatives noted in §5 of
+  # the same doc.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0  # TODO: pin @sha256:
+    container_name: mind-socket-proxy
+    restart: unless-stopped
+    expose:
+      - "2375"
+    environment:
+      LOG_LEVEL: warning
+
+      # Allowed resource families. GET on these is implicit; combined
+      # with POST=1 below, POST/DELETE on the same prefixes is allowed.
+      CONTAINERS: 1   # POST /containers/create, /start, /wait, DELETE /containers/{id}, GET /logs
+      IMAGES: 1       # GET /images/{name}/json so the CLI can verify the coder image exists
+
+      # The catch-all "enable write verbs" flag. Without this, even
+      # CONTAINERS=1 only allows GET.
+      POST: 1
+
+      # Everything below is 0 by default in the image. They are listed
+      # here as documentation of the surface we explicitly deny, and to
+      # survive image upgrades that might flip defaults.
+      AUTH: 0
+      BUILD: 0        # no image builds at runtime
+      COMMIT: 0       # no committing a running container into a new image
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      EVENTS: 0
+      EXEC: 0         # CRITICAL: would let attacker `docker exec` into other containers
+      GRPC: 0
+      INFO: 0
+      NETWORKS: 0     # no creating networks (children use the parent's default network)
+      NODES: 0
+      PING: 0
+      PLUGINS: 0      # plugins can elevate
+      SECRETS: 0
+      SERVICES: 0
+      SESSION: 0
+      SWARM: 0
+      SYSTEM: 0       # /info leaks host metadata (paths, mounts, plugins)
+      TASKS: 0
+      VERSION: 0
+      VOLUMES: 0      # no docker-managed volumes; the work-root bind is on the host fs
+    volumes:
+      # Read-only mount: the proxy needs to call the daemon but doesn't
+      # need to modify the socket file itself.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    # NOTE: `read_only: true` is intentionally NOT set on this service.
+    # The tecnativa/docker-socket-proxy entrypoint regenerates haproxy.cfg
+    # from /usr/local/etc/haproxy/haproxy.cfg.template every start, which
+    # needs the file in place AND write access to the same directory.
+    # tmpfs'ing that path shadows the template; dropping read_only is
+    # the simpler fix and the container is still locked down via:
+    #   • cap_drop: ALL (no kernel-level capabilities)
+    #   • no-new-privileges (no SUID escalation)
+    #   • the filtered Docker API surface (only the verbs we explicitly enabled)
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mind
+
+  css:
+    # Pin CSS to v7 — the bridge code targets v7 behavior. Floating
+    # `:latest` would let a v8 cut day silently change ACL semantics.
+    image: solidproject/community-server:7  # TODO: pin @sha256:
+    container_name: mind-css
+    restart: unless-stopped
+    expose:
+      - "3011"
+    command:
+      - --port=3011
+      - --baseUrl=https://${MIND_DOMAIN_POD}/
+      - --rootFilePath=/data
+      - --config=@css:config/file.json
+      - --loggingLevel=warn
+    volumes:
+      - css_data:/data
+    networks:
+      - mind
+
+  # Verdaccio npm mirror (§3.4). The workflow runner container is
+  # launched with --network mind-workflows — a network that contains
+  # ONLY Verdaccio. The bridge can reach Verdaccio (so it can warm the
+  # cache or run admin tasks) and Verdaccio can reach the public npm
+  # registry to upstream fetches; the workflow container CAN reach
+  # Verdaccio but CANNOT reach anything else. That is the egress
+  # restriction that closes the §3.4 "workflow can call home" hole.
+  #
+  # The Verdaccio config file is a minimal proxy-everything-from-npmjs
+  # — bind-mounted from infra/prod/verdaccio.yaml on the host.
+  verdaccio:
+    image: verdaccio/verdaccio:5  # TODO: pin @sha256: with pin-image-digests.sh
+    container_name: mind-verdaccio
+    restart: unless-stopped
+    expose:
+      - "4873"
+    volumes:
+      - ./verdaccio.yaml:/verdaccio/conf/config.yaml:ro
+      - verdaccio_storage:/verdaccio/storage
+    networks:
+      - mind
+      - mind-workflows
+
+networks:
+  mind:
+    driver: bridge
+  mind-workflows:
+    driver: bridge
+    internal: false  # Verdaccio needs internet to upstream; workflow containers
+                     # do not have internet directly — they reach the public
+                     # registry only via verdaccio's proxy.

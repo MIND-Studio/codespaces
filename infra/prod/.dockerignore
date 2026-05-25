@@ -1,0 +1,41 @@
+# Keep the build context small and predictable. The Dockerfile lives in
+# infra/prod/ but builds with the repo root as context (so it can see
+# package.json, src/, etc.), which is why this file mirrors the repo's
+# .gitignore plus a few extras.
+
+# Build output / caches
+.next
+node_modules
+*.tsbuildinfo
+out
+build
+
+# Local state (large, gitignored)
+.css-data
+.git-data
+.registry-data
+.indexer-data
+.agent-logs
+
+# Env files NEVER end up in an image
+.env
+.env.*
+
+# Dev junk
+.DS_Store
+dev.log
+npm-debug.log*
+.pnpm-debug.log*
+.playwright-mcp
+*.png
+
+# Docs & infra (the image doesn't need them; infra/ is mounted/used at deploy time)
+docs
+infra
+README.md
+AGENTS.md
+CLAUDE.md
+
+# Git metadata
+.git
+.gitignore

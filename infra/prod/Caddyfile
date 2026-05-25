@@ -1,0 +1,53 @@
+# Caddyfile — TLS terminator + reverse proxy.
+#
+# Two virtual hosts, both Let's Encrypt-issued automatically:
+#   codespaces.<domain>  →  bridge   (Next.js, Smart HTTP)
+#   pod.<domain>         →  css      (CommunitySolidServer)
+#
+# Env vars (interpolated by Caddy at startup):
+#   {$MIND_DOMAIN_BRIDGE}  e.g. codespaces.example.com
+#   {$MIND_DOMAIN_POD}     e.g. pod.example.com
+#   {$ACME_EMAIL}          contact email for Let's Encrypt
+
+{
+    email {$ACME_EMAIL}
+    # Bind on HTTP/3 (UDP 443 is published in compose).
+    servers {
+        protocols h1 h2 h3
+    }
+}
+
+# ----------------------------------------------------------------------
+# Bridge — git Smart HTTP needs streaming, no body buffering, no compression
+# of the git RPC endpoints (git already negotiates pack compression).
+# ----------------------------------------------------------------------
+{$MIND_DOMAIN_BRIDGE} {
+    encode zstd gzip
+
+    # Push-body cap: git http-backend has no internal request-body limit,
+    # so a malicious 50 GB push could OOM the bridge. 1 GB is large enough
+    # for any realistic repo push but small enough that a single rogue
+    # client can't fill the host. P0-R7. Tune via MIND_MAX_PUSH_BODY env
+    # interpolation if you have legitimately large monorepo pushes.
+    request_body {
+        max_size {$MIND_MAX_PUSH_BODY:1GB}
+    }
+
+    # Pages — let the bridge stream large responses (cloned repos, packfiles).
+    reverse_proxy bridge:3010 {
+        # Flush every write. Without this, `git clone` over HTTPS can stall
+        # because Caddy buffers the response chunk while git is waiting
+        # for the next bit of the side-band protocol.
+        flush_interval -1
+    }
+}
+
+# ----------------------------------------------------------------------
+# Pod host — Community Solid Server.
+# CSS's --baseUrl is set to https://{this host}/ in compose, so all
+# WebIDs and resource URLs it mints will use this exact origin.
+# ----------------------------------------------------------------------
+{$MIND_DOMAIN_POD} {
+    encode zstd gzip
+    reverse_proxy css:3011
+}

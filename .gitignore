@@ -1,0 +1,55 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+.pnpm-debug.log*
+
+# env files (note: rsync's --exclude='.env*' eats .env.example;
+# in rsync use specific patterns. See docs/DEPLOYMENT.md).
+.env
+.env.local
+.env.production
+.env.*.local
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# CommunitySolidServer dev data
+/.css-data/
+
+# Bare git repos managed by the bridge
+/.git-data/
+
+# SQLite registry dev data
+/.registry-data/
+
+# Ad-hoc screenshots and Playwright artifacts
+/*.png
+/.playwright-mcp/
+
+# Runtime logs (dev server, agent runs, smoke output)
+*.log
+/.agent-logs/
+
+# Backup files left by sed -i and similar
+*.bak
+
+# Bootstrap-laptop tempfile (rotated root password — should be in pw manager)
+/.mind-codespaces-root-pw.tmp

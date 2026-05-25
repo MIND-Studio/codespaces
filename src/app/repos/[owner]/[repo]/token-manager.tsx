@@ -1,0 +1,164 @@
+"use client";
+
+import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
+
+type TokenSummary = {
+  id: number;
+  label: string;
+  createdAt: number;
+};
+
+export function TokenManager({
+  owner,
+  repo,
+  initial,
+}: {
+  owner: string;
+  repo: string;
+  initial: TokenSummary[];
+}) {
+  const [tokens, setTokens] = useState<TokenSummary[]>(initial);
+  const [label, setLabel] = useState("");
+  const [plaintext, setPlaintext] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function createToken(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setPlaintext(null);
+    try {
+      const res = await authedFetch(`/api/repos/${owner}/${repo}/tokens`, {
+        method: "POST",
+        body: JSON.stringify({ label }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `request failed (${res.status})`);
+      }
+      const data = (await res.json()) as {
+        id: number;
+        label: string;
+        createdAt: number;
+        token: string;
+      };
+      setTokens((prev) => [
+        { id: data.id, label: data.label, createdAt: data.createdAt },
+        ...prev,
+      ]);
+      setPlaintext(data.token);
+      setLabel("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(id: number) {
+    if (!confirm(`Revoke token #${id}? This cannot be undone.`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await authedFetch(
+        `/api/repos/${owner}/${repo}/tokens/${id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `request failed (${res.status})`);
+      }
+      setTokens((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4 text-sm">
+      <form onSubmit={createToken} className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span
+            className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            Label
+          </span>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="e.g. my laptop"
+            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5"
+            disabled={busy}
+            maxLength={64}
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[color:var(--paper)] disabled:opacity-50"
+        >
+          {busy ? "…" : "Mint token"}
+        </button>
+      </form>
+
+      {error ? (
+        <p className="text-[color:var(--status-bad)]">{error}</p>
+      ) : null}
+
+      {plaintext ? (
+        <div className="rounded border-l-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)] p-3">
+          <p
+            className="text-[10px] uppercase tracking-[0.18em]"
+            style={{ fontFamily: "var(--font-mono-src)", color: "var(--accent-deep)" }}
+          >
+            Copy this token now — it is not stored in plaintext
+          </p>
+          <pre className="codeblock mt-2 text-[color:var(--ink)]">{plaintext}</pre>
+          <p className="mt-2 text-[color:var(--ink)]">
+            Push with:{" "}
+            <code className="kbd">
+              git push http://USER:{plaintext}@localhost:3010/api/git/{owner}/{repo}.git
+            </code>
+          </p>
+        </div>
+      ) : null}
+
+      {tokens.length === 0 ? (
+        <p className="text-[color:var(--ink-soft)]">No tokens yet.</p>
+      ) : (
+        <ul className="divide-y divide-[color:var(--ink-trace)]">
+          {tokens.map((t) => (
+            <li key={t.id} className="flex items-center justify-between gap-4 py-2">
+              <div>
+                <p className="text-[color:var(--ink)]">{t.label || <em className="text-[color:var(--ink-faint)]">(no label)</em>}</p>
+                <p
+                  className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+                  style={{ fontFamily: "var(--font-mono-src)" }}
+                >
+                  #{t.id} · created {formatDate(t.createdAt)}
+                </p>
+              </div>
+              <button
+                onClick={() => revoke(t.id)}
+                disabled={busy}
+                className="rounded border border-[color:var(--status-bad)] px-3 py-1 text-[color:var(--status-bad)] hover:bg-[color:var(--status-bad)] hover:text-[color:var(--paper)] disabled:opacity-50"
+              >
+                Revoke
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function formatDate(ts: number): string {
+  return new Date(ts).toISOString().slice(0, 16).replace("T", " ");
+}

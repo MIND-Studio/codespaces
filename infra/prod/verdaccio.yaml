@@ -1,0 +1,47 @@
+# Verdaccio config for the workflow-runner npm mirror.
+# Minimal proxy-everything-from-npmjs setup; no logins, no publishes.
+#
+# The workflow container hits Verdaccio at http://verdaccio:4873/ as
+# `npm_config_registry`. Verdaccio passes through to npmjs on miss and
+# caches the tarball in /verdaccio/storage. That gives us:
+#   • a single point of egress (the workflow container itself has no
+#     internet route — only the verdaccio sidecar does)
+#   • a tarball cache that survives container restarts and lets ops
+#     audit what packages a build actually fetched
+
+storage: /verdaccio/storage
+
+# We intentionally don't ship an admin user — uplinks are open for
+# READ (which is what npm install does) and writes are denied. If the
+# operator needs to host a private package, add an htpasswd here and
+# wire it into the publish ACL below.
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd
+    max_users: -1  # no public sign-up; ops can `htpasswd` manually if needed
+
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+    timeout: 30s
+    maxage: 2m
+    fail_timeout: 5m
+
+packages:
+  '@*/*':
+    access: $anonymous
+    publish: $authenticated
+    proxy: npmjs
+  '**':
+    access: $anonymous
+    publish: $authenticated
+    proxy: npmjs
+
+# Caching tunables. The defaults are fine for moderate traffic; bump
+# `max_age` if your builds are heavy and you want longer offline reach.
+log:
+  - { type: stdout, format: pretty, level: warn }
+
+# CORS/origin restrictions don't matter here — Verdaccio is only on
+# the internal `mind-workflows` network, never exposed to the public.
+listen: 0.0.0.0:4873
