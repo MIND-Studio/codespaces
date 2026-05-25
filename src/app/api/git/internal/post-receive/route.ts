@@ -16,38 +16,23 @@ export const dynamic = "force-dynamic";
 
 /**
  * Internal endpoint called by the per-repo `post-receive` hook installed
- * during `createBareRepo`. The hook is local to the box and:
- *   - sends the request from the loopback interface (enforced here by
- *     inspecting the forwarded-for / remote-address headers Caddy sets);
- *   - signs the JSON body with HMAC-SHA256 keyed by `BRIDGE_HOOK_SECRET`
- *     and puts the digest in `X-Bridge-Hmac: sha256=<hex>`.
+ * during `createBareRepo`. The hook signs the JSON body with HMAC-SHA256
+ * keyed by `BRIDGE_HOOK_SECRET` and puts the digest in
+ * `X-Bridge-Hmac: sha256=<hex>`. The HMAC is the security gate: an
+ * attacker without the secret cannot forge a valid request, and the
+ * secret is server-only (env var, never in the repo).
  *
- * Both checks must pass before the publish chain runs. See P0-S3 in
- * docs/PRODUCTION-READINESS.md.
+ * Previously this also enforced a loopback check via X-Forwarded-For,
+ * but in production the hook calls the bridge by service name
+ * (`http://bridge:3010/...`) and Next.js auto-populates X-Forwarded-For
+ * from the peer's container IP for any non-loopback TCP peer. That
+ * caused the check to reject every legitimate intra-container callback
+ * with a 403, silently breaking workflow runs and Pages republishes.
+ * The HMAC alone is the right boundary here.
  */
 export async function POST(req: Request) {
   const env = getEnv();
   const hdrs = await headers();
-
-  // Loopback bind check. Behind Caddy on the prod stack, `X-Forwarded-For`
-  // is the original remote address. In dev (`curl 127.0.0.1`) there is
-  // no forwarded header, so we accept the connection unconditionally
-  // when not behind a proxy — the HMAC carries the trust in that case.
-  const forwardedFor = hdrs.get("x-forwarded-for");
-  if (forwardedFor) {
-    const remote = forwardedFor.split(",")[0]?.trim() ?? "";
-    if (
-      remote &&
-      remote !== "127.0.0.1" &&
-      remote !== "::1" &&
-      remote !== "localhost"
-    ) {
-      return NextResponse.json(
-        { error: "post-receive hook must originate from loopback" },
-        { status: 403 },
-      );
-    }
-  }
 
   // Read body as text first so we can compute HMAC over the EXACT bytes
   // the hook signed (parsing → re-stringifying would mutate whitespace).
