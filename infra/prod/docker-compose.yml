@@ -208,6 +208,16 @@ services:
       CONTAINERS: 1   # POST /containers/create, /start, /wait, DELETE /containers/{id}, GET /logs
       IMAGES: 1       # GET /images/{name}/json so the CLI can verify the coder image exists
 
+      # The Docker CLI's first call on `docker run` is HEAD /_ping to
+      # check daemon liveness + negotiate the API version. GET /version
+      # follows for some CLI codepaths. Without these, `docker run` exits
+      # 125 before even attempting to create the container, which silently
+      # kills every workflow run. /_ping returns "OK" and /version leaks
+      # only the daemon version string — neither expands the attack
+      # surface beyond CONTAINERS=1's already-granted "POST /containers/create".
+      PING: 1
+      VERSION: 1
+
       # The catch-all "enable write verbs" flag. Without this, even
       # CONTAINERS=1 only allows GET.
       POST: 1
@@ -226,7 +236,9 @@ services:
       INFO: 0
       NETWORKS: 0     # no creating networks (children use the parent's default network)
       NODES: 0
-      PING: 0
+      # PING and VERSION are explicitly enabled above — leaving these
+      # lines in place would override the earlier `1`. They are listed
+      # here as the rest of the deny list.
       PLUGINS: 0      # plugins can elevate
       SECRETS: 0
       SERVICES: 0
@@ -234,7 +246,6 @@ services:
       SWARM: 0
       SYSTEM: 0       # /info leaks host metadata (paths, mounts, plugins)
       TASKS: 0
-      VERSION: 0
       VOLUMES: 0      # no docker-managed volumes; the work-root bind is on the host fs
     volumes:
       # Read-only mount: the proxy needs to call the daemon but doesn't
