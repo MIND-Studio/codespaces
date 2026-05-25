@@ -557,15 +557,20 @@ function EmptyReadme({
     );
   }
 
+  const tokenizedCloneUrl = cloneUrl.replace(
+    /^(https?:\/\/)/,
+    "$1USER:<TOKEN>@",
+  );
+
   const newRepo = `echo "# ${name}" >> README.md
 git init
 git add README.md
 git commit -m "first commit"
 git branch -M ${defaultBranch}
-git remote add origin ${cloneUrl}
+git remote add origin ${tokenizedCloneUrl}
 git push -u origin ${defaultBranch}`;
 
-  const existingRepo = `git remote add origin ${cloneUrl}
+  const existingRepo = `git remote add origin ${tokenizedCloneUrl}
 git branch -M ${defaultBranch}
 git push -u origin ${defaultBranch}`;
 
@@ -578,10 +583,24 @@ git push -u origin ${defaultBranch}`;
         >
           Nothing pushed yet.
         </p>
-        <p className="mt-2">
-          Mint a push token in the sidebar, then run one of these. Git will
-          prompt for credentials — use any username and the token as the
-          password.
+        <ol className="mt-3 space-y-1 list-decimal list-inside">
+          <li>
+            Mint a push token in the sidebar →{" "}
+            <em className="text-[color:var(--ink)]">Push tokens · Mint first token</em>.
+          </li>
+          <li>
+            Copy the token, then paste it where{" "}
+            <code className="kbd">&lt;TOKEN&gt;</code> appears below.
+          </li>
+          <li>Run the commands in your terminal.</li>
+        </ol>
+        <p className="mt-3 text-xs text-[color:var(--ink-faint)]">
+          The token goes into your local <code className="kbd">.git/config</code>,
+          which is convenient and easy to revoke later (sidebar → Push tokens). If
+          you prefer your OS keychain instead, drop the{" "}
+          <code className="kbd">USER:&lt;TOKEN&gt;@</code> prefix and let git
+          prompt — but make sure your credential helper isn&apos;t holding a stale
+          credential for this host.
         </p>
       </header>
 
