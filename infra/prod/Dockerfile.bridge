@@ -52,9 +52,14 @@ WORKDIR /app
 #   git              — the coder driver clones the bare repo into workDir.
 #   ca-certificates  — TLS to OpenRouter, Solid pods, OIDC issuers.
 #   tini             — PID 1 so SIGTERM is propagated and zombies reaped.
+#   curl             — every repo's hooks/post-receive script POSTs to the
+#                      bridge's internal /api/git/internal/post-receive
+#                      with curl. Without it the callback fails silently
+#                      and workflow runs + Pages publishes never fire on
+#                      push. (openssl is already in bookworm-slim.)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      git ca-certificates tini \
+      git ca-certificates tini curl \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
