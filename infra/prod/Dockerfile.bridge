@@ -70,7 +70,7 @@ COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
 # image's directory metadata (mode + ownership) onto the empty volume.
 # Without this, the volume is root:root and the bridge (which runs as
 # uid 1000) gets SQLITE_CANTOPEN on the registry DB.
-RUN mkdir -p /var/lib/mind/registry /var/lib/mind/git-data/repos /var/lib/mind/coder-work \
+RUN mkdir -p /var/lib/mind/registry /var/lib/mind/git-data/repos /var/lib/mind/coder-work /var/lib/mind/agent-logs \
  && chown -R node:node /var/lib/mind
 
 USER node
