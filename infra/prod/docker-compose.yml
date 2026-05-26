@@ -28,14 +28,20 @@ volumes:
   css_data:          # User pod content. The product.
   bridge_registry:    # SQLite: repos, push tokens, identities, issues, pulls
   bridge_git_data:    # Bare git repos
-  bridge_agent_logs:  # Per-run coder logs + mirrored screenshots
   verdaccio_storage:  # Cached npm tarballs — safe to delete; re-fetches lazily
 
-# Note: the coder-work dir is a HOST bind mount, not a named volume,
-# because the path must resolve to the same address on the host (where
-# `docker run -v ${workDir}:/work` is interpreted) AND inside the bridge
-# container (where `fs.mkdtemp` allocates the path). See coder driver
-# docstring for MIND_CODER_WORKROOT.
+# Note: the coder-work and agent-logs dirs are HOST bind mounts, not
+# named volumes:
+#   - coder-work because the path must resolve to the same address on
+#     the host (where `docker run -v ${workDir}:/work` is interpreted)
+#     AND inside the bridge container (where `fs.mkdtemp` allocates the
+#     path). See coder driver docstring for MIND_CODER_WORKROOT.
+#   - agent-logs because Docker named volumes mount root-owned by
+#     default at paths that didn't exist in the image, and we want one
+#     unambiguous operator step (sudo chown) instead of two
+#     volume-init-quirk paths to keep straight. Both dirs need
+#     `sudo mkdir -p ... && sudo chown 1000:1000 ...` per the prod
+#     README.
 
 # ----------------------------------------------------------------------
 # Services
@@ -177,12 +183,18 @@ services:
     volumes:
       - bridge_registry:/var/lib/mind/registry
       - bridge_git_data:/var/lib/mind/git-data
-      - bridge_agent_logs:/var/lib/mind/agent-logs
 
       # Coder work root. Host path = container path (the host Docker
       # daemon resolves the -v argument; both sides must see the same
       # absolute path). See coder driver's MIND_CODER_WORKROOT doc.
       - /var/lib/mind/coder-work:/var/lib/mind/coder-work
+
+      # Per-run coder logs + mirrored screenshots. Bind mount instead
+      # of a named volume so the host chown step is unambiguous and
+      # there's no "named volume keeps its first-mount ownership
+      # forever" quirk to remember. Required chown documented in the
+      # prod README.
+      - /var/lib/mind/agent-logs:/var/lib/mind/agent-logs
     depends_on:
       - css
       - socket-proxy

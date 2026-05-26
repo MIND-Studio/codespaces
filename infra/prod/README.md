@@ -65,11 +65,11 @@ Fill in:
 ## 4. Prepare host directories
 
 ```bash
-sudo mkdir -p /var/lib/mind/coder-work
-sudo chown 1000:1000 /var/lib/mind/coder-work
+sudo mkdir -p /var/lib/mind/coder-work /var/lib/mind/agent-logs
+sudo chown 1000:1000 /var/lib/mind/coder-work /var/lib/mind/agent-logs
 ```
 
-`uid 1000` is the `node` user inside the bridge image. The coder-work dir is the **only** host path that needs explicit chmod — the other volumes are docker-named and self-managed.
+`uid 1000` is the `node` user inside the bridge image. Both `coder-work` and `agent-logs` are host bind mounts that need this explicit chmod — the other volumes are docker-named and self-managed.
 
 ## 5. Build the coder sandbox image
 
