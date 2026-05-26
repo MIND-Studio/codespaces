@@ -26,9 +26,10 @@ volumes:
   caddy_data:        # Let's Encrypt certs (NEVER delete — issuance is rate-limited)
   caddy_config:
   css_data:          # User pod content. The product.
-  bridge_registry:   # SQLite: repos, push tokens, identities, issues, pulls
-  bridge_git_data:   # Bare git repos
-  verdaccio_storage: # Cached npm tarballs — safe to delete; re-fetches lazily
+  bridge_registry:    # SQLite: repos, push tokens, identities, issues, pulls
+  bridge_git_data:    # Bare git repos
+  bridge_agent_logs:  # Per-run coder logs + mirrored screenshots
+  verdaccio_storage:  # Cached npm tarballs — safe to delete; re-fetches lazily
 
 # Note: the coder-work dir is a HOST bind mount, not a named volume,
 # because the path must resolve to the same address on the host (where
@@ -108,6 +109,9 @@ services:
       # Container-internal data paths (mounted volumes below).
       REGISTRY_DATA_DIR: /var/lib/mind/registry
       GIT_DATA_DIR: /var/lib/mind/git-data/repos
+      # Default would be /app/.agent-logs, which isn't writable by the
+      # non-root bridge user. Mount a named volume instead.
+      AGENT_LOGS_DIR: /var/lib/mind/agent-logs
 
       # See coder driver: this path MUST exist at the same address on
       # the host and inside the bridge so the host Docker daemon can
@@ -171,6 +175,7 @@ services:
     volumes:
       - bridge_registry:/var/lib/mind/registry
       - bridge_git_data:/var/lib/mind/git-data
+      - bridge_agent_logs:/var/lib/mind/agent-logs
 
       # Coder work root. Host path = container path (the host Docker
       # daemon resolves the -v argument; both sides must see the same
