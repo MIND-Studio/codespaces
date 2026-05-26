@@ -58,13 +58,17 @@ export const PROVIDERS: ProviderSpec[] = [
     containerEnvNames: ["OPENROUTER_API_KEY"],
     keyShapeHint: "sk-or-…",
     models: [
+      // Free tier first — these are what runs out of the box with no
+      // OpenRouter credit balance. Curated against the live `:free` list
+      // and filtered to models that declare tool-use support.
+      { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder", note: "Qwen · free · coder-tuned (default)" },
+      { id: "deepseek/deepseek-v4-flash:free", label: "DeepSeek V4 Flash", note: "DeepSeek · free" },
+      { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B", note: "Meta · free" },
+      { id: "z-ai/glm-4.5-air:free", label: "GLM 4.5 Air", note: "Z.AI · free" },
+      // Paid — pick these when your OpenRouter key has a budget set.
+      { id: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5", note: "Anthropic · paid" },
+      { id: "openai/gpt-4o-mini", label: "GPT-4o mini", note: "OpenAI · paid · cheap" },
       { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", note: "Google · paid" },
-      { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash", note: "Google · free tier" },
-      { id: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5", note: "Anthropic" },
-      { id: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet", note: "Anthropic · legacy" },
-      { id: "openai/gpt-4o", label: "GPT-4o", note: "OpenAI" },
-      { id: "openai/gpt-4o-mini", label: "GPT-4o mini", note: "OpenAI · cheap" },
-      { id: "deepseek/deepseek-chat", label: "DeepSeek Chat", note: "DeepSeek" },
     ],
   },
   {

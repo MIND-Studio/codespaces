@@ -47,7 +47,7 @@ export function ensureAgentsBootstrap(): void {
     registerDriver(openrouterDriver);
     setDefaultDriver("openrouter");
     console.log(
-      `[agents] openrouter driver active as bridge-wide fallback (model=${process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet"})`,
+      `[agents] openrouter driver active as bridge-wide fallback (model=${process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free"})`,
     );
   } else {
     console.log(

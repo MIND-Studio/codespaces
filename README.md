@@ -234,7 +234,7 @@ refuses to start when any of the **required** secrets are missing or wrong size
 | `BRIDGE_ENABLE_SIGNUP` | unset | Set `1` to enable `POST /api/signup` + `/signup` page |
 | `MAX_REPOS_PER_OWNER` / `MAX_TOKENS_PER_REPO` / `MAX_RUNS_PER_OWNER_PER_DAY` / `MAX_DISK_PER_REPO_BYTES` | 50 / 10 / 500 / 1 GiB | Per-owner quotas (return 429 `QUOTA_EXCEEDED`) |
 | `OPENROUTER_API_KEY` | unset | Bridge-wide fallback key. Enables the env-only `openrouter` driver, and serves as the coder driver's fallback when a repo owner hasn't configured BYOK at `/profile/ai-providers`. The coder driver itself is always registered. |
-| `MIND_AGENT_MODEL` | `anthropic/claude-3.5-sonnet` | Model id passed on every chat call |
+| `MIND_AGENT_MODEL` | `qwen/qwen3-coder:free` | OpenRouter model id used as the bridge-wide fallback. Default is a free coder-tuned model so a bridge with no per-user BYOK keys still runs end-to-end without burning credits. Pinning a paid model requires the operator-side OpenRouter key to carry the matching budget. |
 | `MIND_RUNNER` | `auto` | Force workflow runner: `docker` \| `native` \| `auto` |
 | `MIND_WORKFLOW_NETWORK` | `none` | Docker network for workflow containers (`bridge`/custom for npm access) |
 | `MIND_NPM_REGISTRY` | unset | Injected into workflow containers as `npm_config_registry` (Verdaccio mirror) |

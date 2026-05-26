@@ -15,7 +15,7 @@ import type { Driver } from "@/lib/agents/types";
  * Environment:
  *   OPENROUTER_API_KEY — required to register this driver.
  *   MIND_AGENT_MODEL   — OpenRouter model id; defaults to
- *                        "anthropic/claude-3.5-sonnet".
+ *                        "qwen/qwen3-coder:free".
  *
  * Note: this driver is OpenRouter-specific by design. The richer
  * coder driver consults `resolveCoderConfig(ownerWebId)` and can use
@@ -53,7 +53,7 @@ type OpenRouterResponse = {
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 function defaultModel(): string {
-  return process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet";
+  return process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free";
 }
 
 /** Max wall-clock seconds we'll spend honoring upstream retry-after hints. */

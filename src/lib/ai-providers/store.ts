@@ -237,15 +237,16 @@ export function resolveCoderConfig(webId: string): CoderConfig | null {
   }
 
   // Fallback: env-configured OpenRouter setup. The MIND_AGENT_MODEL var
-  // historically includes a slash (e.g. "anthropic/claude-3.5-sonnet")
-  // and is consumed as the bare model id by OpenRouter, so we forward
-  // it as-is.
+  // includes a provider slash (e.g. "qwen/qwen3-coder:free") and is
+  // consumed as the bare model id by OpenRouter, so we forward it
+  // as-is. Default is a free model so a deployment with no per-user
+  // BYOK keys still completes a run end-to-end.
   const envKey = process.env.OPENROUTER_API_KEY;
   if (envKey) {
     return {
       source: "env-fallback",
       provider: "openrouter",
-      model: process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet",
+      model: process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free",
       apiKey: envKey,
     };
   }
@@ -288,7 +289,7 @@ export function resolveCoderConfigSummary(webId: string): CoderConfigSummary {
       source: "env-fallback",
       provider: "openrouter",
       providerLabel: "OpenRouter (bridge-default)",
-      model: process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet",
+      model: process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free",
     };
   }
   return { source: "none" };
