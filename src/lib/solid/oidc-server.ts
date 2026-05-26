@@ -7,6 +7,7 @@ import {
   saveIdentity,
 } from "@/lib/registry/identities";
 import { getEnv } from "@/lib/env";
+import { log, scrubWebId } from "@/lib/log";
 
 const CLIENT_NAME = "Mind Codespaces";
 
@@ -107,6 +108,14 @@ function parseIssuerFromStorageValue(v: string): string {
  *   - Throws `OidcRefreshFailedError` if a stored identity exists but
  *     refresh failed — the caller MUST surface "needs reauthorization"
  *     and must NOT fall back silently (P0-R2).
+ *
+ * Refresh-token rotation: we pass `onNewRefreshToken` so that whenever
+ * the issuer rotates the refresh token, we observe it as a structured
+ * log line (and the SDK persists the new value through our IStorage
+ * adapter on the same call). The SDK's `ERROR` event MUST have at
+ * least one listener attached or Node aborts the worker; we wire one
+ * up that records what actually went wrong so the
+ * `OidcRefreshFailedError` is no longer opaque.
  */
 export async function loadAuthedFetchForWebId(
   webId: string,
@@ -114,12 +123,46 @@ export async function loadAuthedFetchForWebId(
   const identity = getIdentityByWebId(webId);
   if (!identity) return null;
   const storage = makeIdentityStorage(identity.sessionId);
+
+  // `rotations` records every `newRefreshToken` event the SDK emits.
+  // The SDK's persistence path is to immediately call setForUser on
+  // our storage adapter — but we capture the event independently so
+  // a structured log line exists even if the storage write was
+  // somehow skipped or clobbered. On refresh failure the count is
+  // logged so we can tell "refresh ran and rotated tokens N times
+  // before giving up" from "refresh refused immediately".
+  const rotations: string[] = [];
   const session = await getSessionFromStorage(identity.sessionId, {
     storage,
     refreshSession: true,
+    onNewRefreshToken: (newToken: string) => {
+      // First+last 4 chars only — proves a new value was observed
+      // without exposing the secret in logs.
+      const fp = `${newToken.slice(0, 4)}…${newToken.slice(-4)}`;
+      rotations.push(fp);
+      log.info("oidc.refresh.rotated", {
+        webId: scrubWebId(webId),
+        sessionId: identity.sessionId.slice(0, 8),
+        tokenLen: newToken.length,
+        tokenFingerprint: fp,
+      });
+    },
   });
+
   if (!session || !session.info.isLoggedIn) {
+    log.warn("oidc.refresh.failed", {
+      webId: scrubWebId(webId),
+      sessionId: identity.sessionId.slice(0, 8),
+      hasSession: !!session,
+      isLoggedIn: session?.info.isLoggedIn ?? false,
+      rotationsDuringCall: rotations.length,
+    });
     throw new OidcRefreshFailedError(webId);
   }
+  log.info("oidc.refresh.ok", {
+    webId: scrubWebId(webId),
+    sessionId: identity.sessionId.slice(0, 8),
+    rotationsDuringCall: rotations.length,
+  });
   return session.fetch.bind(session) as typeof fetch;
 }
