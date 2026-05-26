@@ -20,6 +20,7 @@ import { validateName } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 import { resolveCoderConfig } from "@/lib/ai-providers/store";
+import { AGENT_LOGS_DIR } from "@/lib/agents/dispatch";
 import {
   PROVIDERS,
   getProvider,
@@ -46,9 +47,17 @@ import {
  * /work, can only hit the network through the container bridge, and is
  * killed at process exit.
  *
+ * Credentials are resolved per repo owner via resolveCoderConfig:
+ * the owner's BYOK key at /profile/ai-providers takes precedence;
+ * otherwise the bridge-wide OPENROUTER_API_KEY + MIND_AGENT_MODEL act
+ * as a fallback. The resolved key is forwarded into the container under
+ * the provider's expected env name(s).
+ *
  * Env:
- *   MIND_AGENT_MODEL    — OpenRouter model id (defaults to claude-sonnet)
- *   OPENROUTER_API_KEY  — forwarded into the container
+ *   MIND_AGENT_MODEL    — bridge-wide fallback model id (defaults to
+ *                         "anthropic/claude-3.5-sonnet"). Only consulted
+ *                         when the owner has no BYOK pref.
+ *   OPENROUTER_API_KEY  — bridge-wide fallback key (see above).
  *   MIND_CODER_IMAGE    — image tag (defaults to mind-codespaces/coder:latest)
  *   MIND_CODER_TIMEOUT  — seconds before the container is killed (default 600)
  *   MIND_CODER_WORKROOT — parent dir for per-run checkouts (defaults to
@@ -210,6 +219,47 @@ export const coderDriver: Driver = {
         );
       }
 
+      // 1a. If a previous coder run already pushed `agent/issue-{n}` to
+      // origin, resume from THAT branch tip instead of the default
+      // branch's HEAD. Two reasons:
+      //   • The naive flow (always branch from default + push) crashes
+      //     with "non-fast-forward" the moment a comment refires the
+      //     coder while a PR is still open — the new HEAD isn't a
+      //     descendant of the existing agent/issue-{n}.
+      //   • Iterating ON the prior attempt matches user intent: a
+      //     comment is a follow-up ("good, now also do X"), not a
+      //     restart. opencode sees the previously-committed files in
+      //     the working tree and builds on them.
+      //
+      // Detection uses the local `origin/agent/issue-{n}` ref that the
+      // initial clone populated — no network round-trip.
+      const branch = `agent/issue-${issueNumber}`;
+      const branchProbe = await sh("git", [
+        "-C",
+        workDir,
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        `origin/${branch}`,
+      ]);
+      const branchExists = branchProbe.exit === 0;
+      if (branchExists) {
+        const co = await sh(
+          "git",
+          ["-C", workDir, "checkout", "-B", branch, `origin/${branch}`],
+          { logStream },
+        );
+        if (co.exit !== 0) {
+          return errorResult(
+            `checkout of existing ${branch} failed (exit ${co.exit})`,
+            co.stderr.slice(-800),
+          );
+        }
+        log(
+          `[coder] resuming on existing branch ${branch} (prior coder attempt detected — building on it)`,
+        );
+      }
+
       // 2. Build the prompt: issue + prior comments + two-mode contract.
       const task = renderTaskPrompt({
         owner: repoOwner,
@@ -218,6 +268,7 @@ export const coderDriver: Driver = {
         title: issue.title,
         body: issue.body,
         comments,
+        resumingFrom: branchExists ? branch : null,
       });
       const uid = os.userInfo().uid;
       const gid = os.userInfo().gid;
@@ -284,6 +335,14 @@ export const coderDriver: Driver = {
         "/work",
         "-m",
         fullModelArg,
+        // Note: we tried `--print-logs --log-level INFO/DEBUG` to surface
+        // tool *results* in the per-run log (the default format only
+        // echoes tool *requests*, so silent tool failures — like the
+        // playwright-mcp file:// block we hit — are indistinguishable
+        // from "still working"). Neither level dumps result payloads;
+        // they just add 500+ lines of session/bus/permission chatter per
+        // run. Real fix is `--format json` + a custom parser in the
+        // driver that re-renders calls + responses; left for later.
         "--dangerously-skip-permissions",
         task,
       );
@@ -325,7 +384,10 @@ export const coderDriver: Driver = {
       // instead of just `.mind/` (the default `--untracked-files=normal`
       // collapses untracked dirs, which fooled the file-mode detection below).
       const status = await sh("git", ["-C", workDir, "status", "--porcelain", "-uall"]);
-      const dirty = status.stdout.trim();
+      // trim only trailing whitespace — leading whitespace is significant
+      // in porcelain output: unstaged-modified files start with " M …" and
+      // parsePorcelain's positional slice(3) relies on the XY+space prefix.
+      const dirty = status.stdout.trimEnd();
       if (!dirty) {
         log(`[coder] no changes detected; aborting`);
         return {
@@ -359,6 +421,19 @@ export const coderDriver: Driver = {
             ? ` [+${screenshotFiles.length} screenshot(s)]`
             : ""),
       );
+
+      // Mirror screenshots to host storage FIRST so a pod upload failure
+      // (expired refresh token, pod offline, ACL bug, …) doesn't lose
+      // the artifact — workDir is wiped in `finally` so this is the only
+      // chance to keep them. Pod upload below is best-effort.
+      if (wantsScreenshots && ctx.runId !== null) {
+        await mirrorScreenshotsToHost({
+          workDir,
+          files: screenshotFiles,
+          runId: ctx.runId,
+          log,
+        });
+      }
 
       // Screenshots are scratch — upload them to the pod and link, then
       // strip from the work tree so they don't end up in the commit.
@@ -440,11 +515,19 @@ export const coderDriver: Driver = {
           .catch(() => {});
       }
 
-      const branch = `agent/issue-${issueNumber}`;
+      // `branch` and `branchExists` were declared up-front (before the
+      // opencode run) so we could resume on top of a prior attempt. The
+      // commit step here is the SAME regardless of how we got here; the
+      // only conditional is the initial `checkout -b` — we already moved
+      // onto the branch when resuming.
       const steps: Array<[string, string[]]> = [
         ["config", ["-C", workDir, "config", "user.email", AGENT_WEBID]],
         ["config", ["-C", workDir, "config", "user.name", "mind-codespaces coder"]],
-        ["checkout", ["-C", workDir, "checkout", "-b", branch]],
+        ...(branchExists
+          ? []
+          : ([["checkout", ["-C", workDir, "checkout", "-b", branch]]] as Array<
+              [string, string[]]
+            >)),
         ["add", ["-C", workDir, "add", "-A"]],
         [
           "commit",
@@ -453,7 +536,9 @@ export const coderDriver: Driver = {
             workDir,
             "commit",
             "-m",
-            `[coder] solve #${issueNumber}: ${issue.title}\n\nGenerated by opencode via model ${orModel}.`,
+            branchExists
+              ? `[coder] iterate on #${issueNumber}: ${issue.title}\n\nFollow-up from opencode via model ${orModel}.`
+              : `[coder] solve #${issueNumber}: ${issue.title}\n\nGenerated by opencode via model ${orModel}.`,
           ],
         ],
         ["push", ["-C", workDir, "push", "origin", branch]],
@@ -562,6 +647,8 @@ function renderTaskPrompt(input: {
   title: string;
   body: string;
   comments: IssueComment[];
+  /** Name of the agent branch we're resuming on, or null for a fresh attempt. */
+  resumingFrom: string | null;
 }): string {
   const conversation =
     input.comments.length > 0
@@ -582,6 +669,20 @@ function renderTaskPrompt(input: {
         ].join("\n")
       : "";
 
+  const resumeNote = input.resumingFrom
+    ? [
+        "",
+        `NOTE: this is a continuation. The working tree is already at the`,
+        `tip of branch \`${input.resumingFrom}\` — your previous attempt's`,
+        `commits are already applied. Treat the conversation above as a`,
+        `follow-up: build on what's there, fix what the user pushed back on,`,
+        `and only edit what the next iteration requires. If everything the`,
+        `user asked for is already present, write \`.mind/agent-comment.md\``,
+        `explaining that and exit without changing files.`,
+        "",
+      ].join("\n")
+    : "";
+
   return [
     `You are the Coder for the ${input.owner}/${input.repo} repository.`,
     "",
@@ -589,6 +690,7 @@ function renderTaskPrompt(input: {
     "",
     input.body || "(no description provided)",
     conversation,
+    resumeNote,
     "DECIDE ONE OF TWO MODES.",
     "",
     "Mode A — IMPLEMENT: if the issue is clear enough, edit the smallest",
@@ -638,6 +740,37 @@ async function readAgentCommentFile(workDir: string): Promise<string | null> {
     return trimmed.length > 0 ? trimmed : null;
   } catch {
     return null;
+  }
+}
+
+/** Copy screenshots from the container workdir into a per-run dir under
+ *  AGENT_LOGS_DIR so they survive the post-run workDir cleanup even if
+ *  the pod upload fails. Best-effort — never throws, only logs. */
+async function mirrorScreenshotsToHost(input: {
+  workDir: string;
+  files: string[];
+  runId: number;
+  log: (line: string) => void;
+}): Promise<void> {
+  const dest = path.join(AGENT_LOGS_DIR, `run-${input.runId}`, "screenshots");
+  try {
+    await fs.mkdir(dest, { recursive: true });
+    for (const name of input.files) {
+      const src = path.join(input.workDir, AGENT_SCREENSHOTS_REL, name);
+      const dst = path.join(dest, name);
+      try {
+        await fs.copyFile(src, dst);
+      } catch (err) {
+        input.log(
+          `[coder] host-mirror failed for ${name}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+    input.log(`[coder] mirrored ${input.files.length} screenshot(s) to ${dest}`);
+  } catch (err) {
+    input.log(
+      `[coder] host-mirror dir create failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 }
 
@@ -825,7 +958,7 @@ function errorResult(message: string, detail: string) {
  * Quoted paths (git sets core.quotePath=true by default for paths with
  * special chars, surrounding them in double quotes) are unquoted last.
  */
-function parsePorcelain(out: string): string[] {
+export function parsePorcelain(out: string): string[] {
   return out
     .split("\n")
     .filter(Boolean)

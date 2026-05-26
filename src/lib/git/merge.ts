@@ -40,6 +40,74 @@ export async function mergeBranches(
   | { ok: true; mergeSha: string }
   | { ok: false; conflict: boolean; message: string }
 > {
+  // Empty-target fast-path. When the target branch doesn't exist on
+  // the bare yet (fresh repo whose first commit is the agent's own,
+  // before anyone has pushed `main`), `checkout target` below fails
+  // with `pathspec 'target' did not match any file(s)`. There is
+  // nothing to merge — the source IS the entire history — so make
+  // the target ref point at source via a push, which also fires the
+  // post-receive hook so the publisher chain triggers.
+  const probe = await sh("git", [
+    "-C",
+    bareRepoPath,
+    "show-ref",
+    "--verify",
+    "--quiet",
+    `refs/heads/${target}`,
+  ]);
+  if (probe.exit !== 0) {
+    const sourceProbe = await sh("git", [
+      "-C",
+      bareRepoPath,
+      "rev-parse",
+      "--verify",
+      `refs/heads/${source}`,
+    ]);
+    if (sourceProbe.exit !== 0) {
+      return {
+        ok: false,
+        conflict: false,
+        message: `source branch ${source} not found on bare repo`,
+      };
+    }
+    const sourceSha = sourceProbe.stdout.trim();
+    const seedDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), "mind-pr-seed-"),
+    );
+    try {
+      const clone = await sh("git", [
+        "clone",
+        "--no-checkout",
+        bareRepoPath,
+        seedDir,
+      ]);
+      if (clone.exit !== 0) {
+        return {
+          ok: false,
+          conflict: false,
+          message: `seed clone failed: ${clone.stderr || clone.stdout}`,
+        };
+      }
+      const push = await sh("git", [
+        "-C",
+        seedDir,
+        "push",
+        "origin",
+        `${sourceSha}:refs/heads/${target}`,
+      ]);
+      if (push.exit !== 0) {
+        return {
+          ok: false,
+          conflict: false,
+          message: `seed push failed: ${push.stderr || push.stdout}`,
+        };
+      }
+      return { ok: true, mergeSha: sourceSha };
+    } finally {
+      await fs.rm(seedDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   const workDir = await fs.mkdtemp(
     path.join(os.tmpdir(), "mind-pr-merge-"),
   );
