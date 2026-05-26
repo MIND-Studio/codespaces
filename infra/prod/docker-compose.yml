@@ -114,8 +114,10 @@ services:
       # resolve the bind mount the bridge requests.
       MIND_CODER_WORKROOT: /var/lib/mind/coder-work
 
-      # Agents / coder driver. Leave OPENROUTER_API_KEY blank to disable
-      # the openrouter + coder drivers (echo stub is always available).
+      # Agents / coder driver. The coder is always registered and
+      # prefers each repo owner's BYOK key from /profile/ai-providers.
+      # OPENROUTER_API_KEY is the bridge-wide fallback for owners who
+      # haven't configured BYOK — leave blank to require BYOK.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       MIND_AGENT_MODEL: ${MIND_AGENT_MODEL:-anthropic/claude-3.5-sonnet}
       MIND_CODER_IMAGE: ${MIND_CODER_IMAGE:-mind-codespaces/coder:latest}

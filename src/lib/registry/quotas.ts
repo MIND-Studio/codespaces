@@ -102,7 +102,7 @@ export function countRunsForOwnerPast24h(owner: string): number {
     .prepare(
       `SELECT COUNT(*) AS c FROM workflow_runs r
          JOIN repos ON repos.id = r.repo_id
-        WHERE repos.owner = ? AND r.created_at >= ?`,
+        WHERE repos.owner = ? AND r.started_at >= ?`,
     )
     .get(owner, since) as { c: number };
   const agent = getDb()

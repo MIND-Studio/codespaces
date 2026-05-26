@@ -120,22 +120,39 @@ for the design rationale.
 ## Agents — roles that respond to issue events
 
 Issues are pod-native (Turtle under `/codespaces/{repo}/issues/{n}/issue.ttl`).
-A roster of named **agents** responds to issue events:
+A single **`coder`** role responds to issue events — it fires on both
+`issue.created` and `issue.commented`, so a conversation in the issue thread
+drives the loop. Each run, the `coder` driver decides per-turn whether to
+**implement** (edit files, commit to `agent/issue-{n}`, open a draft PR) or
+**ask** (write `.mind/agent-comment.md`, which the bridge posts back as an
+issue comment — that comment then fires the next round).
 
-| Role | Fires on | Default driver |
-|---|---|---|
-| `triager` | new issue created | `openrouter` — classifies, proposes priority/labels |
-| `engineer` | `issue.labeled=ready` (opt-in) | `coder` — clones repo, runs `opencode` in a Docker container, commits to `agent/issue-{n}` |
-| `scribe` | `issue.labeled=shipped` | `openrouter` — drafts a one-line changelog entry |
+Drivers:
+- **`echo`** — default no-op stub. Always registered.
+- **`coder`** — opencode-in-container. Always registered. Resolves
+  credentials via `resolveCoderConfig(ownerWebId)`: first the repo owner's
+  BYOK key at `/profile/ai-providers`, then the bridge-wide
+  `OPENROUTER_API_KEY` env, then a clear "no provider configured" error.
+- **`openrouter`** — env-only text driver. Registered when
+  `OPENROUTER_API_KEY` is set.
 
-The drivers ladder is: **`echo`** (default no-op stub when no key is set) →
-**`openrouter`** (real model calls) → **`coder`** (opencode-in-container,
-explicitly opt-in via `MIND_ENABLE_ENGINEER_AGENT=1`).
+Credentials, two paths — equivalent at the dispatch layer:
+1. **BYOK (per user)** — sign in, go to `/profile/ai-providers`, paste a
+   key for OpenRouter / OpenAI / Anthropic / Google, then pick a default
+   provider+model. The coder uses your key for any repo you own.
+2. **Bridge-wide fallback** — operator sets `OPENROUTER_API_KEY` (and
+   optionally `MIND_AGENT_MODEL`) on the bridge itself. Used for owners
+   who haven't configured BYOK. Anyone with shell access to the bridge
+   process can read the key — prefer BYOK in shared deployments.
+
+If neither is configured for an owner, the coder driver returns a
+"no provider configured" error and points the owner at
+`/profile/ai-providers`.
 
 The agents subsystem has a different threat profile than the rest of the
 bridge — `opencode` runs with `--dangerously-skip-permissions` inside the
 sandbox. **Read [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) §6**
-before enabling the engineer role on anything you don't control.
+before pointing this at anything you don't control.
 
 Hand-fire dispatches via `POST /api/agents/dispatch`; introspect roles via
 `GET /api/agents`.
@@ -216,12 +233,11 @@ refuses to start when any of the **required** secrets are missing or wrong size
 | `BRIDGE_CORS_ALLOWED_ORIGINS` | (none) | Extra origins permitted by the `/api/*` CORS allowlist |
 | `BRIDGE_ENABLE_SIGNUP` | unset | Set `1` to enable `POST /api/signup` + `/signup` page |
 | `MAX_REPOS_PER_OWNER` / `MAX_TOKENS_PER_REPO` / `MAX_RUNS_PER_OWNER_PER_DAY` / `MAX_DISK_PER_REPO_BYTES` | 50 / 10 / 500 / 1 GiB | Per-owner quotas (return 429 `QUOTA_EXCEEDED`) |
-| `OPENROUTER_API_KEY` | unset | Enables the `openrouter` driver for agents |
+| `OPENROUTER_API_KEY` | unset | Bridge-wide fallback key. Enables the env-only `openrouter` driver, and serves as the coder driver's fallback when a repo owner hasn't configured BYOK at `/profile/ai-providers`. The coder driver itself is always registered. |
 | `MIND_AGENT_MODEL` | `anthropic/claude-3.5-sonnet` | Model id passed on every chat call |
 | `MIND_RUNNER` | `auto` | Force workflow runner: `docker` \| `native` \| `auto` |
 | `MIND_WORKFLOW_NETWORK` | `none` | Docker network for workflow containers (`bridge`/custom for npm access) |
 | `MIND_NPM_REGISTRY` | unset | Injected into workflow containers as `npm_config_registry` (Verdaccio mirror) |
-| `MIND_ENABLE_ENGINEER_AGENT` | unset | Set `1` to allow the `coder` driver (sandboxed `opencode` runs) |
 | `MIND_CODER_IMAGE` | `mind-codespaces/coder:latest` | Sandbox image for the `coder` driver |
 | `MIND_RECONCILE_INTERVAL_MS` | 300000 | HEAD↔last_published_sha reconciler cadence |
 

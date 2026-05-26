@@ -59,7 +59,7 @@ Fill in:
 
 - `MIND_DOMAIN_BRIDGE` and `MIND_DOMAIN_POD` — your two hostnames.
 - `ACME_EMAIL` — Let's Encrypt notification address.
-- `OPENROUTER_API_KEY` — optional. Leave blank to ship without agents; the `echo` stub records dispatches as no-ops.
+- `OPENROUTER_API_KEY` — optional bridge-wide fallback for the coder. Leave blank if every owner brings their own key via `/profile/ai-providers` (BYOK). Anyone with shell access to the bridge can read this var, so BYOK is preferred in shared deployments; set this only when you want a default for owners who haven't configured BYOK.
 - `MIND_CODER_IMAGE` — after step 5 below, replace `:latest` with the SHA digest of the image you built. Strongly recommended for prod.
 
 ## 4. Prepare host directories

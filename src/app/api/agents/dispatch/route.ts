@@ -117,6 +117,25 @@ function parseEvent(
       },
     };
   }
+  if (type === "issue.commented") {
+    if (
+      typeof o.issueNumber !== "number" ||
+      typeof o.commentId !== "number"
+    ) {
+      return {
+        error: "issueNumber and commentId are required for issue.commented",
+      };
+    }
+    return {
+      value: {
+        type,
+        repoOwner,
+        repoName,
+        issueNumber: o.issueNumber,
+        commentId: o.commentId,
+      },
+    };
+  }
   if (type === "manual") {
     return {
       value: {

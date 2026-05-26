@@ -19,9 +19,16 @@ import { coderDriver } from "@/lib/agents/drivers/coder";
  * every non-agent comment so the conversation keeps moving.
  *
  * Driver selection:
- *   • `echo` is always registered (no key needed, deterministic) and
- *     stays as the default for any future text-only roles.
- *   • `openrouter` + `coder` register when `OPENROUTER_API_KEY` is set.
+ *   • `echo`   — always registered (no key needed, deterministic).
+ *   • `coder`  — always registered. The driver itself is BYOK-aware:
+ *                it calls `resolveCoderConfig(ownerWebId)` which checks
+ *                the per-user key vault at `/profile/ai-providers` before
+ *                falling back to the bridge-wide `OPENROUTER_API_KEY`. So
+ *                a deployment with no env key but real BYOK users still
+ *                needs this driver registered.
+ *   • `openrouter` — registered only when `OPENROUTER_API_KEY` is set
+ *                (this driver is env-only, not BYOK-aware). Becomes the
+ *                default driver for any text-only role added later.
  */
 
 let initialised = false;
@@ -31,19 +38,21 @@ export function ensureAgentsBootstrap(): void {
   initialised = true;
 
   registerDriver(echoDriver);
+  registerDriver(coderDriver);
+  console.log(
+    `[agents] coder driver active (image=${process.env.MIND_CODER_IMAGE ?? "mind-codespaces/coder:latest"})`,
+  );
 
   if (process.env.OPENROUTER_API_KEY) {
     registerDriver(openrouterDriver);
-    registerDriver(coderDriver);
     setDefaultDriver("openrouter");
     console.log(
-      `[agents] openrouter driver active (model=${process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet"})`,
-    );
-    console.log(
-      `[agents] coder driver active (image=${process.env.MIND_CODER_IMAGE ?? "mind-codespaces/coder:latest"})`,
+      `[agents] openrouter driver active as bridge-wide fallback (model=${process.env.MIND_AGENT_MODEL ?? "anthropic/claude-3.5-sonnet"})`,
     );
   } else {
-    console.log("[agents] OPENROUTER_API_KEY not set — using echo driver");
+    console.log(
+      "[agents] no bridge-wide OPENROUTER_API_KEY — coder relies on per-user BYOK keys at /profile/ai-providers",
+    );
   }
 
   if (listRoles().length > 0) return;
