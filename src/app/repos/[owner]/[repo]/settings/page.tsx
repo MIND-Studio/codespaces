@@ -8,7 +8,7 @@ import { listRoles, getDefaultDriverName } from "@/lib/agents/registry";
 import { readSession } from "@/lib/auth/session";
 import { resolveCoderConfigSummary } from "@/lib/ai-providers/store";
 import { TokenManager } from "../token-manager";
-import { NavTabs } from "../nav-tabs";
+import { RepoTabs } from "../repo-tabs";
 import {
   GeneralForm,
   PagesForm,
@@ -72,31 +72,7 @@ export default async function RepoSettingsPage({ params }: PageProps) {
         {repo.owner} / {repo.name} · only the owner can change these
       </p>
 
-      <NavTabs
-        tabs={[
-          {
-            key: "code",
-            href: `/repos/${owner}/${name}`,
-            label: "Code",
-          },
-          {
-            key: "issues",
-            href: `/repos/${owner}/${name}/issues`,
-            label: "Issues",
-          },
-          {
-            key: "pulls",
-            href: `/repos/${owner}/${name}/pulls`,
-            label: "Pulls",
-          },
-          {
-            key: "settings",
-            href: `/repos/${owner}/${name}/settings`,
-            label: "Settings",
-            active: true,
-          },
-        ]}
-      />
+      <RepoTabs owner={owner} name={name} active="settings" />
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12">
         <SectionNav />

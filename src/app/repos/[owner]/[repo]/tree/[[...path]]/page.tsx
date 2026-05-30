@@ -262,16 +262,19 @@ export function Breadcrumbs({
 
 /**
  * Pick a valid ref to render. We never feed arbitrary user input to git
- * commands; the requested ref must appear in `branches` to be honoured.
- * Falls back to the default branch on anything unrecognised so a stale
- * URL doesn't 404 the whole page.
+ * commands; the requested ref must either appear in `branches` (a known
+ * branch name) or look like a hex commit SHA (7-40 hex chars), in which
+ * case git itself will validate it via ls-tree. Anything else falls back
+ * to the default branch so a stale URL doesn't 404 the whole page.
  */
 function pickRef(
   requested: string | undefined,
   branches: string[],
   defaultBranch: string,
 ): string {
-  if (requested && branches.includes(requested)) return requested;
+  if (!requested) return defaultBranch;
+  if (branches.includes(requested)) return requested;
+  if (/^[0-9a-f]{7,40}$/i.test(requested)) return requested;
   return defaultBranch;
 }
 

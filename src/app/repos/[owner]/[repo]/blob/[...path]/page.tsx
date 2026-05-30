@@ -24,8 +24,13 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
   const branches = await listBranches(bare).then((bs) =>
     bs.map((b) => b.name).sort((a, b) => a.localeCompare(b)),
   );
+  // Accept either a known branch name or a hex commit SHA (7-40 chars);
+  // readBlob/git itself validates the final ref via cat-file.
   const ref =
-    sp.ref && branches.includes(sp.ref) ? sp.ref : repo.defaultBranch;
+    sp.ref &&
+    (branches.includes(sp.ref) || /^[0-9a-f]{7,40}$/i.test(sp.ref))
+      ? sp.ref
+      : repo.defaultBranch;
   const refQuery = ref === repo.defaultBranch ? null : ref;
   const subpath = path.join("/");
 

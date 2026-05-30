@@ -31,27 +31,30 @@ export default async function RunsPage({ params }: PageProps) {
       >
         All <em>runs</em>
       </h1>
-      <p
-        className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
-        latest 50 · newest first
-      </p>
+      {runs.length > 0 ? (
+        <p
+          className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          {runs.length >= 50 ? "latest 50" : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} · newest first
+        </p>
+      ) : null}
 
       <RepoTabs owner={owner} name={name} active="runs" />
-
-      <hr className="hairline my-8" />
 
       {runs.length === 0 ? (
         <RunsEmptyState />
       ) : (
-        <ul className="flex flex-col gap-2.5">
-          {runs.map((r) => (
-            <li key={r.id}>
-              <RunCard run={r} owner={owner} name={name} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <hr className="hairline my-8" />
+          <ul className="flex flex-col gap-2.5">
+            {runs.map((r) => (
+              <li key={r.id}>
+                <RunCard run={r} owner={owner} name={name} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
@@ -59,7 +62,7 @@ export default async function RunsPage({ params }: PageProps) {
 
 function RunsEmptyState() {
   return (
-    <section>
+    <section className="mt-10">
       <p className="section-mark">// runs</p>
       <h2
         className="display mt-3 text-3xl text-[color:var(--ink)]"

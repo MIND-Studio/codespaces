@@ -6,13 +6,15 @@ import { PageTransition } from "@/components/page-transition";
 import { AuthCtaServer } from "@/components/auth-cta-server";
 import { MainNav } from "@/components/main-nav";
 import { readSession } from "@/lib/auth/session";
+import { MindAppLauncher } from "@mind-studio/core/launcher";
+import { DEFAULT_APPS } from "@mind-studio/core/apps";
 
 /**
  * Sets data-theme on <html> BEFORE first paint. Default is "dark"; the
  * user can change it from /profile (persisted to localStorage as
  * `mc:theme`). Inlined to dodge the flash-of-wrong-theme problem.
  */
-const THEME_INIT = `(function(){try{var s=localStorage.getItem("mc:theme");var t=s||"dark";if(t==="dark"||t==="neo")document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
+const THEME_INIT = `(function(){try{var s=localStorage.getItem("mc:theme");var t=s||"dark";if(t==="dark"||t==="neo")document.documentElement.setAttribute("data-theme",t);document.documentElement.classList.toggle("dark",t==="dark"||t==="neo");}catch(e){document.documentElement.setAttribute("data-theme","dark");document.documentElement.classList.add("dark");}})();`;
 
 const fontDisplay = Fraunces({
   variable: "--font-display",
@@ -86,6 +88,12 @@ async function Masthead() {
             aria-hidden
             className="hidden h-5 w-px bg-[color:var(--ink-trace)] sm:inline-block"
           />
+          {session ? (
+            <MindAppLauncher
+              apps={DEFAULT_APPS}
+              triggerClassName="grid size-7 place-items-center rounded-md text-[color:var(--ink-soft)] outline-none transition hover:text-[color:var(--accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+            />
+          ) : null}
           <AuthCtaServer />
         </div>
       </div>
@@ -124,7 +132,7 @@ function Colophon() {
             How it works
           </Link>
           <Link
-            href="/"
+            href="/#start-here"
             className="text-[color:var(--ink-soft)] hover:text-[color:var(--accent)]"
           >
             Quickstart

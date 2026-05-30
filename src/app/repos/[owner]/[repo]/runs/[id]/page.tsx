@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
 import { getRunById, type WorkflowRun } from "@/lib/registry/runs";
+import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,8 @@ export default async function RunDetailPage({ params }: PageProps) {
       >
         {owner}/{name} · {run.ref}
       </p>
+
+      <RepoTabs owner={owner} name={name} active="runs" />
 
       <hr className="hairline my-8" />
 

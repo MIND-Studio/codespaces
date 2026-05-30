@@ -1,25 +1,29 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { countIssuesByStatus } from "@/lib/registry/issues";
-import { countOpenPullRequests } from "@/lib/registry/pulls";
 import { listPushTokens } from "@/lib/registry/tokens";
 import {
-  getLatestRunForRepo,
   listRunsForRepo,
   type WorkflowRun,
 } from "@/lib/registry/runs";
 import { isOrg } from "@/lib/registry/owners";
 import { repoPath } from "@/lib/git/backend";
-import { findReadme, hasAnyCommits } from "@/lib/git/objects";
+import {
+  findReadme,
+  hasAnyCommits,
+  listBranches,
+  listRecentCommits,
+  listTree,
+  type CommitSummary,
+  type TreeEntry,
+} from "@/lib/git/objects";
 import { renderMarkdown } from "@/lib/markdown";
 import { RelativeTime } from "@/components/relative-time";
 import { CopyButton } from "@/components/copy-button";
 import { formatDuration } from "@/lib/format";
 import { TokenManager } from "./token-manager";
 import { RerunButton } from "./rerun-button";
-import { NavTabs } from "./nav-tabs";
-import { readSession } from "@/lib/auth/session";
+import { RepoTabs } from "./repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -41,10 +45,21 @@ export default async function RepoDetailPage({ params }: PageProps) {
       : null;
 
   const bare = repoPath(repo.owner, repo.name);
-  const readme = (await hasAnyCommits(bare))
-    ? await findReadme(bare, repo.defaultBranch)
-    : null;
+  const hasCommits = await hasAnyCommits(bare);
+  const readme = hasCommits ? await findReadme(bare, repo.defaultBranch) : null;
   const readmeHtml = readme ? renderMarkdown(readme.content) : null;
+  const branches = hasCommits ? await listBranches(bare) : [];
+  // Fetch 7 so we can show the latest commit in the file-listing "ribbon"
+  // AND still have up-to-6 distinct entries in the Recent commits section
+  // below.
+  const recentCommits = hasCommits
+    ? await listRecentCommits(bare, repo.defaultBranch, 7)
+    : [];
+  const earlierCommits = recentCommits.slice(1);
+  const rootEntries = hasCommits
+    ? await listTree(bare, repo.defaultBranch, "")
+    : [];
+  const latestCommit = recentCommits[0] ?? null;
 
   // Pull the 5 most recent runs: index 0 is the "latest build" panel,
   // indices 1..4 fill the compact "previous runs" mini-list below.
@@ -52,10 +67,6 @@ export default async function RepoDetailPage({ params }: PageProps) {
   const latestRun = recentRuns[0] ?? null;
   const previousRuns = recentRuns.slice(1);
   const runCount = getRunCount(repo.id);
-  const issueCounts = countIssuesByStatus(repo.id);
-  const openPullCount = countOpenPullRequests(repo.id);
-  const session = await readSession();
-  const isOwner = session?.webId === repo.ownerWebId;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-10 sm:py-12">
@@ -65,17 +76,26 @@ export default async function RepoDetailPage({ params }: PageProps) {
         publishedUrl={publishedUrl}
         pages={pages}
         runCount={runCount}
-        openIssueCount={issueCounts.open}
-        openPullCount={openPullCount}
         owner={owner}
         name={name}
-        isOwner={isOwner}
       />
+
+      <RepoTabs owner={owner} name={name} active="code" />
 
       <PublishStatusBanner pages={pages} />
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
-        <main className="min-w-0 space-y-10">
+        <main className="min-w-0 space-y-8">
+          {rootEntries.length > 0 ? (
+            <FileListing
+              owner={owner}
+              repoName={name}
+              defaultBranch={repo.defaultBranch}
+              entries={rootEntries}
+              latestCommit={latestCommit}
+            />
+          ) : null}
+
           {readmeHtml && readme ? (
             <ReadmeSection
               owner={owner}
@@ -87,11 +107,20 @@ export default async function RepoDetailPage({ params }: PageProps) {
             <EmptyReadme
               owner={owner}
               name={name}
-              hasCommits={readme !== null || (await hasAnyCommits(bare))}
+              hasCommits={hasCommits}
               cloneUrl={cloneUrl}
               defaultBranch={repo.defaultBranch}
             />
           )}
+
+          {earlierCommits.length > 0 ? (
+            <RecentCommitsSection
+              owner={owner}
+              repoName={name}
+              defaultBranch={repo.defaultBranch}
+              commits={earlierCommits}
+            />
+          ) : null}
 
           {latestRun ? (
             <LatestBuildSection
@@ -136,17 +165,30 @@ export default async function RepoDetailPage({ params }: PageProps) {
             </SidebarFact>
           </SidebarSection>
 
+          {branches.length > 0 ? (
+            <BranchesSidebar
+              branches={branches}
+              defaultBranch={repo.defaultBranch}
+              owner={owner}
+              repoName={name}
+            />
+          ) : null}
+
           <SidebarSection
             title="Mind Pages"
             trailing={
-              pages?.enabled && pages.targetContainer ? (
-                <span
-                  className="stamp"
+              pages?.enabled && pages.targetContainer && publishedUrl ? (
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="stamp transition-colors hover:text-[color:var(--accent)]"
                   data-tone="ok"
                   style={{ padding: "0.18rem 0.4rem 0.14rem" }}
+                  title={`open ${publishedUrl} in a new tab`}
                 >
-                  live
-                </span>
+                  live ↗
+                </a>
               ) : (
                 <span
                   className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]"
@@ -293,22 +335,16 @@ function Header({
   publishedUrl,
   pages,
   runCount,
-  openIssueCount,
-  openPullCount,
   owner,
   name,
-  isOwner,
 }: {
   repo: ReturnType<typeof getRepo> & object;
   latestRun: WorkflowRun | null;
   publishedUrl: string | null;
   pages: ReturnType<typeof getPagesConfig> | null;
   runCount: number;
-  openIssueCount: number;
-  openPullCount: number;
   owner: string;
   name: string;
-  isOwner: boolean;
 }) {
   const buildBadge = latestRun ? renderBuildStatus(latestRun, owner, name) : null;
   const pagesBadge = renderPagesStatus(pages, publishedUrl);
@@ -358,48 +394,6 @@ function Header({
           ))}
         </div>
       ) : null}
-
-      <NavTabs
-        tabs={[
-          {
-            key: "code",
-            href: `/repos/${repo.owner}/${repo.name}/tree`,
-            label: "Code",
-            active: true,
-          },
-          {
-            key: "issues",
-            href: `/repos/${repo.owner}/${repo.name}/issues`,
-            label: "Issues",
-            count: openIssueCount,
-          },
-          {
-            key: "pulls",
-            href: `/repos/${repo.owner}/${repo.name}/pulls`,
-            label: "Pulls",
-            count: openPullCount,
-          },
-          ...(isOwner
-            ? [
-                {
-                  key: "settings",
-                  href: `/repos/${repo.owner}/${repo.name}/settings`,
-                  label: "Settings",
-                },
-              ]
-            : []),
-          ...(publishedUrl
-            ? [
-                {
-                  key: "live",
-                  href: publishedUrl,
-                  label: "Live site",
-                  external: true,
-                },
-              ]
-            : []),
-        ]}
-      />
     </>
   );
 }
@@ -548,10 +542,7 @@ function EmptyReadme({
         </p>
         <p className="mt-2">
           Add a <code className="kbd">README.md</code> to the default branch
-          and it&apos;ll render here.{" "}
-          <Link href={`/repos/${owner}/${name}/tree`} className="link">
-            Browse code →
-          </Link>
+          and it&apos;ll render here.
         </p>
       </section>
     );
@@ -638,6 +629,292 @@ function FirstStepsBlock({
         {snippet}
       </pre>
     </div>
+  );
+}
+
+function FileListing({
+  owner,
+  repoName,
+  defaultBranch,
+  entries,
+  latestCommit,
+}: {
+  owner: string;
+  repoName: string;
+  defaultBranch: string;
+  entries: TreeEntry[];
+  latestCommit: CommitSummary | null;
+}) {
+  const ts = latestCommit ? Date.parse(latestCommit.authorDate) : NaN;
+  return (
+    <section>
+      <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
+        {latestCommit ? (
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-2 text-[11px] text-[color:var(--ink-soft)]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            <span
+              className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]"
+              title={`${defaultBranch} branch`}
+            >
+              {defaultBranch}
+            </span>
+            <Link
+              href={`/repos/${owner}/${repoName}/tree?ref=${encodeURIComponent(latestCommit.sha)}`}
+              title={latestCommit.sha}
+              className="rounded bg-[color:var(--paper)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+            >
+              {latestCommit.short}
+            </Link>
+            <span className="min-w-0 flex-1 truncate text-[color:var(--ink)]">
+              {latestCommit.subject || (
+                <em className="text-[color:var(--ink-faint)]">(no subject)</em>
+              )}
+            </span>
+            <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
+              {latestCommit.author}
+              {Number.isFinite(ts) ? (
+                <>
+                  {" · "}
+                  <RelativeTime ts={ts} />
+                </>
+              ) : null}
+            </span>
+          </div>
+        ) : null}
+
+        <ul className="divide-y divide-[color:var(--ink-trace)]">
+          {entries.map((entry) => (
+            <li key={entry.sha + entry.name}>
+              <FileRow
+                owner={owner}
+                repoName={repoName}
+                entry={entry}
+              />
+            </li>
+          ))}
+        </ul>
+
+        <div
+          className="flex items-center justify-between gap-3 border-t border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          <span className="text-[color:var(--ink-faint)]">
+            {entries.length} {entries.length === 1 ? "entry" : "entries"} at root
+          </span>
+          <Link
+            href={`/repos/${owner}/${repoName}/tree`}
+            className="text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+          >
+            file browser →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FileRow({
+  owner,
+  repoName,
+  entry,
+}: {
+  owner: string;
+  repoName: string;
+  entry: TreeEntry;
+}) {
+  const isFolder = entry.type === "tree";
+  const isSub = entry.type === "commit"; // submodule
+  const href = isFolder
+    ? `/repos/${owner}/${repoName}/tree/${encodeURIComponent(entry.name)}`
+    : `/repos/${owner}/${repoName}/blob/${encodeURIComponent(entry.name)}`;
+  const icon = isFolder ? "▸" : isSub ? "⌷" : "·";
+  return (
+    <Link
+      href={href}
+      className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2 text-sm hover:bg-[color:var(--paper-soft)]"
+    >
+      <span
+        aria-hidden
+        className="text-[color:var(--ink-faint)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {icon}
+      </span>
+      <span
+        className="min-w-0 truncate text-[color:var(--ink)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {entry.name}
+        {isFolder ? "/" : ""}
+      </span>
+      <span
+        className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {entry.type === "blob" && entry.size !== null
+          ? formatBytes(entry.size)
+          : isFolder
+            ? "folder"
+            : isSub
+              ? "submodule"
+              : ""}
+      </span>
+    </Link>
+  );
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function RecentCommitsSection({
+  owner,
+  repoName,
+  defaultBranch,
+  commits,
+}: {
+  owner: string;
+  repoName: string;
+  defaultBranch: string;
+  commits: CommitSummary[];
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Earlier commits on {defaultBranch}
+        </h2>
+        <Link
+          href={`/repos/${owner}/${repoName}/tree`}
+          className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          file browser →
+        </Link>
+      </div>
+      <ul className="mt-2 divide-y divide-[color:var(--ink-trace)] overflow-hidden rounded border border-[color:var(--ink-trace)]">
+        {commits.map((c) => (
+          <li key={c.sha}>
+            <CommitRow owner={owner} repoName={repoName} commit={c} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function CommitRow({
+  owner,
+  repoName,
+  commit,
+}: {
+  owner: string;
+  repoName: string;
+  commit: CommitSummary;
+}) {
+  const ts = Date.parse(commit.authorDate);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
+      <span className="min-w-0 flex-1 truncate text-[color:var(--ink)]">
+        {commit.subject || (
+          <em className="text-[color:var(--ink-faint)]">(no subject)</em>
+        )}
+      </span>
+      <span
+        className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {commit.author}
+        {Number.isFinite(ts) ? (
+          <>
+            {" · "}
+            <RelativeTime ts={ts} />
+          </>
+        ) : null}
+      </span>
+      <Link
+        href={`/repos/${owner}/${repoName}/tree?ref=${encodeURIComponent(commit.sha)}`}
+        title={commit.sha}
+        className="shrink-0 rounded bg-[color:var(--paper-soft)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        {commit.short}
+      </Link>
+    </div>
+  );
+}
+
+function BranchesSidebar({
+  branches,
+  defaultBranch,
+  owner,
+  repoName,
+}: {
+  branches: Array<{ name: string; sha: string }>;
+  defaultBranch: string;
+  owner: string;
+  repoName: string;
+}) {
+  const sorted = [...branches].sort((a, b) => {
+    if (a.name === defaultBranch) return -1;
+    if (b.name === defaultBranch) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  return (
+    <SidebarSection
+      title="Branches"
+      trailing={
+        <span
+          className="rounded-sm bg-[color:var(--paper-soft)] px-1.5 py-0.5 text-[10px] tracking-[0.14em] text-[color:var(--ink-soft)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          {branches.length}
+        </span>
+      }
+    >
+      <ul className="space-y-1.5">
+        {sorted.map((b) => {
+          const isDefault = b.name === defaultBranch;
+          const query = isDefault ? "" : `?ref=${encodeURIComponent(b.name)}`;
+          return (
+            <li key={b.name} className="flex items-center justify-between gap-2">
+              <Link
+                href={`/repos/${owner}/${repoName}/tree${query}`}
+                className="link min-w-0 truncate text-[12px]"
+                style={{ fontFamily: "var(--font-mono-src)" }}
+                title={b.name}
+              >
+                {b.name}
+              </Link>
+              <span className="flex shrink-0 items-center gap-2">
+                {isDefault ? (
+                  <span
+                    className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]"
+                    style={{ fontFamily: "var(--font-mono-src)" }}
+                  >
+                    default
+                  </span>
+                ) : null}
+                <span
+                  className="text-[10px] text-[color:var(--ink-faint)]"
+                  style={{ fontFamily: "var(--font-mono-src)" }}
+                  title={b.sha}
+                >
+                  {b.sha.slice(0, 7)}
+                </span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </SidebarSection>
   );
 }
 

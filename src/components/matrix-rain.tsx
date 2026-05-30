@@ -17,7 +17,7 @@ const STREAM = [
   "smart-http", "post-receive", "bare repo", "push-token",
   "Mind Codespaces", "Solid Git Bridge",
   "sha256", "0xdeadbeef", "0xcafe", "0xfeed",
-  "codespaces", "registry", "publisher", "engineer", "triager", "scribe",
+  "codespaces", "registry", "publisher", "coder",
 ];
 
 const HEAD_COLOR = "rgba(220, 255, 225, ";

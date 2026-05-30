@@ -85,6 +85,57 @@ export async function listBranches(
     });
 }
 
+export type CommitSummary = {
+  sha: string;
+  short: string;
+  author: string;
+  authorEmail: string;
+  authorDate: string; // ISO 8601
+  subject: string;
+};
+
+/**
+ * Most recent commits on `ref`, newest first. Uses NUL separators so the
+ * subject line is preserved verbatim. Returns `[]` for an empty repo or an
+ * unknown ref rather than throwing.
+ */
+export async function listRecentCommits(
+  bareRepoPath: string,
+  ref: string,
+  limit = 8,
+): Promise<CommitSummary[]> {
+  const n = Math.max(1, Math.min(50, limit));
+  const { stdout, code, stderr } = await runGit(bareRepoPath, [
+    "log",
+    `-${n}`,
+    "--pretty=format:%H%x00%h%x00%an%x00%ae%x00%aI%x00%s",
+    ref,
+    "--",
+  ]);
+  if (code !== 0) {
+    if (/unknown revision|bad revision|does not have any commits|ambiguous/i.test(stderr)) {
+      return [];
+    }
+    throw new Error(`git log failed: ${stderr}`);
+  }
+  const out: CommitSummary[] = [];
+  for (const line of stdout.split("\n")) {
+    if (!line) continue;
+    const parts = line.split("\x00");
+    if (parts.length < 6) continue;
+    const [sha, short, author, authorEmail, authorDate, ...subjectParts] = parts;
+    out.push({
+      sha,
+      short,
+      author,
+      authorEmail,
+      authorDate,
+      subject: subjectParts.join("\x00"),
+    });
+  }
+  return out;
+}
+
 /**
  * List one level of the tree at `path` under `ref`. `path` may be "" for
  * the repo root. Returns directories first, then files, alphabetical.

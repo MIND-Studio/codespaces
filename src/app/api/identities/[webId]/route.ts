@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
-import { deleteIdentity } from "@/lib/registry/identities";
+import { deleteIdentity, getIdentityByWebId } from "@/lib/registry/identities";
 import { requireOwner, clearSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ webId: string }> };
+
+/**
+ * Report whether the bridge holds a delegated identity (pod-write grant) for
+ * this WebID. Returns only a boolean — no token material — so it's safe to
+ * expose for clients (e.g. the mind-builder onboarding) to decide whether to
+ * prompt the user through `/connect` before their first publish.
+ */
+export async function GET(_req: Request, { params }: Params) {
+  const { webId } = await params;
+  const decoded = decodeURIComponent(webId);
+  return NextResponse.json({ webId: decoded, connected: !!getIdentityByWebId(decoded) });
+}
 
 export async function DELETE(_req: Request, { params }: Params) {
   const { webId } = await params;

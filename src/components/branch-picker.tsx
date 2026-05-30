@@ -22,8 +22,15 @@ export function BranchPicker({
   const [busy, setBusy] = useState(false);
   const id = useId();
 
+  // When `current` is a commit SHA (or any non-branch ref) we still want
+  // the <select> to be controlled. Inject a synthetic option for it so
+  // React doesn't warn about a value with no matching option.
+  const isOnBranch = branches.includes(current);
+  const looksLikeSha = !isOnBranch && /^[0-9a-f]{7,40}$/i.test(current);
+
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
+    if (next === current) return;
     setBusy(true);
     const url = new URL(window.location.href);
     if (next === defaultBranch) {
@@ -40,7 +47,7 @@ export function BranchPicker({
       className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
-      branch
+      {looksLikeSha ? "at commit" : "branch"}
       <select
         id={id}
         value={current}
@@ -49,6 +56,11 @@ export function BranchPicker({
         className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-2 py-1 text-[12px] text-[color:var(--ink)] disabled:opacity-50"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
+        {!isOnBranch ? (
+          <option value={current}>
+            {looksLikeSha ? `${current.slice(0, 7)} (commit)` : current}
+          </option>
+        ) : null}
         {branches.map((b) => (
           <option key={b} value={b}>
             {b}

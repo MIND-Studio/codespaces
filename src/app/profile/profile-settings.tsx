@@ -18,6 +18,8 @@ function applyTheme(theme: Theme) {
   } else {
     document.documentElement.setAttribute("data-theme", theme);
   }
+  // Bridge to @mind-studio/ui's `.dark` variant (used by the shared app launcher).
+  document.documentElement.classList.toggle("dark", theme === "dark" || theme === "neo");
 }
 
 function readCurrentTheme(): Theme {

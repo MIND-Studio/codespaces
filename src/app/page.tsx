@@ -311,9 +311,10 @@ function Pillars() {
       title: "Conversational dev",
       body: (
         <>
-          File an issue and a roster of named agents — triager, engineer,
-          scribe — responds against the same WebID. Their working memory
-          lands back in your pod, not in a vendor database.
+          File an issue and a single conversational <em>coder</em> agent
+          responds against the same WebID, either editing files or asking a
+          follow-up in the thread. Their working memory lands back in your
+          pod, not in a vendor database.
         </>
       ),
     },
@@ -405,7 +406,7 @@ function StartHere({
       },
     ];
     return (
-      <Section title="Start here">
+      <Section title="Start here" id="start-here">
         <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
           Four moves from nothing to a live site published from your pod.
           Everything happens in the app — no curl required.
@@ -513,12 +514,14 @@ function StepCard({
 function Section({
   title,
   children,
+  id,
 }: {
   title: React.ReactNode;
   children: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <section>
+    <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2
         className="display text-2xl"
         style={{ fontFamily: "var(--font-display)" }}
