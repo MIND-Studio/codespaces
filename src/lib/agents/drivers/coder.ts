@@ -505,15 +505,21 @@ export const coderDriver: Driver = {
       // ---- PR path (with optional accompanying comment) -------------------
       summaryLines.push(`changed files (${codeChanges.length}): ${codeChanges.join(", ")}`);
 
-      // Drop every agent-scratch dir before committing. Always remove
-      // them (not just when present) so stray debris never leaks into
-      // the commit. .playwright-mcp/ in particular gets re-created
-      // every browser call with timestamped session traces.
-      for (const d of AGENT_SCRATCH_DIRS) {
-        await fs
-          .rm(path.join(workDir, d), { recursive: true, force: true })
-          .catch(() => {});
-      }
+      // Drop agent-scratch before committing, but PRESERVE .mind/workflow.yml
+      // (and any other repo config under .mind/): it's the build recipe the
+      // publisher runs, not scratch — wiping it leaves build-based repos
+      // unpublishable. We remove only the known scratch artifacts inside
+      // .mind/ (screenshots, agent-comment) plus the whole .playwright-mcp/,
+      // which gets re-created every browser call with timestamped traces.
+      await fs
+        .rm(path.join(workDir, ".playwright-mcp"), { recursive: true, force: true })
+        .catch(() => {});
+      await fs
+        .rm(path.join(workDir, AGENT_SCREENSHOTS_REL), { recursive: true, force: true })
+        .catch(() => {});
+      await fs
+        .rm(path.join(workDir, AGENT_COMMENT_REL), { force: true })
+        .catch(() => {});
 
       // `branch` and `branchExists` were declared up-front (before the
       // opencode run) so we could resume on top of a prior attempt. The
@@ -707,19 +713,35 @@ function renderTaskPrompt(input: {
     "You may do both — write `.mind/agent-comment.md` AND edit code — to",
     "implement now while also leaving a note explaining your reasoning.",
     "",
-    "VERIFY WITH SCREENSHOTS.",
+    "PRESERVE THE PROJECT STRUCTURE.",
     "",
-    "You have browser tools (Playwright MCP) available. If the change is",
-    "visible in the browser (HTML/CSS/JS), after editing:",
-    "  1. Navigate to the affected file DIRECTLY via the file:// scheme",
-    "     — for example `file:///work/index.html`. Do NOT spin up an",
-    "     HTTP server (no `python3 -m http.server`, no `npx serve`). The",
-    "     browser opens local files fine, and starting a server wastes",
-    "     time and tmpfs.",
-    "  2. Take 1–3 screenshots that show the result of your change. Use",
-    "     `browser_take_screenshot` with",
-    "     `filename: \"/work/.mind/screenshots/<descriptive-name>.png\"`.",
-    "  3. Stop after 3 screenshots — do not keep iterating in the browser.",
+    "If this is a build-based app (it has a `package.json` with a build",
+    "script and/or a `.mind/workflow.yml` — e.g. Vite / React / Tailwind),",
+    "edit only the source files (usually under `src/`). Do NOT convert it",
+    "into a single hand-written static HTML file, and do NOT delete, move,",
+    "or rewrite `vite.config.*`, `package.json`, the `<script>` tag in",
+    "`index.html`, `src/main.*`, or `.mind/workflow.yml`. Do NOT commit",
+    "`dist/` or `node_modules/`. The platform runs the build and publishes",
+    "the output for you — breaking the build setup means nothing ships.",
+    "",
+    "VERIFY WITH SCREENSHOTS (OPTIONAL).",
+    "",
+    "You have browser tools (Playwright MCP) available. Screenshots are a",
+    "nice-to-have, not required — your committed code is what ships.",
+    "  • Static site (a plain `index.html` that runs with no build): it's",
+    "    cheap to verify — open `file:///work/index.html` directly and",
+    "    screenshot. Do NOT spin up an HTTP server.",
+    "  • Build-based app (Vite/React/etc.): a screenshot needs a full",
+    "    `npm install && npm run build` (slow). SKIP it unless you really",
+    "    need to check something visually — prefer shipping fast. If you do",
+    "    build, open the built entry `file:///work/dist/index.html` (relative",
+    "    base renders from file://), never a dev server, and leave `dist/`",
+    "    UNCOMMITTED.",
+    "If you do take screenshots:",
+    "  - Take 1–3 that show the result of your change. Use",
+    "    `browser_take_screenshot` with",
+    "    `filename: \"/work/.mind/screenshots/<descriptive-name>.png\"`.",
+    "  - Stop after 3 screenshots — do not keep iterating in the browser.",
     "",
     "Screenshots in `.mind/screenshots/` are uploaded to the pod and",
     "embedded in the PR body automatically. Do not commit them yourself;",

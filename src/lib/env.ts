@@ -51,7 +51,6 @@ export type BridgeEnv = {
   coderTimeoutMs: number;
   coderWorkroot: string | null;
   mindRunner: "auto" | "docker" | "native";
-  enableEngineerAgent: boolean; // P0 toggle from §6.3
 
   // Operator-only admin bearer for /api/admin/* — null disables those routes.
   adminToken: string | null;
@@ -179,7 +178,6 @@ export function getEnv(): BridgeEnv {
   const runnerRaw = (process.env.MIND_RUNNER ?? "auto").toLowerCase();
   const mindRunner: BridgeEnv["mindRunner"] =
     runnerRaw === "docker" || runnerRaw === "native" ? runnerRaw : "auto";
-  const enableEngineerAgent = process.env.MIND_ENABLE_ENGINEER_AGENT === "1";
   const adminToken = process.env.BRIDGE_ADMIN_TOKEN?.trim() || null;
 
   // Validation pass.
@@ -283,7 +281,6 @@ export function getEnv(): BridgeEnv {
     coderTimeoutMs,
     coderWorkroot,
     mindRunner,
-    enableEngineerAgent,
     adminToken,
   };
   return cached;

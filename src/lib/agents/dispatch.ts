@@ -12,6 +12,7 @@ import {
 } from "@/lib/registry/agent-runs";
 import { getRepo } from "@/lib/registry/repos";
 import { getIssueByNumber } from "@/lib/registry/issues";
+import { buildPreviewForPull } from "@/lib/pages/preview";
 import { Metrics } from "@/lib/metrics";
 
 /**
@@ -62,8 +63,18 @@ export type DispatchOutcome = {
  *
  * Errors raised by a driver are caught and returned as `status: "error"`
  * so one misbehaving role doesn't kill the rest of the batch.
+ *
+ * `opts.driver` overrides the backend for every fired role, ignoring each
+ * role's own `driver` binding and the registered default. This lets a
+ * caller exercise an alternate backend (e.g. `codex`) against the existing
+ * `coder` role's triggers/context without registering a parallel role that
+ * would double-fire on the same event. The caller is responsible for
+ * validating the name is a registered driver.
  */
-export async function dispatch(event: AgentEvent): Promise<DispatchOutcome[]> {
+export async function dispatch(
+  event: AgentEvent,
+  opts: { driver?: string } = {},
+): Promise<DispatchOutcome[]> {
   const roles = rolesForEvent(event);
   const outcomes: DispatchOutcome[] = [];
 
@@ -75,7 +86,7 @@ export async function dispatch(event: AgentEvent): Promise<DispatchOutcome[]> {
       : null;
 
   for (const role of roles) {
-    const driverName = role.driver ?? getDefaultDriverName();
+    const driverName = opts.driver ?? role.driver ?? getDefaultDriverName();
     if (!driverName) {
       outcomes.push({
         runId: null,
@@ -142,6 +153,21 @@ export async function dispatch(event: AgentEvent): Promise<DispatchOutcome[]> {
     }
 
     Metrics.agentCall(driverName, role.name, result.status === "ok" ? "ok" : "error");
+
+    // Auto-build a preview for any PR a driver just opened (fire-and-forget),
+    // so the result is viewable before merge. Single chokepoint → covers every
+    // driver. SHA-guarded inside buildPreviewForPull, so re-runs are cheap.
+    if (repo && result.status === "ok") {
+      const data = result.data as
+        | { mode?: string; pullNumber?: number }
+        | undefined;
+      if (data?.mode === "pr" && typeof data.pullNumber === "number") {
+        const pn = data.pullNumber;
+        void buildPreviewForPull(repo.id, pn).catch((e) =>
+          console.warn(`[agents] preview build for PR #${pn} did not start:`, e),
+        );
+      }
+    }
 
     outcomes.push({
       runId: run?.id ?? null,

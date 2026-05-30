@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
 import { dispatch } from "@/lib/agents/dispatch";
+import { getDriver } from "@/lib/agents/registry";
 import type { AgentEvent } from "@/lib/agents/types";
 import { getRepo } from "@/lib/registry/repos";
 import { requireOwner } from "@/lib/auth/session";
@@ -44,6 +45,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: event.error }, { status: 400 });
   }
 
+  // Optional driver override: run the matched role(s) through a specific
+  // backend (e.g. "codex") instead of each role's own binding. Validate
+  // against the registry so a typo fails fast with 400 rather than a
+  // confusing "driver not found" buried in the per-role outcome.
+  let driverOverride: string | undefined;
+  if (typeof body === "object" && body !== null && "driver" in body) {
+    const d = (body as Record<string, unknown>).driver;
+    if (d !== undefined && d !== null) {
+      if (typeof d !== "string" || !getDriver(d)) {
+        return NextResponse.json(
+          { error: `unknown driver ${JSON.stringify(d)}` },
+          { status: 400 },
+        );
+      }
+      driverOverride = d;
+    }
+  }
+
   // Authenticate: agent dispatch consumes the operator's OpenRouter
   // budget and can write code into the repo. Only the repo owner may
   // trigger it. P0-S1 + the §3.5 prompt-injection mitigation: an
@@ -74,7 +93,7 @@ export async function POST(req: Request) {
     throw e;
   }
 
-  const outcomes = await dispatch(event.value);
+  const outcomes = await dispatch(event.value, { driver: driverOverride });
 
   return NextResponse.json({ event: event.value, outcomes });
 }

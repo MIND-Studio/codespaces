@@ -8,6 +8,7 @@ import {
 import { echoDriver } from "@/lib/agents/drivers/echo";
 import { openrouterDriver } from "@/lib/agents/drivers/openrouter";
 import { coderDriver } from "@/lib/agents/drivers/coder";
+import { codexDriver } from "@/lib/agents/drivers/codex";
 
 /**
  * Wire the available drivers + the demo roster. Idempotent — safe to
@@ -41,6 +42,15 @@ export function ensureAgentsBootstrap(): void {
   registerDriver(coderDriver);
   console.log(
     `[agents] coder driver active (image=${process.env.MIND_CODER_IMAGE ?? "mind-codespaces/coder:latest"})`,
+  );
+
+  // codex driver (PoC): OpenAI `codex exec` as an alternate backend. Not
+  // bound to any auto-triggered role — invoke it by passing `driver:"codex"`
+  // to POST /api/agents/dispatch so it runs side-by-side with `coder`
+  // without double-firing on the same issue event.
+  registerDriver(codexDriver);
+  console.log(
+    `[agents] codex driver active (runtime=${process.env.MIND_CODEX_RUNTIME ?? "host"})`,
   );
 
   if (process.env.OPENROUTER_API_KEY) {
