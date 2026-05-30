@@ -212,6 +212,45 @@ These are tracked in `PRODUCTION-READINESS.md` and remain open even though the a
 
 ---
 
+## Rolling out the Mind CSS branding to prod (gated — not yet applied)
+
+Dev `:3011` serves Mind-branded CSS pages (login/consent/account/root + pod README)
+via `infra/css/` (config.json Overrides + main.html.ejs shell + styles/main.css +
+pod-template/). Prod still runs stock CSS. **The login screen users actually see during
+SSO is this prod pod's**, so rolling the branding here is what makes the live journey
+consistent. Steps (run when ready — this restarts the live IdP, ~seconds of SSO downtime):
+
+1. Sync the branding dir to the VM (mind the `--exclude='.env*'` rsync gotcha — there are
+   no env files under `infra/css/`, so a plain sync is safe):
+   ```bash
+   rsync -avz ./infra/css/ mind-codespaces:/opt/mind-codespaces/infra/css/
+   ```
+2. Edit the prod `css` service in `infra/prod/docker-compose.yml` — add the bind mount and
+   point `--config` at the override (the `@context` is `^7.0.0`, matching the `:7` image):
+   ```yaml
+       command:
+         - --port=3011
+         - --baseUrl=https://${MIND_DOMAIN_POD}/
+         - --rootFilePath=/data
+         - --config=/css-host/config.json        # was @css:config/file.json
+         - --loggingLevel=warn
+       volumes:
+         - css_data:/data
+         - /opt/mind-codespaces/infra/css:/css-host:ro   # NEW
+   ```
+   Note: `index.html`/`main.html.ejs`/`README` link `http://localhost:3070` (Mind Builder).
+   For prod, swap those to the prod builder URL before syncing, or drop the link.
+3. Apply: `docker compose --env-file .env up -d css` on the VM (recreates the container so
+   the new mount + `--config` take effect — `restart` alone keeps the old config).
+4. Verify: `curl -sI https://$MIND_DOMAIN_POD/.well-known/css/styles/main.css` (200) and
+   open the login page.
+
+**New** prod pods then get the Mind README automatically. **Existing** prod pods keep their
+default README — a prod re-seed (`scripts/brand-pod-readmes.ts` against the prod data volume)
+is out of scope here and would touch live user pods; do it deliberately if at all.
+
+---
+
 ## Recovery scenarios
 
 **Bridge stuck on a bad deploy:** roll back by re-rsync'ing an older code state from your laptop (you have a working copy locally) and rebuilding. With CI: deploy an earlier tag.
@@ -220,6 +259,6 @@ These are tracked in `PRODUCTION-READINESS.md` and remain open even though the a
 
 **Lost rotated root password:** Hetzner cloud panel → Server → Actions → "Reset root password". Emails a new temp password; use console to log in and change.
 
-**DuckDNS subdomain expires (60 days of inactivity):** DuckDNS pings every record automatically, but if it ever expires, your subdomains are gone. Migration target is a real `.com` domain; WebIDs will need user-side reconnection because they're origin-bound.
+**DuckDNS subdomain expires (~30 days of inactivity):** DuckDNS deletes subdomains that haven't been refreshed (via the update endpoint *or* a dashboard login) for ~30 days — it does **not** auto-ping records. The server runs a `duckdns-update.timer` (hourly oneshot `/etc/duckdns/update.sh`, token in `/etc/duckdns/token`) to keep both records alive; verify with `systemctl status duckdns-update.timer` and `journalctl -u duckdns-update.service`. If the timer is down and records expire, re-create at https://www.duckdns.org/ and point at `37.27.80.161`. Migration target is a real `.com` domain; WebIDs will need user-side reconnection because they're origin-bound.
 
 **Domain change:** see `PRODUCTION-READINESS.md` § identity migration — WebIDs are sticky and changing the pod host orphans every user's signed-up identity.

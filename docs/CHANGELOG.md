@@ -2,6 +2,34 @@
 
 What shipped in each iteration. Most-recent at the top.
 
+## v0.6.2 — Mind-branded CSS pages (login / pod welcome) (2026-05-30)
+
+The Solid server (CommunitySolidServer) behind the bridge now serves
+**Mind-branded pages** instead of stock CSS. New `infra/css/`: a Components.js
+`config.json` that imports `css:config/file.json` and `Override`s four ids —
+`StylesStaticAsset` (dark Mind stylesheet at `/.well-known/css/styles/main.css`),
+`MainTemplateEngine` (`main.html.ejs` shell wrapping every rendered page —
+login / consent / account / register / root), `RootStaticAsset` (`index.html`
+landing), and `PodResourcesGenerator` (`pod-template/` so **new pods** get a Mind
+"Welcome to your pod" README). `docker-compose.yml` mounts `./infra/css:/css-host`
+and switches `--config` to it. `scripts/brand-pod-readmes.ts` (`npm run seed:readmes`)
+re-seeds existing demo pods' READMEs (alice/mind/test2). Dark Mind theme (teal
+`#16b88a`), matching mind-builder. **Dev only** — the prod rollout is documented in
+`docs/DEPLOYMENT.md` but not yet applied. The branding recreates the look in plain
+HTML/CSS (no React) reusing the `@mind-studio/ui` "mind" tokens.
+
+## v0.6.1 — Agent roster simplified to a single conversational coder (2026-05-25)
+
+Collapsed the `triager`/`engineer`/`scribe` roster down to one role: `coder`.
+`ensureAgentsBootstrap` (`src/lib/agents/bootstrap.ts`) now registers exactly
+that role, wired to the `coder` driver and firing on both `issue.created` and
+`issue.commented`. The driver itself decides per-run whether to **implement**
+(edit files → commit to `agent/issue-{n}` → open a draft PR) or **ask** (write
+`.mind/agent-comment.md`, which is posted as an issue comment and triggers the
+next round via `issue.commented`). No more label-driven handoff between roles;
+the conversation in the issue thread is the loop. `MIND_ENABLE_ENGINEER_AGENT`
+is gone — nothing branches on it anymore.
+
 ## v0.6 — Workflows, agents, multi-user, prod deployment (2026-05-23 → 2026-05-25)
 
 A long iteration that turned the publishing demo into a small but credible

@@ -23,8 +23,13 @@ RUN apt-get update \
       build-essential python3 ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# `.npmrc` points the @mind-studio scope at GitHub Packages and reads the auth
+# token from $NODE_AUTH_TOKEN. The token is passed as a BuildKit secret (never
+# baked into a layer) and exported only for this npm ci invocation.
+COPY package.json package-lock.json .npmrc ./
+RUN --mount=type=secret,id=node_auth_token \
+    NODE_AUTH_TOKEN="$(cat /run/secrets/node_auth_token 2>/dev/null || true)" \
+    npm ci --no-audit --no-fund
 
 COPY tsconfig.json next.config.ts postcss.config.mjs ./
 COPY src ./src

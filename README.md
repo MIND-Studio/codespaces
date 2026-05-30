@@ -17,6 +17,13 @@ Solid Pod as a plain static website (the **Mind Pages** feature). Identity,
 repo metadata, issues, and the published artifact all live in your pod; the
 bridge is just protocol glue.
 
+## Shared packages (GitHub Packages)
+
+The dashboard installs `@mind-studio/core` and `@mind-studio/ui` from **GitHub Packages**.
+A committed `.npmrc` scopes `@mind-studio` to that registry; before installing, export a
+GitHub token with `read:packages` (`export NODE_AUTH_TOKEN=<PAT>`). CI/CD passes the token
+to the Docker build as the `node_auth_token` BuildKit secret (see `release.yml`).
+
 ## Dev setup
 
 ```bash

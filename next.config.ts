@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   // imports) instead of the full node_modules tree. Dev (`next dev`) is
   // unaffected.
   output: "standalone",
+  transpilePackages: ["@mind-studio/core", "@mind-studio/ui"],
 };
 
 export default nextConfig;
