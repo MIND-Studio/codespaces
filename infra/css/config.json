@@ -1,0 +1,49 @@
+{
+  "@context": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
+  "comment": [
+    "Mind branding override for the mind-codespaces pod host.",
+    "Inherits everything from css:config/file.json, then redeclares four",
+    "components via Components.js Override entries:",
+    "  - StylesStaticAsset.filePath   -> serve the Mind dark stylesheet (/.well-known/css/styles/)",
+    "  - MainTemplateEngine.template  -> wrap every server-rendered page (login/consent/account/root)",
+    "  - RootStaticAsset.filePath     -> serve the Mind landing page at /",
+    "  - PodResourcesGenerator.templateFolder -> seed NEW pods from the Mind pod template (Welcome README)",
+    "All filePaths point at locations populated by the docker-compose bind mount (./infra/css -> /css-host)."
+  ],
+  "import": [ "css:config/file.json" ],
+  "@graph": [
+    {
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:StylesStaticAsset" },
+      "overrideParameters": {
+        "@type": "StaticAssetEntry",
+        "filePath": "/css-host/styles/"
+      }
+    },
+    {
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:MainTemplateEngine" },
+      "overrideParameters": {
+        "@type": "StaticTemplateEngine",
+        "template": "/css-host/main.html.ejs"
+      }
+    },
+    {
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:RootStaticAsset" },
+      "overrideParameters": {
+        "@type": "StaticAssetEntry",
+        "filePath": "/css-host/index.html"
+      }
+    },
+    {
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:PodResourcesGenerator" },
+      "overrideParameters": {
+        "@type": "StaticFolderGenerator",
+        "templateFolder": "/css-host/pod-template",
+        "resourcesGenerator": { "@id": "urn:solid-server:default:TemplatedResourcesGenerator" }
+      }
+    }
+  ]
+}

@@ -7,11 +7,16 @@ services:
     volumes:
       - ./.css-data:/data
       - ./infra/css/seed.json:/seed.json:ro
+      # Mind branding: config.json (Overrides), main.html.ejs shell, index.html
+      # landing, styles/ (served at /.well-known/css/styles/), and pod-template/
+      # (Welcome README for new pods). Whole dir is mounted so editor save-via-
+      # rename doesn't break the bind via inode pinning.
+      - ./infra/css:/css-host:ro
     command:
       - --port=3011
       - --baseUrl=http://localhost:3011/
       - --rootFilePath=/data
-      - --config=@css:config/file.json
+      - --config=/css-host/config.json
       - --seedConfig=/seed.json
       - --loggingLevel=warn
     restart: unless-stopped

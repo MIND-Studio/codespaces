@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title><%= extractTitle(htmlBody) %> · Mind</title>
+  <link rel="stylesheet" href="<%= baseUrl -%>.well-known/css/styles/main.css?v=mind-1" type="text/css">
+  <!-- CSS's own page-control script: defines fetchControls() etc. that the
+       login/consent/account page bodies call. Dropping it leaves the
+       Log in / Authorize buttons disabled and the WebID list empty. -->
+  <script type="text/javascript" src="<%= baseUrl -%>.well-known/css/scripts/util.js?v=7"></script>
+</head>
+<body>
+  <header>
+    <a class="mind-brand" href="<%= baseUrl %>">
+      <span class="mind-symbol" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#16b88a"/>
+          <path d="M8 23V10.5c0-.4.5-.6.8-.3L16 17l7.2-6.8c.3-.3.8-.1.8.3V23" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="mind-wordmark">Mind</span>
+    </a>
+    <p class="mind-tagline">Your pod. Your data. Sign in once, use everywhere.</p>
+  </header>
+
+  <main>
+    <%- htmlBody %>
+  </main>
+
+  <footer>
+    <a href="<%= baseUrl %>">Your Solid pod</a>
+    <span>Part of Mind</span>
+  </footer>
+</body>
+</html>
+
+<%
+function extractTitle(body) {
+  const match = /^\s*<h1[^>]*>([^<]*)<\/h1>/u.exec(body);
+  return match ? match[1] : 'Sign in';
+}
+%>

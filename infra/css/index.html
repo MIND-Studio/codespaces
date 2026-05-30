@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Your Mind pod</title>
+  <link rel="stylesheet" href="/.well-known/css/styles/main.css?v=mind-1" type="text/css">
+</head>
+<body>
+  <header>
+    <a class="mind-brand" href="/">
+      <span class="mind-symbol" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#16b88a"/>
+          <path d="M8 23V10.5c0-.4.5-.6.8-.3L16 17l7.2-6.8c.3-.3.8-.1.8.3V23" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="mind-wordmark">Mind</span>
+    </a>
+    <p class="mind-tagline">Your own private space on the web.</p>
+  </header>
+
+  <main>
+    <h1>This is your pod</h1>
+    <p>
+      A <strong>pod</strong> is your own private space for your data — the things
+      you make, your profile, and the apps you use. It belongs to you. You decide
+      what to share and with whom, and you can take it with you anytime.
+    </p>
+
+    <h2>Get started</h2>
+    <p id="registration-enabled">
+      Don’t have one yet?
+      <a id="registration-link" href="./.account/login/password/register/">Create your account</a>
+      — it only takes a moment, and there’s no password to invent twice.
+    </p>
+    <p id="registration-disabled" class="hidden">
+      New sign-ups are paused right now. If you already have an account, you can
+      <a href="./.account/">sign in</a>.
+    </p>
+
+    <h2>Already have an account?</h2>
+    <p>
+      <a href="./.account/">Sign in to your account</a> to manage your pods,
+      profile, and which apps can access your data.
+    </p>
+
+    <h2>What can I build?</h2>
+    <p>
+      With <a href="http://localhost:3070/">Mind Builder</a> you can wish for a
+      website or app in plain words and watch it get built — and everything it
+      makes is saved right here, in your pod.
+    </p>
+  </main>
+
+  <footer>
+    <a href="/">Your Solid pod</a>
+    <span>Part of Mind</span>
+  </footer>
+
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('.account/');
+        const registrationUrl = (await res.json())?.controls?.html?.password?.register;
+        const probe = registrationUrl
+          ? await fetch(registrationUrl, { headers: { accept: 'text/html' } })
+          : null;
+        const enabled = !!registrationUrl && probe && probe.status === 200;
+        document.getElementById('registration-enabled').classList[enabled ? 'remove' : 'add']('hidden');
+        document.getElementById('registration-disabled').classList[enabled ? 'add' : 'remove']('hidden');
+        if (enabled) document.getElementById('registration-link').href = registrationUrl;
+      } catch { /* leave defaults in place */ }
+    })();
+  </script>
+</body>
+</html>
