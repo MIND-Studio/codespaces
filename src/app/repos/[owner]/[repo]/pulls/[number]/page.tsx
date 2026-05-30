@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
 import { getPullRequest } from "@/lib/registry/pulls";
-import { getIssueById } from "@/lib/registry/issues";
+import { countComments, getIssueById } from "@/lib/registry/issues";
 import { repoPath } from "@/lib/git/backend";
 import {
   commitsAhead,
@@ -14,6 +14,8 @@ import { RelativeTime } from "@/components/relative-time";
 import { renderMarkdown } from "@/lib/markdown";
 import { DiffView } from "@/components/diff-view";
 import { PullActions } from "./pull-actions";
+import { PrPreviewCard } from "./pr-preview-card";
+import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +61,9 @@ export default async function PullDetailPage({ params }: PageProps) {
 
   const bodyHtml = pull.body.trim() ? renderMarkdown(pull.body) : null;
   const linkedIssue = pull.issueId ? getIssueById(pull.issueId) : null;
+  const linkedIssueComments = linkedIssue
+    ? countComments(linkedIssue.id)
+    : 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-10 sm:py-12">
@@ -135,6 +140,8 @@ export default async function PullDetailPage({ params }: PageProps) {
         ) : null}
       </p>
 
+      <RepoTabs owner={owner} name={name} active="pulls" />
+
       <div className="mt-6 overflow-hidden rounded border border-[color:var(--ink-trace)]">
         <div
           className="flex items-center justify-between gap-3 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)]"
@@ -159,10 +166,48 @@ export default async function PullDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      <div className="mt-6">
+        <PrPreviewCard
+          owner={owner}
+          repo={name}
+          number={pull.number}
+          initialStatus={pull.previewStatus}
+          initialUrl={pull.previewUrl}
+          initialError={pull.previewError}
+        />
+      </div>
+
       {pull.status === "open" ? (
         <div className="mt-6">
           <PullActions owner={owner} repo={name} number={pull.number} />
         </div>
+      ) : null}
+
+      {linkedIssue ? (
+        <Link
+          href={`/repos/${owner}/${name}/issues/${linkedIssue.number}#comments`}
+          className="mt-6 flex items-center justify-between gap-3 rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-3 hover:border-[color:var(--accent)] hover:bg-[color:var(--paper)]"
+        >
+          <span className="min-w-0">
+            <span
+              className="block text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
+              style={{ fontFamily: "var(--font-mono-src)" }}
+            >
+              // discussion
+            </span>
+            <span className="mt-0.5 block text-sm text-[color:var(--ink)]">
+              {linkedIssueComments === 0
+                ? "Start the discussion on the issue"
+                : `${linkedIssueComments} comment${linkedIssueComments === 1 ? "" : "s"} on issue #${linkedIssue.number}`}
+            </span>
+          </span>
+          <span
+            className="shrink-0 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            open thread →
+          </span>
+        </Link>
       ) : null}
 
       <section className="mt-10">

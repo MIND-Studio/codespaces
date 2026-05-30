@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type { PreviewStatus } from "@/lib/registry/pulls";
+import { authedFetch } from "@/lib/auth/csrf-client";
+
+const POLL_INTERVAL_MS = 1500;
+const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g; // eslint-disable-line no-control-regex
+
+type PreviewState = {
+  status: PreviewStatus | null;
+  url: string | null;
+  error: string | null;
+  log: string;
+};
+
+/**
+ * Live PR-preview panel. Shows the published preview link when ready,
+ * the build log + a spinner while building, the error when failed, and a
+ * Build/Rebuild button. Polls /pulls/{n}/preview while a build is in flight.
+ */
+export function PrPreviewCard({
+  owner,
+  repo,
+  number,
+  initialStatus,
+  initialUrl,
+  initialError,
+}: {
+  owner: string;
+  repo: string;
+  number: number;
+  initialStatus: PreviewStatus | null;
+  initialUrl: string | null;
+  initialError: string | null;
+}) {
+  const [state, setState] = useState<PreviewState>({
+    status: initialStatus,
+    url: initialUrl,
+    error: initialError,
+    log: "",
+  });
+  const logRef = useRef<HTMLPreElement | null>(null);
+  const base = `/api/repos/${owner}/${repo}/pulls/${number}/preview`;
+
+  // Poll while building.
+  useEffect(() => {
+    if (state.status !== "building") return;
+    let cancelled = false;
+    async function tick() {
+      try {
+        const res = await fetch(base, { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as PreviewState;
+        if (cancelled) return;
+        setState((prev) => ({
+          status: body.status,
+          url: body.url,
+          error: body.error,
+          log: body.log || prev.log,
+        }));
+      } catch {
+        /* transient — next tick retries */
+      }
+    }
+    const handle = setInterval(tick, POLL_INTERVAL_MS);
+    void tick();
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, [state.status, base]);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [state.log]);
+
+  async function build() {
+    setState((prev) => ({ ...prev, status: "building", error: null }));
+    try {
+      await authedFetch(base, { method: "POST" });
+    } catch {
+      /* the poll loop will surface any failure */
+    }
+  }
+
+  const tone =
+    state.status === "ready"
+      ? "ok"
+      : state.status === "failed"
+        ? "bad"
+        : undefined;
+  const buildLabel =
+    state.status === "building"
+      ? "Building…"
+      : state.status
+        ? "Rebuild preview"
+        : "Build preview";
+
+  return (
+    <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
+      <div
+        className="flex items-center justify-between gap-3 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        <span>preview</span>
+        {state.status ? (
+          <span className="stamp" data-tone={tone}>
+            {state.status}
+          </span>
+        ) : (
+          <span className="text-[color:var(--ink-faint)]">not built</span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 bg-[color:var(--paper)] px-5 py-4">
+        {state.status === "ready" && state.url ? (
+          <a
+            href={state.url}
+            target="_blank"
+            rel="noreferrer"
+            className="link text-sm"
+          >
+            Open preview ↗
+          </a>
+        ) : null}
+
+        {state.status === "failed" && state.error ? (
+          <p className="text-sm text-[color:var(--status-bad)]">{state.error}</p>
+        ) : null}
+
+        {state.status === "building" || state.log ? (
+          <pre
+            ref={logRef}
+            className="max-h-64 overflow-auto rounded bg-[color:var(--paper-soft)] p-3 text-[11px] leading-relaxed text-[color:var(--ink-soft)]"
+            style={{ fontFamily: "var(--font-mono-src)", whiteSpace: "pre-wrap" }}
+          >
+            {state.log.replace(ANSI_ESCAPE, "") ||
+              (state.status === "building" ? "Starting build…" : "")}
+          </pre>
+        ) : null}
+
+        <div>
+          <button
+            type="button"
+            onClick={build}
+            disabled={state.status === "building"}
+            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-4 py-2 text-sm text-[color:var(--ink-soft)] disabled:opacity-50"
+          >
+            {buildLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

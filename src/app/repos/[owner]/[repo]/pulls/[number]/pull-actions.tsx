@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 /**
  * Merge/close buttons for an open PR. Both fire server actions through
@@ -24,7 +25,7 @@ export function PullActions({
     setBusy(action);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await authedFetch(
         `/api/repos/${owner}/${repo}/pulls/${number}/${action}`,
         { method: "POST" },
       );

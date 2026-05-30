@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
-import { listPullRequests, type PullStatus } from "@/lib/registry/pulls";
+import {
+  countPullRequestsByStatus,
+  listPullRequests,
+  type PullStatus,
+} from "@/lib/registry/pulls";
 import { RelativeTime } from "@/components/relative-time";
 import { RepoTabs } from "../repo-tabs";
 
@@ -27,6 +31,7 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
   ) as PullStatus | "all";
 
   const pulls = listPullRequests(repo.id, filter);
+  const counts = countPullRequestsByStatus(repo.id);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-10 sm:py-12">
@@ -45,7 +50,7 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
 
       <RepoTabs owner={owner} name={name} active="pulls" />
 
-      <FilterBar owner={owner} repo={name} current={filter} />
+      <FilterBar owner={owner} repo={name} current={filter} counts={counts} />
 
       <div className="mt-6">
         {pulls.length === 0 ? (
@@ -160,25 +165,41 @@ function FilterBar({
   owner,
   repo,
   current,
+  counts,
 }: {
   owner: string;
   repo: string;
   current: PullStatus | "all";
+  counts: { open: number; merged: number; closed: number };
 }) {
+  const items: Array<{
+    key: PullStatus | "all";
+    label: string;
+    count: number;
+  }> = [
+    { key: "open", label: "Open", count: counts.open },
+    { key: "merged", label: "Merged", count: counts.merged },
+    { key: "closed", label: "Closed", count: counts.closed },
+    {
+      key: "all",
+      label: "All",
+      count: counts.open + counts.merged + counts.closed,
+    },
+  ];
   return (
     <nav
       className="mt-5 flex flex-wrap items-center gap-2 border-y border-[color:var(--ink-trace)] py-2 text-[11px] uppercase tracking-[0.18em]"
       style={{ fontFamily: "var(--font-mono-src)" }}
       aria-label="Filter pull requests by status"
     >
-      {VALID_FILTERS.map((f) => {
-        const isCurrent = f === current;
+      {items.map((item) => {
+        const isCurrent = item.key === current;
         const href = `/repos/${owner}/${repo}/pulls${
-          f === "open" ? "" : `?status=${f}`
+          item.key === "open" ? "" : `?status=${item.key}`
         }`;
         return (
           <Link
-            key={f}
+            key={item.key}
             href={href}
             aria-current={isCurrent ? "page" : undefined}
             className="rounded-full border px-3 py-1 transition-colors"
@@ -192,7 +213,16 @@ function FilterBar({
                 : "var(--ink-soft)",
             }}
           >
-            {f}
+            {item.label}{" "}
+            <span
+              style={{
+                color: isCurrent
+                  ? "var(--accent-deep)"
+                  : "var(--ink-faint)",
+              }}
+            >
+              {item.count}
+            </span>
           </Link>
         );
       })}
@@ -211,7 +241,7 @@ function EmptyState({
   defaultBranch: string;
   filter: PullStatus | "all";
 }) {
-  // The bridge opens draft PRs automatically when the engineer agent pushes
+  // The bridge opens draft PRs automatically when the coder agent pushes
   // a branch — there is no "file a PR by form" path here yet. The copy
   // reflects what the bridge actually does (see AGENTS.md / pulls model).
   if (filter !== "open") {
@@ -239,10 +269,9 @@ function EmptyState({
         No open pull requests.
       </p>
       <p className="mt-3 leading-relaxed">
-        The <span style={{ color: "var(--ink)" }}>engineer</span> agent opens
+        The <span style={{ color: "var(--ink)" }}>coder</span> agent opens
         a draft pull request automatically when it pushes a branch in
-        response to an issue labeled{" "}
-        <code className="kbd">ready</code> — the PR then targets{" "}
+        response to an issue — the PR then targets{" "}
         <code className="kbd">{defaultBranch}</code>.
       </p>
       <p className="mt-3 leading-relaxed">

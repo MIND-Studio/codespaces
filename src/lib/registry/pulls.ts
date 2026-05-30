@@ -4,6 +4,9 @@ import { RegistryError } from "@/lib/registry/repos";
 
 export type PullStatus = "open" | "merged" | "closed";
 
+/** Lifecycle of a PR's static preview build. null = never built. */
+export type PreviewStatus = "building" | "ready" | "failed";
+
 export type PullRequest = {
   id: number;
   repoId: number;
@@ -22,6 +25,11 @@ export type PullRequest = {
   updatedAt: number;
   mergedAt: number | null;
   closedAt: number | null;
+  previewStatus: PreviewStatus | null;
+  previewUrl: string | null;
+  previewSha: string | null;
+  previewLogPath: string | null;
+  previewError: string | null;
 };
 
 function rowToPull(row: Record<string, unknown>): PullRequest {
@@ -43,6 +51,11 @@ function rowToPull(row: Record<string, unknown>): PullRequest {
     updatedAt: row.updated_at as number,
     mergedAt: (row.merged_at as number | null) ?? null,
     closedAt: (row.closed_at as number | null) ?? null,
+    previewStatus: (row.preview_status as PreviewStatus | null) ?? null,
+    previewUrl: (row.preview_url as string | null) ?? null,
+    previewSha: (row.preview_sha as string | null) ?? null,
+    previewLogPath: (row.preview_log_path as string | null) ?? null,
+    previewError: (row.preview_error as string | null) ?? null,
   };
 }
 
@@ -180,6 +193,32 @@ export function countOpenPullRequests(repoId: number): number {
   return row.n;
 }
 
+export function countPullRequestsByStatus(
+  repoId: number,
+): { open: number; merged: number; closed: number } {
+  const rows = getDb()
+    .prepare(
+      `SELECT status, COUNT(*) AS n FROM pull_requests
+       WHERE repo_id = ?
+       GROUP BY status`,
+    )
+    .all(repoId) as Array<{ status: PullStatus; n: number }>;
+  const out = { open: 0, merged: 0, closed: 0 };
+  for (const r of rows) out[r.status] = r.n;
+  return out;
+}
+
+export function listPullRequestsForIssue(issueId: number): PullRequest[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT * FROM pull_requests
+       WHERE issue_id = ?
+       ORDER BY created_at DESC`,
+    )
+    .all(issueId) as Record<string, unknown>[];
+  return rows.map(rowToPull);
+}
+
 export function markPullRequestMerged(
   id: number,
   mergeSha: string,
@@ -200,6 +239,51 @@ export function markPullRequestMerged(
     .prepare("SELECT * FROM pull_requests WHERE id = ?")
     .get(id) as Record<string, unknown>;
   return rowToPull(row);
+}
+
+/**
+ * Patch a PR's preview-build fields. Only the keys provided are written
+ * (partial update), so a "building" transition needn't clear a prior URL
+ * until the new build resolves. `updatedAt` is intentionally NOT bumped —
+ * a preview rebuild is not a change to the PR itself.
+ */
+export function updatePullPreview(
+  id: number,
+  patch: {
+    status?: PreviewStatus | null;
+    url?: string | null;
+    sha?: string | null;
+    logPath?: string | null;
+    error?: string | null;
+  },
+): void {
+  const sets: string[] = [];
+  const vals: unknown[] = [];
+  if ("status" in patch) {
+    sets.push("preview_status = ?");
+    vals.push(patch.status ?? null);
+  }
+  if ("url" in patch) {
+    sets.push("preview_url = ?");
+    vals.push(patch.url ?? null);
+  }
+  if ("sha" in patch) {
+    sets.push("preview_sha = ?");
+    vals.push(patch.sha ?? null);
+  }
+  if ("logPath" in patch) {
+    sets.push("preview_log_path = ?");
+    vals.push(patch.logPath ?? null);
+  }
+  if ("error" in patch) {
+    sets.push("preview_error = ?");
+    vals.push(patch.error ?? null);
+  }
+  if (sets.length === 0) return;
+  vals.push(id);
+  getDb()
+    .prepare(`UPDATE pull_requests SET ${sets.join(", ")} WHERE id = ?`)
+    .run(...(vals as never[]));
 }
 
 export function closePullRequest(id: number): PullRequest {

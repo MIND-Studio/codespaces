@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRepo, RegistryError } from "@/lib/registry/repos";
 import { getPullRequest, closePullRequest } from "@/lib/registry/pulls";
 import { requireOwner } from "@/lib/auth/session";
+import { deletePreview } from "@/lib/pages/preview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,12 @@ export async function POST(_req: Request, { params }: Params) {
   }
   try {
     const closed = closePullRequest(pull.id);
+    // Tear down the PR's preview (best-effort, fire-and-forget).
+    if (pull.previewStatus === "ready") {
+      void deletePreview(pull).catch((err) =>
+        console.warn(`[pulls.close] preview cleanup for #${pull.number} failed:`, err),
+      );
+    }
     return NextResponse.json({ pull: closed });
   } catch (e) {
     if (e instanceof RegistryError) {

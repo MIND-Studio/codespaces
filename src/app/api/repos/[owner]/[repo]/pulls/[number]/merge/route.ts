@@ -10,6 +10,7 @@ import { displayNameForWebId } from "@/lib/solid/web-id";
 import { getIssueById, updateIssue } from "@/lib/registry/issues";
 import { writeIssueToPod } from "@/lib/solid/issues";
 import { requireOwner } from "@/lib/auth/session";
+import { deletePreview } from "@/lib/pages/preview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,14 @@ export async function POST(_req: Request, { params }: Params) {
   }
 
   const merged = markPullRequestMerged(pull.id, result.mergeSha);
+
+  // Tear down the PR's preview (the merged content now publishes to main).
+  // Best-effort, fire-and-forget — a leftover preview is harmless.
+  if (pull.previewStatus === "ready") {
+    void deletePreview(pull).catch((err) =>
+      console.warn(`[pulls.merge] preview cleanup for #${pull.number} failed:`, err),
+    );
+  }
 
   // Auto-close any linked issue. Best-effort: a pod-write failure should
   // not undo the merge, so the catch logs and moves on.
