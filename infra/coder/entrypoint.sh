@@ -66,6 +66,15 @@ fi
 #                       ALL, which removes CAP_SYS_ADMIN — chromium's
 #                       user-namespace sandbox can't initialise without
 #                       it. The container itself is the sandbox.
+#   --allow-unrestricted-file-access
+#                       playwright-mcp blocks file:// URLs by default,
+#                       which makes "navigate to file:///work/index.html
+#                       and screenshot" silently fail with no actionable
+#                       error for the model. We override because the
+#                       container is the sandbox (--read-only, --cap-drop
+#                       ALL, only /work writable) — file:// access can
+#                       only ever reach /work plus the image's read-only
+#                       fs, both already trusted.
 cat > /tmp/config/opencode/config.json <<'EOF'
 {
   "mcp": {
@@ -77,7 +86,8 @@ cat > /tmp/config/opencode/config.json <<'EOF'
         "--browser", "chromium",
         "--headless",
         "--isolated",
-        "--no-sandbox"
+        "--no-sandbox",
+        "--allow-unrestricted-file-access"
       ]
     }
   }
