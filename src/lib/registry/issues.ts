@@ -335,6 +335,13 @@ export function setCommentPodUrl(id: number, podUrl: string): void {
     .run(podUrl, id);
 }
 
+export function countComments(issueId: number): number {
+  const row = getDb()
+    .prepare("SELECT COUNT(*) AS n FROM issue_comments WHERE issue_id = ?")
+    .get(issueId) as { n: number };
+  return row.n;
+}
+
 export function listComments(issueId: number): IssueComment[] {
   const rows = getDb()
     .prepare(

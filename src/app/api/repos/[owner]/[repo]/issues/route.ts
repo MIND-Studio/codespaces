@@ -125,12 +125,20 @@ export async function POST(req: Request, { params }: Params) {
   // driver error is captured in the per-role outcome, not thrown.
   ensureAgentsBootstrap();
   const issueRef = issue;
-  dispatch({
-    type: "issue.created",
-    repoOwner: owner,
-    repoName: name,
-    issueNumber: issueRef.number,
-  })
+  // MIND_ISSUE_DRIVER (e.g. "codex") overrides the backend for auto-fired
+  // issue agents so a single driver runs. Without it the default `coder`
+  // role fires its own driver and would race a separately-dispatched
+  // backend on the same agent/issue-{n} branch (non-fast-forward push).
+  const issueDriver = process.env.MIND_ISSUE_DRIVER?.trim() || undefined;
+  dispatch(
+    {
+      type: "issue.created",
+      repoOwner: owner,
+      repoName: name,
+      issueNumber: issueRef.number,
+    },
+    { driver: issueDriver },
+  )
     .then((outcomes) => {
       if (outcomes.length > 0) {
         console.log(

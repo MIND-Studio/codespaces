@@ -152,7 +152,7 @@ export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
         >
           agents fire on create ·{" "}
           <span style={{ color: "var(--ink-soft)" }}>
-            triager runs immediately
+            coder runs immediately
           </span>
         </p>
       </div>

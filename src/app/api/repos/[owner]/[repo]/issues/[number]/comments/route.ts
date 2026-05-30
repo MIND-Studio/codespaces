@@ -116,13 +116,19 @@ export async function POST(req: Request, { params }: Params) {
   // re-triggers on its own clarifying question.
   if (comment.agentRunId === null) {
     ensureAgentsBootstrap();
-    dispatch({
-      type: "issue.commented",
-      repoOwner: owner,
-      repoName: name,
-      issueNumber: issue.number,
-      commentId: comment.id,
-    })
+    // See MIND_ISSUE_DRIVER note in the issues route: pick a single backend
+    // for auto-fired issue agents so coder + an override don't race.
+    const issueDriver = process.env.MIND_ISSUE_DRIVER?.trim() || undefined;
+    dispatch(
+      {
+        type: "issue.commented",
+        repoOwner: owner,
+        repoName: name,
+        issueNumber: issue.number,
+        commentId: comment.id,
+      },
+      { driver: issueDriver },
+    )
       .then((outcomes) => {
         if (outcomes.length > 0) {
           console.log(

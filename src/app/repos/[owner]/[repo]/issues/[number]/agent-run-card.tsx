@@ -181,10 +181,8 @@ function LiveLog({
             }}
           />
           <span style={{ color: "var(--accent)", textShadow: "0 0 6px color-mix(in srgb, var(--accent) 55%, transparent)" }}>
-            engineer
+            coder
           </span>
-          <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>/</span>
-          <span>coder</span>
         </span>
         <span className="flex items-center gap-3">
           <span className="mc-term-live flex items-center gap-1.5">
@@ -287,7 +285,7 @@ const FILES_LINE = /^Changed files \((\d+)\):\s*$/;
 const TAIL_DIVIDER = /^---\s+opencode output[^-]*---\s*$/i;
 
 /**
- * Pull the engineer driver's summary string into structured parts so
+ * Pull the coder driver's summary string into structured parts so
  * the UI can render each one with appropriate styling. Format is
  * controlled by the driver itself (`coder.ts`), so the parser is
  * permissive: anything it doesn't recognise lands in `tail`, which
