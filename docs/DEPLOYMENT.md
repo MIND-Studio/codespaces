@@ -7,6 +7,15 @@ For the architectural shape (security floor, compose layout, env vars),
 see [`infra/prod/README.md`](../infra/prod/README.md) and
 [`PRODUCTION-READINESS.md`](./PRODUCTION-READINESS.md).
 
+> **Scope:** this is the runbook for the original single-box Hetzner alpha at
+> `codespaces.duckdns.org`. The production fleet at `codespaces.mindpods.org` is
+> deployed separately from the **`mind-studio/mindpods-infra`** repo (one Caddy in
+> front of dock/drive/builder/bridge/css). There, `release.yml` only builds and
+> pushes the `git-bridge` image to GHCR; the fleet repo pins the digest and rolls
+> the stack. The CI-SSH-deploy flow described below was the original alpha plan and
+> was superseded by that fleet model — treat the `deploy.yml`/SSH references here as
+> historical.
+
 ---
 
 ## Resume in a new session
@@ -39,7 +48,7 @@ git remote -v   # → git@github.com:MIND-Studio/codespaces.git
 git pull        # always pull before editing — CI deploys from tags
 ```
 
-The VM at `/opt/mind-codespaces/` is **not** a git checkout — it's an rsync snapshot from before the repo existed. Until the first CI deploy fires, it'll stay out of git's view. After the first successful `git tag v0.x.y && git push --tags`, the CI workflow at `.github/workflows/deploy.yml` will (a) build the bridge image on GHA, (b) push to `ghcr.io/mind-studio/codespaces-bridge:<sha>`, (c) SSH into the VM and pull the digest-pinned image, and the VM stops being a divergent snapshot.
+The VM at `/opt/mind-codespaces/` is **not** a git checkout — it's an rsync snapshot from before the repo existed, and on this alpha box the image is built locally (`docker compose up -d --build`). The repo's actual CI is `.github/workflows/release.yml`, which on a `v*` tag builds the bridge image and pushes it to `ghcr.io/mind-studio/git-bridge@sha256:...` — it does **not** SSH-deploy anywhere. Consuming that image is the fleet repo's job (`mindpods-infra`, for `codespaces.mindpods.org`); this duckdns alpha is updated by hand.
 
 ### One-time loose ends to close before stepping away
 
@@ -203,7 +212,7 @@ These are the bugs we fixed while bringing the alpha up; they're now baked into 
 
 These are tracked in `PRODUCTION-READINESS.md` and remain open even though the alpha is live:
 
-- **First CI deploy hasn't fired yet.** Repo is at `MIND-Studio/codespaces`, deploy.yml is wired, all 5 repo secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`, `DEPLOY_DIR`, `DEPLOY_SSH_KEY`) are set, and the CI SSH key (`~/.ssh/id_ed25519_mind_codespaces_ci` on your laptop) is in the deploy user's `authorized_keys` on the VM. To trigger the first run: `git tag v0.1.0 && git push --tags`. The VM will switch from "image built locally" to "image pulled from `ghcr.io/mind-studio/codespaces-bridge@sha256:...`" on first successful workflow run.
+- **This alpha box builds its image locally; it is not CI-deployed.** Repo is at `MIND-Studio/codespaces`. The CI is `release.yml` (build + push `ghcr.io/mind-studio/git-bridge@sha256:...` on a `v*` tag) — it does not SSH-deploy. Pulling that digest onto a host is the `mindpods-infra` fleet's job (which serves `codespaces.mindpods.org`, a separate deployment from this duckdns alpha). This VM stays on `docker compose up -d --build` unless/until you point it at the fleet flow.
 - **Orphan personal repo** — `https://github.com/huhn511/mind-codespaces-v0` was created during setup before the org was identified. It's empty of useful history (one commit, same as `MIND-Studio/codespaces`). Delete via web UI: Settings → "Delete this repository". The gh CLI token lacks `delete_repo` scope so this has to be a manual click.
 - **Image digests not pinned** — `caddy:2-alpine`, `solidproject/community-server:7`, etc. are floating tags. Run `infra/prod/scripts/pin-image-digests.sh` after the next image bump.
 - **Offsite backups not scheduled** — manual `tar` via the snippet above is the only path. Consider rclone → S3/Backblaze in cron.
