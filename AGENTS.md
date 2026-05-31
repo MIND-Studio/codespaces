@@ -1,6 +1,6 @@
 # Orientation
 
-The user-facing README is the source of truth for commands, endpoints, ports, env vars, demo user, and layout — imported below. `docs/PRD.md` has the design rationale; `docs/CHANGELOG.md` is what actually shipped (the README occasionally lags).
+The user-facing README is the source of truth for commands, endpoints, ports, env vars, demo user, and layout — imported below. `docs/IDEA.md` has the design rationale; `docs/CHANGELOG.md` is what actually shipped (the README occasionally lags).
 
 @README.md
 
@@ -30,3 +30,17 @@ If a CSS change isn't visible — even after restarting the dev server — the c
 # Workflow runner auto-detects Docker
 
 `runWorkflow` probes `docker info` once at first use. If Docker is reachable, every workflow's `run:` commands execute inside a single `node:22-alpine` container (`--rm --user $(uid):$(gid) --memory=2g --cpus=2`, bind-mount the temp checkout at `/work`). Otherwise it falls back to native `sh -c` on the host with no sandbox. The chosen mode is logged at the top of every run's log (`[runner: docker]` / `[runner: native]`). Force one with `MIND_RUNNER=docker` or `MIND_RUNNER=native`. The Docker path needs `node:22-alpine` pulled (~150MB); the first cold run pays the pull cost. The publish step runs back on the host *after* the container exits — that's why the container runs as the host UID, so file ownership in the bind mount doesn't trip up the publisher. See `docs/WORKFLOWS-PLAN.md` for the threat-model boundary (step 2a sandboxes from the host fs, not from the network).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, used verbatim. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
