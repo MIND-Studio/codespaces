@@ -53,3 +53,5 @@ next-env.d.ts
 
 # Bootstrap-laptop tempfile (rotated root password — should be in pw manager)
 /.mind-codespaces-root-pw.tmp
+
+!.claude/skills/*
