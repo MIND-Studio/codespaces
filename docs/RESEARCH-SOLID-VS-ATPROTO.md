@@ -26,7 +26,7 @@ This pulls each protocol toward what it is good at, refuses to fork a lexicon we
 
 ## 1. What we already have (Mind Codespaces v0)
 
-Reference: `docs/PRD.md`, `docs/PRODUCTION-READINESS.md`, `docs/WORKFLOWS-PLAN.md`, ~23k LOC of TypeScript/React.
+Reference: `docs/IDEA.md`, `docs/PRODUCTION-READINESS.md`, `docs/WORKFLOWS-PLAN.md`, ~23k LOC of TypeScript/React.
 
 | Component | File | What it does |
 |---|---|---|
@@ -306,7 +306,7 @@ Mind Codespaces v0 has built ~70% of the user-facing surface. **The remaining 30
 - [Assessing the Solid Protocol — Esposito et al.](https://arxiv.org/abs/2210.08270)
 
 ### Internal references
-- `docs/PRD.md` — Mind Codespaces vision
+- `docs/IDEA.md` — Mind Codespaces vision
 - `docs/PRODUCTION-READINESS.md` — gap analysis
 - `docs/WORKFLOWS-PLAN.md` — runner threat model
 - `src/lib/git/http-cgi.ts:46-229` — Smart-HTTP implementation

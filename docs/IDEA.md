@@ -12,9 +12,11 @@ for what's still open.
 A **Git Smart HTTP bridge** that sits between `git push` and a **Solid Pod**,
 plus a **workflow runner** that can build the pushed source in a sandboxed
 Docker container before publishing the output to the pod as a static site,
-plus an **agents module** that responds to issue events (triager, scribe,
-optional opencode-backed engineer). Identity is via Solid-OIDC delegation —
-the bridge acts on the user's pod with the user's permissions.
+plus an **agents module** that responds to issue events via a single
+conversational **`coder`** role (it decides per-run whether to implement or ask;
+the earlier triager/scribe/engineer split was collapsed into it in v0.6.1).
+Identity is via Solid-OIDC delegation — the bridge acts on the user's pod with
+the user's permissions.
 
 Runs end-to-end locally; runs in production behind Caddy on a Hetzner CX33;
 crosses from "closed beta" toward "managed multi-user" per the audit. About

@@ -3,7 +3,7 @@
 Solid Git Bridge prototype — `git push` your site into your own Solid Pod,
 with a workflow runner and issue-driven agents on top. Sibling of `mind-market-v0`.
 
-See [`docs/PRD.md`](./docs/PRD.md) for the vision and current shape,
+See [`docs/IDEA.md`](./docs/IDEA.md) for the vision and current shape,
 [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) for what shipped in each iteration,
 [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for the Hetzner alpha runbook,
 [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) for what's still open.
@@ -142,6 +142,11 @@ Drivers:
   `OPENROUTER_API_KEY` env, then a clear "no provider configured" error.
 - **`openrouter`** — env-only text driver. Registered when
   `OPENROUTER_API_KEY` is set.
+- **`codex`** — OpenAI `codex exec` backend (PoC). Always registered, but not
+  auto-triggered by issue events — hand-fire it via `POST /api/agents/dispatch`
+  with `"driver":"codex"` (reuses the `coder` role). Runtime (host vs Docker) is
+  set by `MIND_CODEX_RUNTIME`; see also `MIND_CODEX_IMAGE` / `MIND_CODEX_MODEL` /
+  `MIND_CODEX_TIMEOUT` / `MIND_CODEX_NETWORK`.
 
 Credentials, two paths — equivalent at the dispatch layer:
 1. **BYOK (per user)** — sign in, go to `/profile/ai-providers`, paste a
@@ -183,7 +188,9 @@ Hand-fire dispatches via `POST /api/agents/dispatch`; introspect roles via
 | GET POST | `/api/repos/{o}/{r}/tokens` · DELETE `/{id}` | Push-token CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues` · GET PATCH `/{n}` | Issue CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues/{n}/comments` | Issue comments |
+| GET | `/api/repos/{o}/{r}/issues/{n}/agent-runs` | Agent runs for an issue |
 | GET POST | `/api/repos/{o}/{r}/pulls` · GET `/{n}` · POST `/{n}/merge` · `/{n}/close` | PR CRUD |
+| GET POST | `/api/repos/{o}/{r}/pulls/{n}/preview` | Read · (re)build per-PR static preview |
 | GET POST | `/api/repos/{o}/{r}/runs` · GET `/{id}` | Workflow run history + manual rerun |
 | GET | `/api/agent-runs/{id}` · `/{id}/log` | Agent run detail + log tail |
 | GET POST | `/api/agents`, `/api/agents/dispatch` | Roster introspection + hand-fire |
@@ -268,7 +275,7 @@ PRODUCTION-READINESS.
 - `src/lib/pages/` — Publisher, publish-lock, reconciler, MIME map
 - `src/lib/solid/` — Containers, ACLs, OIDC delegation, profile dereferencing, repo-metadata
 - `src/lib/workflows/` — `.mind/workflow.yml` parser + native/Docker runners
-- `src/lib/agents/` — Dispatch, registry, drivers (`echo`/`openrouter`/`coder`)
+- `src/lib/agents/` — Dispatch, registry, drivers (`echo`/`openrouter`/`coder`/`codex`)
 - `src/lib/auth/`, `src/lib/rate-limit.ts`, `src/lib/http/json.ts`, `src/proxy.ts` — Session, CSRF, rate limits, CORS
 - `src/lib/log.ts`, `src/lib/metrics.ts`, `src/lib/env.ts`, `src/instrumentation.ts` — Observability + boot
 - `infra/css/seed.json` — Bootstraps the CSS accounts

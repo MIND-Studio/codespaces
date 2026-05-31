@@ -134,12 +134,12 @@ docker compose --env-file .env up -d --build bridge
 
 **Updates — via CI (registry-pulled, recommended):**
 
-Push a `v*` tag and `.github/workflows/deploy.yml` will build the bridge image, push it to GHCR, then SSH here and roll the stack onto the new digest. See the workflow header for the repo secrets it needs (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optionally `DEPLOY_PORT`, `DEPLOY_DIR`).
+Push a `v*` tag and `.github/workflows/release.yml` builds the bridge image and pushes it to `ghcr.io/mind-studio/git-bridge@sha256:...`. The workflow builds and pushes **only** — it does not SSH-deploy. To roll a host onto the new digest, pin `MIND_BRIDGE_IMAGE` to the printed digest and re-run compose (the `mindpods-infra` fleet repo automates this for `codespaces.mindpods.org`).
 
 The workflow uses `docker-compose.prod.yml` as an override that replaces the bridge `build:` with a digest-pinned `image:` reference — so two compose files are in play whenever you run compose by hand against a CI-deployed stack:
 
 ```bash
-export MIND_BRIDGE_IMAGE='ghcr.io/<owner>/<repo>-bridge@sha256:...'  # see the last deploy log
+export MIND_BRIDGE_IMAGE='ghcr.io/mind-studio/git-bridge@sha256:...'  # see the last release run's summary
 docker compose --env-file .env \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
@@ -222,9 +222,12 @@ What it blocks (everything else, by explicit `*=0` envs in `docker-compose.yml`)
 
 | File | Purpose |
 |---|---|
-| `docker-compose.yml` | Service definitions: caddy, bridge, socket-proxy, css. |
+| `docker-compose.yml` | Service definitions: caddy, bridge, socket-proxy, css, verdaccio (+ `mind`/`mind-workflows` networks). |
+| `docker-compose.prod.yml` | CI override — swaps the bridge `build:` for a digest-pinned `image:`. |
 | `Caddyfile` | TLS + reverse-proxy config. |
 | `Dockerfile.bridge` | Multi-stage Next.js standalone build. |
+| `verdaccio.yaml` | Config for the Verdaccio npm mirror used by workflow containers. |
+| `scripts/` | `bootstrap-vm.sh`, `harden-first-boot.sh`, `pin-image-digests.sh`. |
 | `.dockerignore` | Keeps the build context small. |
 | `.env.example` | Template for the populated `.env`. |
 | `README.md` | This file. |
