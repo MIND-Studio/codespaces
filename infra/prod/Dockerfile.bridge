@@ -39,6 +39,18 @@ COPY src ./src
 # empty case at runtime fine.
 RUN mkdir -p public
 
+# NEXT_PUBLIC_* are inlined at build time. The masthead app launcher renders
+# the shared app suite, so the four sibling app URLs must be baked in here too
+# (passed as build-args by release.yml).
+ARG NEXT_PUBLIC_APP_DOCK_URL
+ARG NEXT_PUBLIC_APP_DRIVE_URL
+ARG NEXT_PUBLIC_APP_BUILDER_URL
+ARG NEXT_PUBLIC_APP_CODESPACES_URL
+ENV NEXT_PUBLIC_APP_DOCK_URL=$NEXT_PUBLIC_APP_DOCK_URL \
+    NEXT_PUBLIC_APP_DRIVE_URL=$NEXT_PUBLIC_APP_DRIVE_URL \
+    NEXT_PUBLIC_APP_BUILDER_URL=$NEXT_PUBLIC_APP_BUILDER_URL \
+    NEXT_PUBLIC_APP_CODESPACES_URL=$NEXT_PUBLIC_APP_CODESPACES_URL
+
 # `next-env.d.ts` is gitignored (Next regenerates it on every build /
 # dev start), so it isn't in the build context from a CI `actions/checkout`.
 # `next build` auto-creates it during type-checking, so no separate step.

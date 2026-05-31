@@ -72,6 +72,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # The masthead app launcher links to the sibling Mind apps; their
+          # public URLs are inlined into the UI at build time.
+          build-args: |
+            NEXT_PUBLIC_APP_DOCK_URL=https://dock.mindpods.org
+            NEXT_PUBLIC_APP_DRIVE_URL=https://drive.mindpods.org
+            NEXT_PUBLIC_APP_BUILDER_URL=https://builder.mindpods.org
+            NEXT_PUBLIC_APP_CODESPACES_URL=https://codespaces.mindpods.org
           # Auth for installing the public @mind-studio/* packages from GitHub
           # Packages during `npm ci`. Never baked into a layer (BuildKit secret).
           secrets: |
