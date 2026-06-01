@@ -67,22 +67,25 @@ If you want a scriptable flow, hit `/api/auth/login` with the seeded
 credentials and reuse the cookie jar:
 
 ```bash
-# 1. Sign in and stash the cookies
+# 1. Sign in and stash the cookies. The login route's CSRF guard requires a
+#    same-origin signal, so send Origin (curl omits it by default).
 curl -fsS -c cookies.txt -X POST http://localhost:3010/api/auth/login \
-  -H 'Content-Type: application/json' \
+  -H 'Content-Type: application/json' -H 'Origin: http://localhost:3010' \
   -d '{"email":"alice@mind-codespaces.local","password":"dev-only-do-not-use-in-prod"}'
+# The non-HttpOnly cookie is `mc-csrf`; mutating routes want it echoed in the
+# `X-CSRF-Token` header.
 CSRF=$(grep mc-csrf cookies.txt | awk '{print $7}')
 
 # 2. Create a repo, configure Pages, mint a push token
-curl -fsS -b cookies.txt -H "x-mc-csrf: $CSRF" -X POST http://localhost:3010/api/repos \
+curl -fsS -b cookies.txt -H "X-CSRF-Token: $CSRF" -X POST http://localhost:3010/api/repos \
   -H 'Content-Type: application/json' \
   -d '{"owner":"alice","name":"hello","ownerWebId":"http://localhost:3011/alice/profile/card#me","ownerPodRoot":"http://localhost:3011/alice/","visibility":"public"}'
 
-curl -fsS -b cookies.txt -H "x-mc-csrf: $CSRF" -X PUT http://localhost:3010/api/repos/alice/hello/pages \
+curl -fsS -b cookies.txt -H "X-CSRF-Token: $CSRF" -X PUT http://localhost:3010/api/repos/alice/hello/pages \
   -H 'Content-Type: application/json' \
   -d '{"enabled":true,"sourceBranch":"main","sourcePath":"/","targetContainer":"http://localhost:3011/alice/public/sites/hello/"}'
 
-TOKEN=$(curl -fsS -b cookies.txt -H "x-mc-csrf: $CSRF" -X POST http://localhost:3010/api/repos/alice/hello/tokens \
+TOKEN=$(curl -fsS -b cookies.txt -H "X-CSRF-Token: $CSRF" -X POST http://localhost:3010/api/repos/alice/hello/tokens \
   -H 'Content-Type: application/json' -d '{"label":"my laptop"}' \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
 
@@ -169,6 +172,78 @@ before pointing this at anything you don't control.
 Hand-fire dispatches via `POST /api/agents/dispatch`; introspect roles via
 `GET /api/agents`.
 
+## Packages (Mind Pages for artifacts)
+
+A package registry whose bytes live in your pod, alongside Pages. Artifacts are
+content-addressed (sha256) under `{pod}/public/packages/blobs/`; a SQLite index
+maps `(repo, type, name, version)` → blob. Auth reuses the repo's **push tokens**
+(the same `scp_…` token used for `git push`). See [`docs/PACKAGES-PLAN.md`](./docs/PACKAGES-PLAN.md).
+
+Published artifacts surface in the dashboard under the repo's **Packages** tab
+(`/repos/{o}/{r}/packages`) — grouped by type (npm / container images / files)
+with a copy-able install hint per package. Private repos show packages only to
+the signed-in owner.
+
+**Generic files / zips:**
+
+```bash
+# Upload (push token as Bearer or HTTP-Basic password)
+curl -fsS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-binary @release.zip \
+  http://localhost:3010/api/repos/alice/hello/files/v1.0.0/release.zip
+
+# Download
+curl -fsSL http://localhost:3010/api/repos/alice/hello/files/v1.0.0/release.zip -o out.zip
+```
+
+**npm packages** — point `.npmrc` at the repo's registry base, then publish:
+
+```ini
+# ~/.npmrc
+@alice:registry=http://localhost:3010/api/packages/npm/alice/hello/
+//localhost:3010/api/packages/npm/alice/hello/:_authToken=scp_…
+```
+
+```bash
+npm publish              # @alice/<name> from package.json
+npm install @alice/<name>
+```
+
+Publish decodes the inline tarball into the pod CAS; `npm install` reads the
+packument (with bridge-rewritten `dist.tarball` URLs) and pulls the tarball back
+through the bridge. Private repos require the token on read too.
+
+**Docker / OCI images** — `docker login`, then push/pull. The image name is
+`{host}/{owner}/{repo}[/{image}]`; auth is the repo's push token as the password.
+
+```bash
+docker login localhost:3010 -u alice -p scp_…     # any username; token is the password
+docker tag myapp localhost:3010/alice/hello/myapp:v1
+docker push localhost:3010/alice/hello/myapp:v1
+docker pull localhost:3010/alice/hello/myapp:v1
+```
+
+Image blobs are sha256-addressed and land in the same pod CAS as everything
+else, so identical layers dedup across your repos.
+
+> **Plain-HTTP / `docker login` caveat.** The bridge serves the registry over
+> plain HTTP. On **Linux** (daemon on the same host) `localhost:3010` is treated
+> as a loopback insecure registry and just works. On **Docker Desktop
+> (macOS/Windows)** the daemon runs in a VM, so it classifies `localhost:3010`
+> as a remote registry and forces HTTPS, which the plaintext bridge can't
+> answer — add `"insecure-registries": ["localhost:3010"]` to the daemon config
+> and restart Docker, **or** skip the daemon entirely and use a client that
+> speaks plain HTTP directly, e.g.
+> `crane --insecure push img.tar host.docker.internal:3010/alice/hello/app:v1`
+> (`crane`/`skopeo` round-trips are verified working). A remote bridge needs TLS
+> regardless (the prod Caddy stack provides it).
+
+> **OCI v0 limits:** uploads buffer in memory (capped by `MAX_PACKAGE_BLOB_BYTES`),
+> so very large layers aren't supported yet; auth is HTTP-Basic only (no bearer
+> token endpoint); no `?mount=` cross-repo blob mount. See
+> [`docs/PACKAGES-PLAN.md`](./docs/PACKAGES-PLAN.md).
+
 ## Endpoints
 
 | Method | Path | Purpose |
@@ -176,7 +251,7 @@ Hand-fire dispatches via `POST /api/agents/dispatch`; introspect roles via
 | GET | `/` | Landing |
 | GET | `/repos`, `/repos/{o}/{r}` | Dashboard, repo detail |
 | GET | `/repos/{o}/{r}/{tree,blob}/...` | Code browser |
-| GET | `/repos/{o}/{r}/{issues,pulls,runs,settings}` | Repo subpages |
+| GET | `/repos/{o}/{r}/{issues,pulls,runs,packages,settings}` | Repo subpages (Packages lists published artifacts) |
 | GET | `/people`, `/people/{owner}` | Owner directory + profile view |
 | GET | `/profile`, `/profile/ai-providers` | User profile + BYOK AI keys |
 | GET | `/connect`, `/identities` | Pod authorization + connected pods |
@@ -192,6 +267,10 @@ Hand-fire dispatches via `POST /api/agents/dispatch`; introspect roles via
 | GET POST | `/api/repos/{o}/{r}/pulls` · GET `/{n}` · POST `/{n}/merge` · `/{n}/close` | PR CRUD |
 | GET POST | `/api/repos/{o}/{r}/pulls/{n}/preview` | Read · (re)build per-PR static preview |
 | GET POST | `/api/repos/{o}/{r}/runs` · GET `/{id}` | Workflow run history + manual rerun |
+| GET | `/api/repos/{o}/{r}/packages` | List published package versions (`?type=npm\|oci\|file`) |
+| GET PUT | `/api/repos/{o}/{r}/files/{version}/{filename}` | Generic file/zip artifact download · upload |
+| GET PUT | `/api/packages/npm/{o}/{r}/...` | npm registry protocol (packument, tarball, publish) |
+| GET HEAD POST PUT PATCH | `/v2/...` | OCI Distribution API (`docker push`/`pull`); image name `{o}/{r}[/{img}]` |
 | GET | `/api/agent-runs/{id}` · `/{id}/log` | Agent run detail + log tail |
 | GET POST | `/api/agents`, `/api/agents/dispatch` | Roster introspection + hand-fire |
 | GET POST | `/api/git/{o}/{r}.git/...` | Git Smart HTTP (clone/fetch/push) |
@@ -247,6 +326,7 @@ refuses to start when any of the **required** secrets are missing or wrong size
 | `BRIDGE_CORS_ALLOWED_ORIGINS` | (none) | Extra origins permitted by the `/api/*` CORS allowlist |
 | `BRIDGE_ENABLE_SIGNUP` | unset | Set `1` to enable `POST /api/signup` + `/signup` page |
 | `MAX_REPOS_PER_OWNER` / `MAX_TOKENS_PER_REPO` / `MAX_RUNS_PER_OWNER_PER_DAY` / `MAX_DISK_PER_REPO_BYTES` | 50 / 10 / 500 / 1 GiB | Per-owner quotas (return 429 `QUOTA_EXCEEDED`) |
+| `MAX_PACKAGE_BLOB_BYTES` / `MAX_PACKAGE_BYTES_PER_REPO` | 100 MiB / 2 GiB | Package registry: single-artifact cap (also an in-memory OOM guard) + per-repo total (return 413 `QUOTA_EXCEEDED`) |
 | `OPENROUTER_API_KEY` | unset | Bridge-wide fallback key. Enables the env-only `openrouter` driver, and serves as the coder driver's fallback when a repo owner hasn't configured BYOK at `/profile/ai-providers`. The coder driver itself is always registered. |
 | `MIND_AGENT_MODEL` | `qwen/qwen3-coder:free` | OpenRouter model id used as the bridge-wide fallback. Default is a free coder-tuned model so a bridge with no per-user BYOK keys still runs end-to-end without burning credits. Pinning a paid model requires the operator-side OpenRouter key to carry the matching budget. |
 | `MIND_RUNNER` | `auto` | Force workflow runner: `docker` \| `native` \| `auto` |
@@ -276,6 +356,7 @@ PRODUCTION-READINESS.
 - `src/lib/solid/` — Containers, ACLs, OIDC delegation, profile dereferencing, repo-metadata
 - `src/lib/workflows/` — `.mind/workflow.yml` parser + native/Docker runners
 - `src/lib/agents/` — Dispatch, registry, drivers (`echo`/`openrouter`/`coder`/`codex`)
+- `src/lib/packages/` — Mind Packages: content-addressed pod store, index, npm + OCI protocols, upload sessions, push-token auth
 - `src/lib/auth/`, `src/lib/rate-limit.ts`, `src/lib/http/json.ts`, `src/proxy.ts` — Session, CSRF, rate limits, CORS
 - `src/lib/log.ts`, `src/lib/metrics.ts`, `src/lib/env.ts`, `src/instrumentation.ts` — Observability + boot
 - `infra/css/seed.json` — Bootstraps the CSS accounts

@@ -2,6 +2,101 @@
 
 What shipped in each iteration. Most-recent at the top.
 
+## v0.8.1 — Mind Packages: web UI, `/v2` version-ping fix, live verification (2026-06-01)
+
+The packages feature was API/CLI-only; this adds the dashboard surface and
+fixes the one bug that blocked real OCI clients.
+
+- **Packages tab + page** — `src/app/repos/[owner]/[repo]/packages/page.tsx` and a
+  new tab in `repo-tabs.tsx` (distinct `(type, name)` count, so an OCI image
+  indexed by both tag and digest counts once). Groups published artifacts into
+  **npm / container images / files**, each with version, size, relative time,
+  short digest, and a copy-able install hint (`npm install` / `docker pull` /
+  `curl`). Empty state and a private-repo locked state (owner-gated). Added
+  `formatBytes` to `src/lib/format.ts`.
+- **`/v2/` version-ping fix** — `skipTrailingSlashRedirect: true` in
+  `next.config.ts`. Next was 308-redirecting `GET /v2/` → `/v2`; docker/OCI
+  clients treat anything but 200/401 on the trailing-slash ping as "not a v2
+  registry", so the redirect broke `docker login`/push. Now `/v2/` answers 200
+  directly. (Both slash variants still resolve for every other route.)
+- **Verified live against local CSS** — all three formats round-tripped with
+  bytes confirmed in the pod CAS: generic file (curl PUT/GET), npm (`npm publish`
+  → `npm install` → `require()`), OCI (the full Distribution v2 wire sequence +
+  a real `crane push`/`pull`/`export` round-trip over plain HTTP). The
+  workflows→publish chain was re-confirmed too (build in a `node:22-alpine`
+  container → publish to pod → live site, with failure-gating: a broken build
+  leaves the previous site intact).
+- **Doc fixes** — README CLI flow now sends `Origin` on login and the correct
+  `X-CSRF-Token` header (was `x-mc-csrf`); documented the Docker-Desktop
+  plain-HTTP / `insecure-registries` caveat and the `crane --insecure`
+  alternative. Added a Packages glossary section to `CONTEXT.md` and an ADR
+  (`docs/adr/0001-mind-packages-in-the-bridge.md`).
+
+No new runtime deps; `tsc` clean, 32 unit tests pass, `next build` green.
+
+## v0.8 — Mind Packages: OCI / Docker registry (`docker push`/`pull`) (2026-06-01)
+
+The third package format, on the same pod-backed content-addressed store. A
+top-level `/v2/` mount implements the OCI Distribution Spec subset for
+`docker push` / `docker pull`.
+
+- **`src/app/v2/[[...path]]/route.ts`** — `GET /v2/` version check; blob upload
+  `POST` (start or monolithic single-POST) / `PATCH` (chunk) / `PUT` (finalize);
+  blob `GET`/`HEAD`; manifest `PUT`/`GET`/`HEAD`; `GET …/tags/list`. Returns the
+  `Docker-Content-Digest` / `Docker-Distribution-Api-Version` headers and OCI
+  `{errors:[…]}` bodies.
+- **Name mapping** — `src/lib/packages/oci.ts` parses `/v2/<name>/…` and maps the
+  image `<name>` to `{owner}/{repo}[/{image}]`, reusing the repo-scoping from the
+  npm/files phase. OCI blobs are already sha256-addressed, so they drop straight
+  into the existing `PodContentStore` — `docker`'s HEAD-before-push gives free
+  dedup within an owner's pod.
+- **Upload sessions** — `src/lib/packages/oci-uploads.ts`: an in-memory,
+  process-global accumulator for the chunked POST→PATCH→PUT flow. Digest is
+  verified on finalize (`DIGEST_INVALID` on mismatch).
+- **Auth** — HTTP-Basic (`docker login`, push token as password); reuses the
+  repo's push tokens. Bearer/JWT token endpoint is the documented v1.
+- **Index** — manifests are indexed as `type='oci'` rows (by tag *and* by
+  digest); raw layer/config blobs live in the CAS only. `validateVersion` now
+  accepts digest-form refs; `validatePackageName` gained an OCI name grammar.
+- **Tests** — `tests/packages-oci.test.ts` (routing classification, ref/name
+  validation, upload-session concat). 32 unit tests pass.
+
+**v0 limits** (see `docs/PACKAGES-PLAN.md`): in-memory uploads capped by
+`MAX_PACKAGE_BLOB_BYTES` (no streaming yet → large layers unsupported);
+Basic-only auth; no `?mount=` cross-repo blob mount.
+
+## v0.7 — Mind Packages: pod-backed npm + generic-file registry (2026-06-01)
+
+The fourth surface alongside Pages / Actions / Agents: a package registry whose
+artifact bytes live in the owner's pod, mirroring Mind Pages. Built directly in
+the bridge (no Verdaccio-as-backend, no forked forge) per
+[`docs/PACKAGES-PLAN.md`](./PACKAGES-PLAN.md).
+
+- **Content-addressed pod store** — `src/lib/packages/content-store.ts`.
+  `PodContentStore` keys every blob by sha256 and writes it to
+  `{pod}/public/packages/blobs/sha256/<aa>/<hex>` (public-read ACL, like Pages).
+  Writes are idempotent (HEAD-before-PUT) and identical bytes dedup. Format-agnostic
+  — ready for OCI layer blobs.
+- **Index** — migration `015_packages.sql` + `src/lib/packages/store.ts`. One row per
+  `(repo, type, name, version)` → blob digest + format metadata. Bytes in the pod,
+  index in SQLite (the existing split).
+- **npm** — `PUT/GET /api/packages/npm/{owner}/{repo}/…`. Publish decodes the inline
+  base64 `_attachments` tarball into the CAS; packument GET rewrites each version's
+  `dist.tarball` to a bridge URL and preserves client-computed integrity; tarball GET
+  streams the blob back. Point `.npmrc` at the repo's registry base.
+- **Generic files** — `PUT/GET /api/repos/{o}/{r}/files/{version}/{filename}`.
+- **Auth reuses push tokens** — npm `Bearer` (`_authToken`) or HTTP-Basic; the same
+  `scp_…` token that authorizes `git push` authorizes publishing.
+- **Quotas** — `MAX_PACKAGE_BLOB_BYTES` (100 MiB, also an in-memory OOM guard until
+  streaming lands) and `MAX_PACKAGE_BYTES_PER_REPO` (2 GiB).
+- **Tests** — 3 new vitest files (CAS round-trip + dedup, index upsert/replace +
+  quota sum, npm parse/packument). 29 unit tests pass; `015` applies in `smoke:db`.
+
+Scoped to **repos** (not bare owners) so it reuses repo identity, visibility, and
+push tokens — a refinement on the plan's owner-scoped sketch. **OCI/Docker is the
+next phase** (needs streaming + large-blob handling + the `/v2/` mount); the CAS is
+already built to carry it.
+
 ## v0.6.2 — Mind-branded CSS pages (login / pod welcome) (2026-05-30)
 
 The Solid server (CommunitySolidServer) behind the bridge now serves

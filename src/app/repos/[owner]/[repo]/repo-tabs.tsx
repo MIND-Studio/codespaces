@@ -2,10 +2,11 @@ import "server-only";
 import { getRepo, getPagesConfig } from "@/lib/registry/repos";
 import { countIssuesByStatus } from "@/lib/registry/issues";
 import { countOpenPullRequests } from "@/lib/registry/pulls";
+import { listPackages } from "@/lib/packages/store";
 import { readSession } from "@/lib/auth/session";
 import { NavTabs } from "./nav-tabs";
 
-type ActiveKey = "code" | "issues" | "pulls" | "runs" | "settings";
+type ActiveKey = "code" | "issues" | "pulls" | "runs" | "packages" | "settings";
 
 export async function RepoTabs({
   owner,
@@ -24,6 +25,12 @@ export async function RepoTabs({
 
   const issueCounts = countIssuesByStatus(repo.id);
   const openPullCount = countOpenPullRequests(repo.id);
+
+  // Distinct published artifacts, counting each (type, name) once — an OCI
+  // image indexed by both tag and digest is one package, not two.
+  const packageCount = new Set(
+    listPackages(repo.id).map((p) => `${p.type}:${p.name}`),
+  ).size;
 
   const pages = getPagesConfig(repo.id);
   const publishedUrl =
@@ -59,6 +66,13 @@ export async function RepoTabs({
           href: `/repos/${owner}/${name}/runs`,
           label: "Runs",
           active: active === "runs",
+        },
+        {
+          key: "packages",
+          href: `/repos/${owner}/${name}/packages`,
+          label: "Packages",
+          count: packageCount,
+          active: active === "packages",
         },
         ...(isOwner
           ? [
