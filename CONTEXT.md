@@ -124,6 +124,35 @@ The background loop that reconciles a Repo's git HEAD against its `last_publishe
 and re-publishes on divergence (covers a missed post-receive hook).
 _Avoid_: sync, cron, watcher
 
+### Packages
+
+**Package**:
+A published artifact hosted by a Repo, in one of three formats — `npm`, `oci`
+(Docker/OCI image), or `file` (generic file/zip). Bytes live in the owner's pod;
+the SQLite row is only an index. "Mind Packages" is the marketing name; the
+feature is "Mind Pages for non-HTML artifacts."
+_Avoid_: artifact (reserve for the published bytes), release, asset
+
+**Package version**:
+One immutable `(repo, type, name, version)` entry pointing at a content digest.
+`version` is a semver/tag string or, for OCI, a `sha256:…` digest reference.
+Re-publishing the same version repoints the index row.
+_Avoid_: release, tag (except as the OCI sense)
+
+**Content store (CAS)**:
+The content-addressed blob store backing all package formats — every blob is
+keyed by sha256 and written to `{podRoot}/public/packages/blobs/sha256/<aa>/<hex>`
+(public-read ACL, like Pages). Writes are idempotent; identical bytes dedup
+within an owner's pod. Shared by npm tarballs, OCI layers/configs/manifests, and
+files.
+_Avoid_: object store, bucket, cache
+
+**Blob**:
+One content-addressed unit of bytes in the CAS (a tarball, an OCI layer/config,
+a manifest, or a file). Addressed only by its digest; the Package index gives it
+a human name.
+_Avoid_: object, file (reserve "file" for the `file` package type), layer (OCI-only)
+
 ### Collaboration
 
 **Issue**:

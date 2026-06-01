@@ -41,6 +41,18 @@ export const QUOTAS = {
     "MAX_DISK_PER_REPO_BYTES",
     1024 * 1024 * 1024,
   ),
+  // Mind Packages (docs/PACKAGES-PLAN.md). Package blobs live in the pod, so
+  // these guard the bridge's own ingest path, not local disk:
+  //   • a single artifact larger than this is refused outright (default
+  //     100 MiB — the in-memory ingest can't stream yet, so this is also an
+  //     OOM guard; raise it once OCI streaming lands)
+  //   • the sum of a repo's published blob sizes is capped separately from
+  //     git disk so a few large images can't fill the pod (default 2 GiB)
+  maxPackageBlobBytes: envInt("MAX_PACKAGE_BLOB_BYTES", 100 * 1024 * 1024),
+  maxPackageBytesPerRepo: envInt(
+    "MAX_PACKAGE_BYTES_PER_REPO",
+    2 * 1024 * 1024 * 1024,
+  ),
 };
 
 export class QuotaExceededError extends Error {
@@ -122,6 +134,39 @@ export function assertCanDispatchRun(owner: string): void {
       "maxRunsPerOwnerPerDay",
       QUOTAS.maxRunsPerOwnerPerDay,
       observed,
+    );
+  }
+}
+
+/** Sum of all published package blob sizes for a repo. */
+export function sumPackageBytesForRepo(repoId: number): number {
+  const row = getDb()
+    .prepare("SELECT COALESCE(SUM(size_bytes), 0) AS c FROM packages WHERE repo_id = ?")
+    .get(repoId) as { c: number };
+  return row.c;
+}
+
+/**
+ * Guard a package upload of `addBytes`: refuse an oversized single blob, and
+ * refuse if it would push the repo's total package storage over the cap.
+ * (Re-publishing an existing version slightly over-counts here — a known v0
+ * simplification, since the CAS dedups but the index sum doesn't subtract the
+ * replaced row.)
+ */
+export function assertCanStorePackage(repoId: number, addBytes: number): void {
+  if (addBytes > QUOTAS.maxPackageBlobBytes) {
+    throw new QuotaExceededError(
+      "maxPackageBlobBytes",
+      QUOTAS.maxPackageBlobBytes,
+      addBytes,
+    );
+  }
+  const observed = sumPackageBytesForRepo(repoId);
+  if (observed + addBytes > QUOTAS.maxPackageBytesPerRepo) {
+    throw new QuotaExceededError(
+      "maxPackageBytesPerRepo",
+      QUOTAS.maxPackageBytesPerRepo,
+      observed + addBytes,
     );
   }
 }
