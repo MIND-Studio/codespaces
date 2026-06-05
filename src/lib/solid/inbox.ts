@@ -64,9 +64,32 @@ export type Proposal = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Triple-quoted Turtle long string — survives newlines without escaping. */
+/**
+ * Triple-quoted Turtle long string — keeps newlines literal. Every `"` is
+ * escaped individually (`\"`), which is always valid inside `"""…"""` and,
+ * crucially, also handles a body that *ends* in a quote (e.g. `He said "hi"`):
+ * a bare trailing `"` would otherwise merge with the closing `"""` and produce
+ * malformed Turtle the pod rejects.
+ */
 function quote(s: string): string {
-  return `"""${s.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')}"""`;
+  return `"""${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"""`;
+}
+
+/**
+ * A WebID is interpolated into an `<…>` IRI, so — unlike the escaped literals —
+ * a hostile value could inject a triple. WebIDs come from the signed session
+ * (never the request body), but a self-hosted IdP could still assert a
+ * malformed one, so we validate before trusting it as an IRI.
+ */
+function isSafeIri(value: string): boolean {
+  try {
+    const u = new URL(value);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    // Reject anything that could break out of `<…>` or smuggle a triple.
+    return !/[\u0000-\u0020<>"{}|\\^\u0060]/.test(value);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -90,7 +113,9 @@ export function renderProposalTurtle(input: ProposalInput): string {
     `    sioc:content ${quote(input.body)} ;`,
     `    dcterms:created "${new Date(input.createdMs).toISOString()}"^^xsd:dateTime`,
   ];
-  if (input.proposerWebId) {
+  // Only emit `as:actor` for a well-formed IRI — a malformed WebID is dropped
+  // (provenance lost, but no triple injection) rather than trusted as-is.
+  if (input.proposerWebId && isSafeIri(input.proposerWebId)) {
     lines[lines.length - 1] += " ;";
     lines.push(`    as:actor <${input.proposerWebId}>`);
   }

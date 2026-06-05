@@ -65,7 +65,7 @@ the whole surface picks up a light/dark/neo theme.
   `packages-oci-blob-cap.test.ts`); empty-state "push tokens" link now points to
   Settings → tokens instead of the code browser.
 
-`tsc` clean, 55 unit tests pass (16 files), `smoke:db` 9/9 (migrations 016/017).
+`tsc` clean, 57 unit tests pass (16 files), `smoke:db` 9/9 (migrations 016/017).
 Integration coverage (live-CSS propose→accept→git-push, relay round-trip) remains
 the PRODUCTION-READINESS §3.2 backlog.
 

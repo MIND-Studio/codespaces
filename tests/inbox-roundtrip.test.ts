@@ -150,6 +150,43 @@ describe("inbox round-trip", () => {
     expect(proposals[0].contact).toBe("anon@example.com");
   });
 
+  it("round-trips a body that ends in a quote (no malformed Turtle)", async () => {
+    const { postProposal, listProposals } = await import("@/lib/solid/inbox");
+
+    // A naive `"""…"""` wrapper would merge the trailing quote with the closing
+    // delimiter and produce Turtle the pod rejects.
+    const body = 'He said "hi"';
+    await postProposal(repo, {
+      title: "quote ending",
+      body,
+      proposerWebId: null,
+      contact: null,
+      createdMs: Date.UTC(2026, 5, 5, 20, 0, 0),
+    });
+
+    const proposals = await listProposals(repo);
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0].body).toBe(body);
+  });
+
+  it("drops a malformed proposer WebID instead of injecting an IRI", async () => {
+    const { postProposal, listProposals } = await import("@/lib/solid/inbox");
+
+    // A WebID that tries to break out of `<…>` and smuggle a triple must not be
+    // trusted — provenance is dropped, but no `#evil` subject appears.
+    await postProposal(repo, {
+      title: "bad webid",
+      body: "",
+      proposerWebId: "http://e/x> .\n<#evil> <http://ex/p> <http://ex/o",
+      contact: null,
+      createdMs: Date.UTC(2026, 5, 5, 20, 5, 0),
+    });
+
+    const proposals = await listProposals(repo);
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0].proposerWebId).toBeNull();
+  });
+
   it("dismiss deletes the notification", async () => {
     const { postProposal, listProposals, deleteProposal } = await import(
       "@/lib/solid/inbox"

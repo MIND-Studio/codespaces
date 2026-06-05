@@ -185,7 +185,14 @@ function setupConnection(conn: WebSocket, roomName: string) {
       message instanceof ArrayBuffer
         ? new Uint8Array(message)
         : new Uint8Array(message.buffer, message.byteOffset, message.byteLength);
-    onMessage(room, conn, bytes);
+    // `onMessage` decodes attacker-controlled varuints; a truncated/garbage
+    // frame throws. Contain it to this one connection — never let a single bad
+    // client crash the relay and drop every room.
+    try {
+      onMessage(room, conn, bytes);
+    } catch {
+      closeConn();
+    }
   });
 
   // Track which awareness clientIDs this conn owns so we can clear them on
