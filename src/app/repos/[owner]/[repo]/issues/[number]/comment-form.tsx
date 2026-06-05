@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
 import { SignInWall } from "@/components/sign-in-wall";
+import { Button, Textarea } from "@mind-studio/ui";
 
 /**
  * Issue comment composer. Designed to feel like a chat composer rather
@@ -113,7 +114,7 @@ export function CommentForm({
             )}
           </span>
         </div>
-        <textarea
+        <Textarea
           ref={taRef}
           rows={5}
           value={body}
@@ -121,7 +122,7 @@ export function CommentForm({
           onKeyDown={onKeyDown}
           placeholder="Write a reply. Anything you commit to the conversation re-fires the coder."
           aria-label="Comment body"
-          className="block w-full resize-none bg-transparent px-3 py-3 text-sm leading-relaxed focus:outline-none"
+          className="block w-full resize-none border-0 bg-transparent px-3 py-3 text-sm leading-relaxed shadow-none focus-visible:ring-0"
           style={{ fontFamily: "var(--font-mono-src)", minHeight: 120 }}
           disabled={busy}
         />
@@ -148,21 +149,18 @@ export function CommentForm({
         </p>
         <div className="flex items-center gap-2">
           {hasDraft && !busy ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setBody("")}
-              className="rounded border border-[color:var(--ink-trace)] px-3 py-1.5 text-sm text-[color:var(--ink-soft)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
             >
               Clear
-            </button>
+            </Button>
           ) : null}
-          <button
-            type="submit"
-            disabled={busy || !hasDraft}
-            className="inline-block rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-sm text-[color:var(--paper)] hover:bg-[color:var(--accent-deep)] disabled:opacity-50"
-          >
+          <Button type="submit" size="sm" disabled={busy || !hasDraft}>
             {busy ? "Submitting…" : "Comment"}
-          </button>
+          </Button>
         </div>
       </div>
     </form>

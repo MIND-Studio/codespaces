@@ -12,6 +12,10 @@ export type Repo = {
   defaultBranch: string;
   visibility: Visibility;
   createdAt: number;
+  /** Whether the public "propose an issue" endpoint is open for this repo. */
+  proposalsEnabled: boolean;
+  /** Whether draft co-authoring connects to the live relay (off = local-only). */
+  collabEnabled: boolean;
 };
 
 export type PublishStatus = "success" | "failed" | "needs-reauth";
@@ -142,6 +146,8 @@ function rowToRepo(row: Record<string, unknown>): Repo {
     defaultBranch: row.default_branch as string,
     visibility: row.visibility as Visibility,
     createdAt: row.created_at as number,
+    proposalsEnabled: (row.proposals_enabled as number) !== 0,
+    collabEnabled: (row.collab_enabled as number) !== 0,
   };
 }
 
@@ -172,7 +178,9 @@ export function listRepos(): Repo[] {
 export function updateRepo(
   owner: string,
   name: string,
-  patch: Partial<Pick<Repo, "visibility" | "defaultBranch">>,
+  patch: Partial<
+    Pick<Repo, "visibility" | "defaultBranch" | "proposalsEnabled" | "collabEnabled">
+  >,
 ): Repo {
   const repo = getRepo(owner, name);
   if (!repo) throw new RegistryError("repo not found", "NOT_FOUND");
@@ -193,6 +201,20 @@ export function updateRepo(
     }
     fields.push("default_branch = ?");
     values.push(patch.defaultBranch);
+  }
+  if (patch.proposalsEnabled !== undefined) {
+    if (typeof patch.proposalsEnabled !== "boolean") {
+      throw new RegistryError("proposalsEnabled must be a boolean", "INVALID_INPUT");
+    }
+    fields.push("proposals_enabled = ?");
+    values.push(patch.proposalsEnabled ? 1 : 0);
+  }
+  if (patch.collabEnabled !== undefined) {
+    if (typeof patch.collabEnabled !== "boolean") {
+      throw new RegistryError("collabEnabled must be a boolean", "INVALID_INPUT");
+    }
+    fields.push("collab_enabled = ?");
+    values.push(patch.collabEnabled ? 1 : 0);
   }
 
   if (fields.length === 0) return repo;

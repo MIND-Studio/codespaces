@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PreviewStatus } from "@/lib/registry/pulls";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import { Button } from "@mind-studio/ui";
 
 const POLL_INTERVAL_MS = 1500;
 const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g; // eslint-disable-line no-control-regex
@@ -141,14 +142,15 @@ export function PrPreviewCard({
         ) : null}
 
         <div>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={build}
             disabled={state.status === "building"}
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-4 py-2 text-sm text-[color:var(--ink-soft)] disabled:opacity-50"
           >
             {buildLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

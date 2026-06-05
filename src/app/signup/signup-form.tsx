@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Input } from "@mind-studio/ui";
 
 export function SignupForm() {
   const router = useRouter();
@@ -42,12 +43,12 @@ export function SignupForm() {
     <form onSubmit={onSubmit} className="space-y-4 max-w-md">
       <label className="block text-sm">
         <span className="block text-[color:var(--ink-soft)] mb-1">Email</span>
-        <input
+        <Input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-[color:var(--ink-faint)] bg-transparent px-3 py-2"
+          className="w-full"
           autoComplete="email"
         />
       </label>
@@ -55,13 +56,13 @@ export function SignupForm() {
         <span className="block text-[color:var(--ink-soft)] mb-1">
           Password (≥8 chars)
         </span>
-        <input
+        <Input
           type="password"
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border border-[color:var(--ink-faint)] bg-transparent px-3 py-2"
+          className="w-full"
           autoComplete="new-password"
         />
       </label>
@@ -70,12 +71,12 @@ export function SignupForm() {
           Pod name (URL slug; lower-case, alphanumeric)
         </span>
         {/* No `pattern=` — see new-repo-form.tsx for the /v-flag rationale. */}
-        <input
+        <Input
           type="text"
           required
           value={podName}
           onChange={(e) => setPodName(e.target.value)}
-          className="w-full rounded border border-[color:var(--ink-faint)] bg-transparent px-3 py-2"
+          className="w-full"
           autoComplete="off"
         />
       </label>
@@ -84,13 +85,9 @@ export function SignupForm() {
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={busy}
-        className="rounded border border-[color:var(--ink)] px-4 py-2 text-sm disabled:opacity-50"
-      >
+      <Button type="submit" variant="outline" size="sm" disabled={busy}>
         {busy ? "Creating pod…" : "Create pod"}
-      </button>
+      </Button>
     </form>
   );
 }

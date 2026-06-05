@@ -1,356 +1,69 @@
 @import "tailwindcss";
 
-/* @mind-studio/ui tokens — needed by the shared MindAppLauncher dropdown.
-   Direct path (not the "@mind-studio/ui/styles.css" exports subpath) so
-   Tailwind v4's CSS @import resolver finds it on disk. */
+/* @mind-studio/ui design system — the shared Mind brand tokens, used by every
+   primitive (Button, Dialog, …) and the MindAppLauncher. Direct path (not the
+   "@mind-studio/ui/styles.css" exports subpath) so Tailwind v4's CSS @import
+   resolver finds it on disk. `@source` makes Tailwind emit the utility classes
+   used INSIDE the dist components. */
 @import "../../node_modules/@mind-studio/ui/dist/styles.css";
 @source "../../node_modules/@mind-studio/ui/dist";
 
-/* @mind-studio/ui's base layer sets `* { border-color: var(--border) }`, which
-   would recolor Mind Codespaces' bespoke bare-`border` elements. Restore the
-   Tailwind default so only the launcher (which sets its own colors) is themed
-   by @mind-studio/ui; the bridge keeps its paper/ink borders. */
-@layer base {
-  *,
-  ::after,
-  ::before {
-    border-color: currentColor;
-  }
-}
-
 /* ------------------------------------------------------------------ */
-/*  Mind Codespaces — design tokens                                    */
+/*  Mind brand bridge                                                  */
 /*                                                                     */
-/*  Same paper / ink family as mind-market-v0 but the accent shifts    */
-/*  from turquoise to amber to mark "this is the dev surface, not the  */
-/*  marketplace." Fraunces + DM Sans + JetBrains Mono.                 */
+/*  Mind Codespaces now rides the shared @mind-studio/ui design system */
+/*  (the flagship "mind" brand, with "neo" preserved as an opt-in CRT  */
+/*  brand — see src/lib/theme/neo.ts + the [data-mind-theme="neo"]     */
+/*  block below). The bespoke paper/ink/accent palette is gone; the    */
+/*  old token NAMES survive only as a thin compatibility shim that     */
+/*  resolves to @mind-studio/ui's semantic alias tokens. So every       */
+/*  existing `var(--ink)` / `text-ink` / `border-ink-trace` class in    */
+/*  the app instantly renders in the active Mind/neo palette, and       */
+/*  light / dark / neo all flow through <ThemeProvider> (next-themes).  */
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* porcelain canvas */
-  --paper: #fbfaf6;
-  --paper-soft: #f4f1eb;
-  --paper-sunk: #e9e4d9;
+  /* surfaces */
+  --paper: var(--background);
+  --paper-soft: var(--card);
+  --paper-sunk: var(--muted);
 
   /* ink */
-  --ink: #1f1d1a;
-  --ink-soft: #524d45;
-  --ink-faint: #8a8378;
-  --ink-trace: #d7d1c4;
+  --ink: var(--foreground);
+  --ink-soft: var(--muted-foreground);
+  --ink-faint: color-mix(in oklch, var(--muted-foreground) 72%, var(--background));
+  --ink-trace: var(--border);
 
-  /* amber accent — different from mind-market-v0's turquoise */
-  --accent: #c4801d;
-  --accent-soft: #f5e6cf;
-  --accent-deep: #8a570f;
+  /* accent (Mind's brand colour lives in --primary; shadcn's --accent is a
+     neutral hover surface, so accent-soft is a primary tint, not --accent) */
+  --accent: var(--primary);
+  --accent-soft: color-mix(in oklch, var(--primary) 15%, var(--background));
+  --accent-deep: color-mix(in oklch, var(--primary) 82%, var(--foreground));
 
-  --status-ok: #2f8c5b;
-  --status-warn: #c68c2e;
-  --status-bad: #d9534a;
+  --status-ok: var(--chart-1);
+  --status-warn: oklch(0.72 0.15 75);
+  --status-bad: var(--destructive);
 
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
   --radius-chip: 999px;
   --hairline: 1px;
+
+  /* Fonts. The default Mind brand drops the old Fraunces/DM Sans editorial
+     stack for Mind's clean system sans; the masthead still loads JetBrains
+     Mono (as --font-mono-src) for code, the neo terminal, and section marks.
+     The old --font-display / --font-body names alias to Mind sans so the
+     app's many inline `style={{fontFamily:"var(--font-display)"}}` refs keep
+     working. */
+  --mind-font-mono: var(--font-mono-src, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --font-display: var(--mind-font-sans);
+  --font-body: var(--mind-font-sans);
 }
 
-[data-theme="dark"] {
-  --paper: #16191a;
-  --paper-soft: #1c2120;
-  --paper-sunk: #232a28;
-
-  --ink: #ecead8;
-  --ink-soft: #b6b1a0;
-  --ink-faint: #7c7868;
-  --ink-trace: #383d39;
-
-  --accent: #e5a44a;
-  --accent-soft: #3b2a13;
-  --accent-deep: #f3c172;
-
-  --status-ok: #6dc18c;
-  --status-warn: #e0a45a;
-  --status-bad: #f47e74;
-
-  color-scheme: dark;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Neo — inside the Matrix. Phosphor green + magenta. CRT scanlines,  */
-/*  vignette, glow, chromatic aberration on headlines.                 */
-/* ------------------------------------------------------------------ */
-
-[data-theme="neo"] {
-  --paper: #000000;
-  --paper-soft: #060a07;
-  --paper-sunk: #0a120c;
-
-  --ink: #d6e4d8;
-  --ink-soft: #8fa195;
-  --ink-faint: #5a6960;
-  --ink-trace: #1c2a22;
-
-  --accent: #00ff41;
-  --accent-soft: #082a12;
-  --accent-deep: #6dff8e;
-
-  --status-ok: #00ff41;
-  --status-warn: #ffd600;
-  --status-bad: #ff3860;
-
-  color-scheme: dark;
-}
-
-/* Neo body: the matrix-rain is now a small corner badge, not a wash.
-   Restore a faint dot-grid as ambient texture behind the holo surfaces. */
-[data-theme="neo"] body {
-  background-color: var(--paper);
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 255, 65, 0.06) 0.6px, transparent 1.4px);
-  background-size: 28px 28px;
-  background-position: 0 0;
-}
-
-[data-theme="neo"] body {
-  font-family: var(--font-mono-src);
-  letter-spacing: 0.01em;
-  text-shadow: 0 0 1px currentColor;
-}
-
-[data-theme="neo"] .display {
-  font-family: var(--font-mono-src);
-  font-weight: 500;
-  letter-spacing: 0.005em;
-  color: var(--ink);
-  text-shadow:
-    -1px 0 0 color-mix(in srgb, var(--accent) 35%, transparent),
-    1px 0 0 color-mix(in srgb, var(--ink) 35%, transparent),
-    0 0 10px color-mix(in srgb, var(--ink) 30%, transparent);
-}
-
-[data-theme="neo"] .display em {
-  font-style: normal;
-  color: var(--accent);
-  text-shadow:
-    -1px 0 0 color-mix(in srgb, var(--ink) 45%, transparent),
-    1px 0 0 color-mix(in srgb, var(--accent) 60%, transparent),
-    0 0 14px color-mix(in srgb, var(--accent) 65%, transparent),
-    0 0 28px color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
-[data-theme="neo"] .stamp {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 80%, transparent);
-  box-shadow:
-    0 0 12px color-mix(in srgb, var(--accent) 45%, transparent),
-    inset 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-
-[data-theme="neo"] .kbd {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--paper-sunk));
-  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
-}
-
-[data-theme="neo"] .codeblock,
-[data-theme="neo"] .markdown-body pre {
-  color: var(--ink);
-  border-color: var(--ink-trace);
-  background: var(--paper-soft);
-}
-
-[data-theme="neo"] .markdown-body code {
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--paper-sunk));
-  color: var(--accent);
-}
-
-[data-theme="neo"] hr,
-[data-theme="neo"] .hairline,
-[data-theme="neo"] .markdown-body hr {
-  border-top-color: color-mix(in srgb, var(--accent) 30%, transparent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-/* ----- HUD ornaments — corner brackets on cards, list markers, links ----- */
-
-/* Transparent holo-displays — cards, README body, masthead, footer all
-   become translucent glass with backdrop-blur. The matrix rain shows
-   through. Stacking: every interactive surface sits in its own context
-   above the canvas (z-index 1+) so the rain never overlaps text. */
-
-/* Global stacking baseline: header sits ABOVE main so dropdowns and
-   popovers anchored in the masthead (user menu, search results) paint
-   above page content. Without this, the page hero's h1 ghosts straight
-   through the dropdown — most visible in Safari and in any theme whose
-   main creates its own stacking context. Setting header to z:50 keeps
-   it comfortably above main's z:1 while staying well below any modal /
-   overlay layer. Applies to every theme. */
-header,
-main,
-footer {
-  position: relative;
-  z-index: 1;
-}
-
-header {
-  z-index: 50;
-}
-
-[data-theme="neo"] header {
-  background-color: color-mix(in srgb, var(--paper) 80%, transparent) !important;
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
-  border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-[data-theme="neo"] footer {
-  background-color: color-mix(in srgb, var(--paper) 84%, transparent) !important;
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
-  border-top-color: color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
-[data-theme="neo"] .card,
-[data-theme="neo"] .markdown-body {
-  position: relative;
-  background-color: color-mix(in srgb, var(--paper) 72%, transparent) !important;
-  backdrop-filter: blur(6px) saturate(130%);
-  -webkit-backdrop-filter: blur(6px) saturate(130%);
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  border-radius: 4px;
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
-    0 0 22px color-mix(in srgb, var(--accent) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--accent) 6%, transparent);
-}
-
-[data-theme="neo"] .card::before,
-[data-theme="neo"] .card::after,
-[data-theme="neo"] .markdown-body::before,
-[data-theme="neo"] .markdown-body::after {
-  content: "";
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 1px solid var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
-  pointer-events: none;
-}
-
-[data-theme="neo"] .card::before,
-[data-theme="neo"] .markdown-body::before {
-  top: -1px;
-  left: -1px;
-  border-right: 0;
-  border-bottom: 0;
-}
-
-[data-theme="neo"] .card::after,
-[data-theme="neo"] .markdown-body::after {
-  bottom: -1px;
-  right: -1px;
-  border-left: 0;
-  border-top: 0;
-}
-
-[data-theme="neo"] a:hover,
-[data-theme="neo"] .link:hover {
-  color: var(--accent);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 65%, transparent);
-}
-
-[data-theme="neo"] .markdown-body ul {
-  list-style: none;
-  padding-left: 0.4rem;
-}
-[data-theme="neo"] .markdown-body ul > li {
-  position: relative;
-  padding-left: 1.2rem;
-}
-[data-theme="neo"] .markdown-body ul > li::before {
-  content: "▸";
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: var(--accent);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-[data-theme="neo"] .section-mark {
-  color: var(--accent);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-
-/* CRT scanlines + vignette — felt more than seen.
-   These overlay the page as ambient decoration. They MUST sit below
-   interactive UI like modals and dropdowns; previously they were at
-   z:9998/9999 with `mix-blend-mode: screen` on the scanlines, which on
-   Safari ghosts straight through fixed-positioned modal contents
-   regardless of the modal's z-index (WebKit treats mix-blend-mode as
-   crossing stacking contexts in cases Chrome does not). Two changes
-   prevent that:
-     1) Drop mix-blend-mode entirely — the scanlines render as faint
-        green tints over whatever's underneath. The visual loss is
-        negligible (alpha is already 0.045) and Safari now respects
-        z-index normally.
-     2) Move the layers to z:0/1, just below `main`'s z:1. They still
-        cover the viewport because they're position:fixed; they no
-        longer compete with anything UI-level. */
-[data-theme="neo"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 255, 65, 0.045) 0px,
-    rgba(0, 255, 65, 0.045) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-}
-
-[data-theme="neo"] body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 55%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
-}
-
-[data-theme="neo"] ::selection {
-  background: var(--accent);
-  color: var(--paper);
-  text-shadow: none;
-}
-
-[data-theme="neo"] ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-[data-theme="neo"] ::-webkit-scrollbar-track {
-  background: var(--paper);
-}
-[data-theme="neo"] ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--ink) 35%, transparent);
-  border: 1px solid var(--ink-trace);
-}
-[data-theme="neo"] ::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-soft);
-  box-shadow: 0 0 6px var(--ink);
-}
-
+/* Expose the bridge's semantic names as Tailwind colour/font utilities
+   (`bg-paper`, `text-ink-soft`, `border-ink-trace`, `text-accent`, …). They
+   now resolve to the Mind tokens above. */
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-soft: var(--paper-soft);
@@ -365,25 +78,39 @@ header {
   --color-background: var(--paper);
   --color-foreground: var(--ink);
   --font-sans: var(--font-body);
-  --font-mono: var(--font-mono-src);
+  --font-mono: var(--mind-font-mono);
   --font-serif: var(--font-display);
 }
 
 html {
-  background: var(--paper);
+  background: var(--background);
 }
 
 body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--mind-font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Global stacking baseline: header sits ABOVE main so dropdowns/popovers
+   anchored in the masthead paint above page content (without this the hero h1
+   ghosts through dropdowns, most visibly in Safari and neo). Applies to every
+   theme. */
+header,
+main,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+header {
+  z-index: 50;
+}
+
 /* iOS Safari zooms inputs on focus if their computed font-size is < 16px.
-   Force 16px on all form controls below the sm: breakpoint so taps don't
-   trigger the page-zoom dance. Above 640px we let Tailwind text-sm win. */
+   Force 16px on form controls below the sm: breakpoint. */
 @media (max-width: 639.98px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   textarea,
@@ -392,11 +119,234 @@ body {
   }
 }
 
-/* Page transition — each top-level section of the new page materializes
-   one after another: opacity 0→1, translateY 10px→0, blur 4px→0.
-   Selector targets grandchildren so the page's outer wrapper div passes
-   through unanimated and its content rows stagger in. CSS-only stagger
-   via :nth-child(N) so there's no JS flash-of-invisible-content. */
+/* ================================================================== */
+/*  Neo — the CRT/terminal brand. Colours come from the `neo` Theme   */
+/*  object (data-mind-theme="neo"); below are the flourishes that      */
+/*  can't be expressed as tokens: phosphor glow, scanlines, vignette,  */
+/*  HUD corner brackets, dot-grid, custom scrollbars.                  */
+/* ================================================================== */
+
+[data-mind-theme="neo"] {
+  color-scheme: dark;
+}
+
+/* Faint dot-grid texture behind the holo surfaces. */
+[data-mind-theme="neo"] body {
+  background-color: var(--background);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(0, 255, 65, 0.06) 0.6px,
+    transparent 1.4px
+  );
+  background-size: 28px 28px;
+  background-position: 0 0;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 1px currentColor;
+}
+
+[data-mind-theme="neo"] .display {
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: var(--foreground);
+  text-shadow:
+    -1px 0 0 color-mix(in srgb, var(--primary) 35%, transparent),
+    1px 0 0 color-mix(in srgb, var(--foreground) 35%, transparent),
+    0 0 10px color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+[data-mind-theme="neo"] .display em {
+  font-style: normal;
+  color: var(--primary);
+  text-shadow:
+    -1px 0 0 color-mix(in srgb, var(--foreground) 45%, transparent),
+    1px 0 0 color-mix(in srgb, var(--primary) 60%, transparent),
+    0 0 14px color-mix(in srgb, var(--primary) 65%, transparent),
+    0 0 28px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+[data-mind-theme="neo"] .stamp {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 80%, transparent);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--primary) 45%, transparent),
+    inset 0 0 6px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+[data-mind-theme="neo"] .kbd {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, var(--muted));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 50%, transparent);
+}
+
+[data-mind-theme="neo"] .codeblock,
+[data-mind-theme="neo"] .markdown-body pre {
+  color: var(--foreground);
+  border-color: var(--border);
+  background: var(--card);
+}
+
+[data-mind-theme="neo"] .markdown-body code {
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, var(--muted));
+  color: var(--primary);
+}
+
+[data-mind-theme="neo"] hr,
+[data-mind-theme="neo"] .hairline,
+[data-mind-theme="neo"] .markdown-body hr {
+  border-top-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* Translucent glass masthead / footer — the dot-grid shows through. */
+[data-mind-theme="neo"] header {
+  background-color: color-mix(in srgb, var(--background) 80%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-bottom-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+[data-mind-theme="neo"] footer {
+  background-color: color-mix(in srgb, var(--background) 84%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-top-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+/* Holo cards + README body: translucent glass with HUD corner brackets. */
+[data-mind-theme="neo"] .card,
+[data-mind-theme="neo"] .markdown-body {
+  position: relative;
+  background-color: color-mix(in srgb, var(--background) 72%, transparent) !important;
+  backdrop-filter: blur(6px) saturate(130%);
+  -webkit-backdrop-filter: blur(6px) saturate(130%);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary) 10%, transparent),
+    0 0 22px color-mix(in srgb, var(--primary) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+[data-mind-theme="neo"] .card::before,
+[data-mind-theme="neo"] .card::after,
+[data-mind-theme="neo"] .markdown-body::before,
+[data-mind-theme="neo"] .markdown-body::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 60%, transparent);
+  pointer-events: none;
+}
+
+[data-mind-theme="neo"] .card::before,
+[data-mind-theme="neo"] .markdown-body::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+[data-mind-theme="neo"] .card::after,
+[data-mind-theme="neo"] .markdown-body::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+[data-mind-theme="neo"] a:hover,
+[data-mind-theme="neo"] .link:hover {
+  color: var(--primary);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 65%, transparent);
+}
+
+[data-mind-theme="neo"] .markdown-body ul {
+  list-style: none;
+  padding-left: 0.4rem;
+}
+[data-mind-theme="neo"] .markdown-body ul > li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+[data-mind-theme="neo"] .markdown-body ul > li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--primary);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+[data-mind-theme="neo"] .section-mark {
+  color: var(--primary);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* CRT scanlines + vignette — ambient decoration. Kept at z:0 (just below
+   main's z:1) and WITHOUT mix-blend-mode so Safari doesn't ghost them through
+   fixed-position modals/dropdowns. */
+[data-mind-theme="neo"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 65, 0.045) 0px,
+    rgba(0, 255, 65, 0.045) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+[data-mind-theme="neo"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+[data-mind-theme="neo"] ::selection {
+  background: var(--primary);
+  color: var(--background);
+  text-shadow: none;
+}
+
+[data-mind-theme="neo"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-mind-theme="neo"] ::-webkit-scrollbar-track {
+  background: var(--background);
+}
+[data-mind-theme="neo"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 35%, transparent);
+  border: 1px solid var(--border);
+}
+[data-mind-theme="neo"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+  box-shadow: 0 0 6px var(--foreground);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Page transition — each top-level section materialises one after    */
+/*  another: opacity 0→1, translateY 10px→0, blur 4px→0. CSS-only       */
+/*  stagger via :nth-child so there's no flash-of-invisible-content.    */
+/* ------------------------------------------------------------------ */
 @keyframes mc-build-in {
   from {
     opacity: 0;
@@ -415,11 +365,6 @@ body {
   will-change: opacity, transform, filter;
 }
 
-/* Force the route-segment's outer wrapper to take the page-transition's
-   full width. Without this, when wide intrinsic-content descendants (a
-   diff, a code blob, a long Turtle dump) bubble their min-content up the
-   flex chain, the page wrapper itself can grow past the viewport. Belt
-   to the body's overflow-x-hidden suspenders. */
 .mc-page-transition > * {
   width: 100%;
   min-width: 0;
@@ -438,8 +383,6 @@ body {
 .mc-page-transition > * > *:nth-child(10) { animation-delay: 495ms; }
 .mc-page-transition > * > *:nth-child(n+11) { animation-delay: 540ms; }
 
-/* Pages that render the content directly (no outer wrapper) — animate
-   immediate children too as a fallback so they don't pop in unstyled. */
 .mc-page-transition > *:not(:has(> *)) {
   animation: mc-build-in 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -455,13 +398,16 @@ body {
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--foreground);
+  color: var(--background);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Bridge utility classes — values now resolve to Mind tokens.        */
+/* ------------------------------------------------------------------ */
 .display {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.018em;
   line-height: 1.05;
 }
@@ -471,7 +417,7 @@ body {
 }
 
 .section-mark {
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.625rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -480,35 +426,35 @@ body {
 
 .hairline {
   border: 0;
-  border-top: var(--hairline) solid var(--ink-trace);
+  border-top: var(--hairline) solid var(--border);
 }
 
 .card {
   background: var(--paper-soft);
-  border: var(--hairline) solid var(--ink-trace);
-  border-radius: var(--radius-sm);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.25rem 1.5rem;
 }
 
 .kbd {
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.8125rem;
   padding: 0.1rem 0.35rem;
   border-radius: var(--radius-sm);
   background: var(--paper-sunk);
-  border: 1px solid var(--ink-trace);
+  border: 1px solid var(--border);
   color: var(--ink);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .codeblock {
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.8125rem;
   line-height: 1.6;
   background: var(--paper-sunk);
-  border: 1px solid var(--ink-trace);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   overflow-x: auto;
   white-space: pre;
@@ -533,7 +479,7 @@ body {
 
 .stamp {
   display: inline-block;
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.625rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -544,12 +490,11 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Markdown body — used to render repo READMEs server-side via marked */
+/*  Markdown body — repo READMEs rendered server-side via marked       */
 /* ------------------------------------------------------------------ */
-
 .markdown-body {
   color: var(--ink);
-  font-family: var(--font-body);
+  font-family: var(--mind-font-sans);
   line-height: 1.65;
   font-size: 0.9375rem;
 }
@@ -564,6 +509,7 @@ body {
 .markdown-body h5,
 .markdown-body h6 {
   font-family: var(--font-display);
+  font-weight: 600;
   letter-spacing: -0.012em;
   line-height: 1.2;
   margin: 1.6rem 0 0.6rem 0;
@@ -571,7 +517,7 @@ body {
 }
 
 .markdown-body h1 { font-size: 1.75rem; }
-.markdown-body h2 { font-size: 1.4rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--ink-trace); }
+.markdown-body h2 { font-size: 1.4rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
 .markdown-body h3 { font-size: 1.15rem; }
 .markdown-body h4 { font-size: 1rem; }
 .markdown-body h5 { font-size: 0.9rem; color: var(--ink-soft); }
@@ -606,7 +552,7 @@ body {
 .markdown-body ul ol { list-style-type: lower-roman; }
 .markdown-body li { margin: 0.2rem 0; }
 .markdown-body li > p { margin: 0; }
-/* And restore the bold default — preflight unsets font-weight on strong/b. */
+/* Restore the bold default — preflight unsets font-weight on strong/b. */
 .markdown-body strong,
 .markdown-body b { font-weight: 600; }
 .markdown-body em,
@@ -615,15 +561,15 @@ body {
 .markdown-body blockquote {
   margin: 0 0 0.9rem 0;
   padding: 0.1rem 0.9rem;
-  border-left: 3px solid var(--ink-trace);
+  border-left: 3px solid var(--border);
   color: var(--ink-soft);
 }
 
 .markdown-body code {
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.86em;
   background: var(--paper-soft);
-  border: 1px solid var(--ink-trace);
+  border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.08rem 0.32rem;
 }
@@ -632,10 +578,10 @@ body {
   margin: 0 0 1rem 0;
   padding: 0.85rem 1rem;
   background: var(--paper-sunk);
-  border: 1px solid var(--ink-trace);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow-x: auto;
-  font-family: var(--font-mono-src);
+  font-family: var(--mind-font-mono);
   font-size: 0.8125rem;
   line-height: 1.55;
 }
@@ -656,7 +602,7 @@ body {
 .markdown-body td {
   text-align: left;
   padding: 0.45rem 0.7rem;
-  border-bottom: 1px solid var(--ink-trace);
+  border-bottom: 1px solid var(--border);
 }
 .markdown-body th {
   font-weight: 600;
@@ -665,7 +611,7 @@ body {
 
 .markdown-body hr {
   border: 0;
-  border-top: 1px solid var(--ink-trace);
+  border-top: 1px solid var(--border);
   margin: 1.5rem 0;
 }
 
@@ -673,4 +619,87 @@ body {
   max-width: 100%;
   height: auto;
   border-radius: 3px;
+}
+
+/* ── Collaborative draft editor (TipTap / ProseMirror) ───────────────────── */
+.mc-editor .ProseMirror {
+  min-height: 18rem;
+  outline: none;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+.mc-editor .ProseMirror > * + * {
+  margin-top: 0.7rem;
+}
+.mc-editor .ProseMirror h1 { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.mc-editor .ProseMirror h2 { font-size: 1.3rem; font-weight: 700; line-height: 1.25; }
+.mc-editor .ProseMirror h3 { font-size: 1.1rem; font-weight: 600; }
+.mc-editor .ProseMirror ul { list-style: disc; padding-left: 1.4rem; }
+.mc-editor .ProseMirror ol { list-style: decimal; padding-left: 1.4rem; }
+.mc-editor .ProseMirror blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 0.9rem;
+  color: var(--ink-soft);
+}
+.mc-editor .ProseMirror code {
+  font-family: var(--font-mono-src, monospace);
+  background: var(--paper-sunk, var(--paper-soft));
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+.mc-editor .ProseMirror pre {
+  background: var(--paper-sunk, var(--paper-soft));
+  border: 1px solid var(--ink-trace);
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  overflow-x: auto;
+}
+.mc-editor .ProseMirror pre code { background: none; padding: 0; font-size: 0.85rem; }
+.mc-editor .ProseMirror hr {
+  border: 0;
+  border-top: 1px solid var(--ink-trace);
+  margin: 1.2rem 0;
+}
+/* Task lists (checkboxes) */
+.mc-editor .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.2rem; }
+.mc-editor .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.mc-editor .ProseMirror ul[data-type="taskList"] li > label { margin-top: 0.2rem; }
+.mc-editor .ProseMirror ul[data-type="taskList"] li > div { flex: 1 1 auto; }
+/* Empty-doc placeholder */
+.mc-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+/* Live collaboration carets (CollaborationCursor) */
+.collaboration-cursor__caret {
+  border-left: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  margin-left: -1px;
+  margin-right: -1px;
+  position: relative;
+  word-break: normal;
+  pointer-events: none;
+}
+.collaboration-cursor__label {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  border-radius: 3px 3px 3px 0;
+  padding: 0.12rem 0.35rem;
+  user-select: none;
+  pointer-events: none;
 }

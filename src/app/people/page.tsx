@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button, Input } from "@mind-studio/ui";
 import { listRepos, type Repo } from "@/lib/registry/repos";
 import ProfileView from "./profile-view";
 
@@ -94,20 +95,17 @@ export default async function PeoplePage({
           that have never heard of this bridge.
         </p>
         <form className="flex flex-wrap gap-2" action="/people" method="get">
-          <input
+          <Input
             type="url"
             name="webid"
             required
             placeholder="https://example.solidcommunity.net/profile/card#me"
-            className="flex-1 min-w-0 rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 text-sm focus:border-[color:var(--accent)] focus:outline-none"
+            className="flex-1 min-w-0 text-sm"
             style={{ fontFamily: "var(--font-mono-src)" }}
           />
-          <button
-            type="submit"
-            className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] hover:bg-[color:var(--accent-deep)]"
-          >
+          <Button type="submit" variant="default" size="sm">
             Look up →
-          </button>
+          </Button>
         </form>
         <p className="mt-3 text-xs text-[color:var(--ink-faint)]">
           Tip: this works for any WebID whose document is public-read — the

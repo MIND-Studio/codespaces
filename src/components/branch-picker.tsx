@@ -2,6 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@mind-studio/ui";
 
 /**
  * Small `<select>` for switching the displayed branch on a tree/blob
@@ -28,8 +35,7 @@ export function BranchPicker({
   const isOnBranch = branches.includes(current);
   const looksLikeSha = !isOnBranch && /^[0-9a-f]{7,40}$/i.test(current);
 
-  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const next = e.target.value;
+  function onChange(next: string) {
     if (next === current) return;
     setBusy(true);
     const url = new URL(window.location.href);
@@ -44,30 +50,32 @@ export function BranchPicker({
   return (
     <label
       htmlFor={id}
-      className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+      className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
       {looksLikeSha ? "at commit" : "branch"}
-      <select
-        id={id}
-        value={current}
-        onChange={onChange}
-        disabled={busy}
-        className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-2 py-1 text-[12px] text-[color:var(--ink)] disabled:opacity-50"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
-        {!isOnBranch ? (
-          <option value={current}>
-            {looksLikeSha ? `${current.slice(0, 7)} (commit)` : current}
-          </option>
-        ) : null}
-        {branches.map((b) => (
-          <option key={b} value={b}>
-            {b}
-            {b === defaultBranch ? " (default)" : ""}
-          </option>
-        ))}
-      </select>
+      <Select value={current} onValueChange={onChange} disabled={busy}>
+        <SelectTrigger
+          id={id}
+          className="h-auto py-1 text-[12px]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent style={{ fontFamily: "var(--font-mono-src)" }}>
+          {!isOnBranch ? (
+            <SelectItem value={current}>
+              {looksLikeSha ? `${current.slice(0, 7)} (commit)` : current}
+            </SelectItem>
+          ) : null}
+          {branches.map((b) => (
+            <SelectItem key={b} value={b}>
+              {b}
+              {b === defaultBranch ? " (default)" : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

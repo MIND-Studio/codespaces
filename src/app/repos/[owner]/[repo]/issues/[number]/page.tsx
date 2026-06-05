@@ -1,18 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
-import { getIssueByNumber, listComments } from "@/lib/registry/issues";
-import { listAgentRunsForIssue } from "@/lib/registry/agent-runs";
-import { listPullRequestsForIssue } from "@/lib/registry/pulls";
+import { repoPath } from "@/lib/git/backend";
+import { readGitTracker } from "@/lib/tracker/read";
+import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
 import { RelativeTime } from "@/components/relative-time";
 import { renderMarkdown } from "@/lib/markdown";
-import { IssueActions } from "./issue-actions";
-import { CommentForm } from "./comment-form";
-import { AgentRunCard } from "./agent-run-card";
 import { RepoTabs } from "../../repo-tabs";
 import { Avatar, deriveLabel } from "@/components/avatar";
-import { SignInWall } from "@/components/sign-in-wall";
-import { readSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -27,15 +22,20 @@ export default async function IssueDetailPage({ params }: PageProps) {
 
   const repo = getRepo(owner, name);
   if (!repo) notFound();
-  const issue = getIssueByNumber(repo.id, number);
-  if (!issue) notFound();
-  const comments = listComments(issue.id);
-  const agentRuns = listAgentRunsForIssue(issue.id);
-  const linkedPulls = listPullRequestsForIssue(issue.id);
-  const session = await readSession();
-  const returnTo = `/repos/${owner}/${name}/issues/${number}`;
 
-  const bodyHtml = issue.body.trim() ? renderMarkdown(issue.body) : null;
+  const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  if (!tracker) notFound();
+  const issue = tracker.issues.find((i) => i.number === number);
+  if (!issue) notFound();
+
+  const bodyHtml = issue.description?.trim()
+    ? renderMarkdown(issue.description)
+    : null;
+  const epic = issue.epicSlug
+    ? tracker.epics.find((e) => e.slug === issue.epicSlug)
+    : undefined;
+  const createdTs = issue.created ? Date.parse(issue.created) : NaN;
+  const modifiedTs = issue.modified ? Date.parse(issue.modified) : NaN;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-10 sm:py-12">
@@ -52,239 +52,164 @@ export default async function IssueDetailPage({ params }: PageProps) {
           <span className="text-[color:var(--ink-faint)]">#{issue.number}</span>{" "}
           {issue.title}
         </h1>
-        <span
-          className="stamp shrink-0"
-          data-tone={issue.status === "open" ? undefined : "ok"}
-        >
-          {issue.status}
+        <span className="stamp shrink-0" data-tone={issue.open ? undefined : "ok"}>
+          {issue.stateLabel ?? (issue.open ? "open" : "closed")}
         </span>
       </div>
       <p
-        className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+        className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        priority {issue.priority} · created <RelativeTime ts={issue.createdAt} />{" "}
-        · updated <RelativeTime ts={issue.updatedAt} />
-        {issue.labels.length > 0 ? (
-          <> · {issue.labels.map((l) => `#${l}`).join(" ")}</>
+        {issue.categoryLabel ? <span>{issue.categoryLabel}</span> : null}
+        {epic ? (
+          <span>
+            epic{" "}
+            <Link
+              href={`/repos/${owner}/${name}/issues`}
+              className="hover:text-[color:var(--accent)]"
+            >
+              {epic.title}
+            </Link>
+          </span>
         ) : null}
+        {Number.isFinite(createdTs) ? (
+          <span>
+            created <RelativeTime ts={createdTs} />
+          </span>
+        ) : null}
+        {Number.isFinite(modifiedTs) ? (
+          <span>
+            updated <RelativeTime ts={modifiedTs} />
+          </span>
+        ) : null}
+        {issue.afk ? <span>afk</span> : null}
       </p>
 
       <RepoTabs owner={owner} name={name} active="issues" />
 
-      {linkedPulls.length > 0 ? (
-        <div
-          className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          <span className="text-[color:var(--ink-faint)]">linked pulls</span>
-          {linkedPulls.map((p) => (
-            <Link
-              key={p.id}
-              href={`/repos/${owner}/${name}/pulls/${p.number}`}
-              className="inline-flex items-center gap-1.5 hover:text-[color:var(--accent)]"
-              title={p.title}
-            >
-              <span
-                className="stamp"
-                data-tone={
-                  p.status === "merged"
-                    ? "ok"
-                    : p.status === "closed"
-                      ? "bad"
-                      : undefined
-                }
-              >
-                {p.status}
-              </span>
-              <span>#{p.number}</span>
-            </Link>
-          ))}
-        </div>
-      ) : null}
+      <Dependencies owner={owner} repo={name} tracker={tracker} issue={issue} />
 
-      <CommentCard
-        author={{ webId: issue.authorWebId, agentRunId: null }}
-        createdAt={issue.createdAt}
-        podUrl={issue.podUrl}
-        bodyHtml={bodyHtml}
-        opener
-      />
-
-      {session ? (
-        <div className="mt-6">
-          <IssueActions
-            owner={owner}
-            repo={name}
-            number={issue.number}
-            status={issue.status}
-            hasOpenRun={agentRuns.some(
-              (r) => r.status === "running" && r.role === "coder",
-            )}
-          />
-        </div>
-      ) : null}
-
-      {agentRuns.length > 0 ? (
-        <section className="mt-10">
-          <h2
-            className="border-b border-[color:var(--ink-trace)] pb-1.5 text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            Agent activity · {agentRuns.length}
-          </h2>
-          <ul className="mt-4 space-y-3">
-            {agentRuns.map((run) => (
-              <li key={run.id} id={`agent-run-${run.id}`} className="scroll-mt-20">
-                <AgentRunCard run={run} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section id="comments" className="mt-10 scroll-mt-20">
-        <h2
-          className="border-b border-[color:var(--ink-trace)] pb-1.5 text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Comments · {comments.length}
-        </h2>
-        {comments.length === 0 ? (
-          <p
-            className="mt-4 rounded border border-dashed border-[color:var(--ink-trace)] px-4 py-6 text-center text-sm italic text-[color:var(--ink-faint)]"
-          >
-            No comments yet. Start the conversation below — the coder agent
-            re-fires on every new comment.
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-4">
-            {comments.map((c) => (
-              <li key={c.id} id={`comment-${c.id}`} className="scroll-mt-20">
-                <CommentCard
-                  author={{ webId: c.authorWebId, agentRunId: c.agentRunId }}
-                  createdAt={c.createdAt}
-                  podUrl={c.podUrl}
-                  bodyHtml={renderMarkdown(c.body)}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="mt-6">
-          {session ? (
-            <CommentForm owner={owner} repo={name} number={issue.number} />
+      <div className="mt-6 overflow-hidden rounded border border-[color:var(--ink-trace)]">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-4 py-2">
+          {issue.assignee ? (
+            <Assignee webId={issue.assignee} />
           ) : (
-            <SignInWall
-              action="leave a comment or close this issue"
-              next={`${returnTo}#comments`}
-            />
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/**
- * Renders one entry in the issue thread: the original issue body
- * (`opener`) or a follow-up comment. Agent comments get a distinct
- * border + "coder" avatar and a deep-link to the corresponding agent
- * run card on the same page.
- */
-function CommentCard({
-  author,
-  createdAt,
-  podUrl,
-  bodyHtml,
-  opener,
-}: {
-  author: { webId: string; agentRunId: number | null };
-  createdAt: number;
-  podUrl: string;
-  bodyHtml: string | null;
-  opener?: boolean;
-}) {
-  const isAgent = author.agentRunId !== null;
-  const { handle } = deriveLabel(author.webId);
-
-  return (
-    <div
-      className={`overflow-hidden rounded border ${
-        isAgent
-          ? "border-[color:var(--accent)]/40"
-          : "border-[color:var(--ink-trace)]"
-      }`}
-    >
-      <div
-        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-4 py-2 ${
-          isAgent
-            ? "border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10"
-            : "border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)]"
-        }`}
-      >
-        <span className="flex min-w-0 items-center gap-3">
-          <Avatar webId={author.webId} agent={isAgent} size="md" />
-          <span className="min-w-0">
-            {isAgent ? (
-              <span className="block text-sm text-[color:var(--ink)]">
-                <strong className="font-semibold">coder</strong>{" "}
-                <a
-                  href={`#agent-run-${author.agentRunId}`}
-                  className="text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
-                  style={{ fontFamily: "var(--font-mono-src)" }}
-                  title="jump to agent run on this page"
-                >
-                  · run #{author.agentRunId} ↑
-                </a>
-              </span>
-            ) : (
-              <a
-                href={author.webId}
-                target="_blank"
-                rel="noreferrer"
-                className="block truncate text-sm text-[color:var(--ink)] hover:text-[color:var(--accent)]"
-                title={author.webId}
-              >
-                <strong className="font-semibold">{handle}</strong>
-              </a>
-            )}
             <span
-              className="block text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+              className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
-              {opener ? "opened " : "commented "}
-              <RelativeTime ts={createdAt} />
+              unassigned
             </span>
-          </span>
-        </span>
-        {!isAgent && podUrl ? (
-          <a
-            href={podUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+          )}
+          <span
+            className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
-            title="view the source Turtle in the pod"
+            title="canonical .mind issue id"
           >
-            turtle →
-          </a>
-        ) : null}
+            {issue.id}
+          </span>
+        </div>
+        <div className="bg-[color:var(--paper)] px-4 py-4 sm:px-5">
+          {bodyHtml ? (
+            <article
+              className="markdown-body"
+              dangerouslySetInnerHTML={{ __html: bodyHtml }}
+            />
+          ) : (
+            <p className="text-sm italic text-[color:var(--ink-faint)]">
+              (no description)
+            </p>
+          )}
+        </div>
       </div>
-      <div className="bg-[color:var(--paper)] px-4 py-4 sm:px-5">
-        {bodyHtml ? (
-          <article
-            className="markdown-body"
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
-        ) : (
-          <p className="text-sm italic text-[color:var(--ink-faint)]">
-            (no description)
-          </p>
-        )}
-      </div>
+
+      <p
+        className="mt-6 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+        style={{ fontFamily: "var(--font-mono-src)" }}
+      >
+        Read-only · folded from this repo&apos;s{" "}
+        <code className="kbd">.mind</code> tracker. Edit by authoring events under{" "}
+        <code className="kbd">.mind/issues/</code> and pushing.
+      </p>
     </div>
   );
 }
 
+function Assignee({ webId }: { webId: string }) {
+  const { handle } = deriveLabel(webId);
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      <Avatar webId={webId} size="md" />
+      <span className="min-w-0">
+        <a
+          href={webId}
+          target="_blank"
+          rel="noreferrer"
+          className="block truncate text-sm text-[color:var(--ink)] hover:text-[color:var(--accent)]"
+          title={webId}
+        >
+          <strong className="font-semibold">{handle}</strong>
+        </a>
+        <span
+          className="block text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          assignee
+        </span>
+      </span>
+    </span>
+  );
+}
+
+/** Renders blocks / blockedBy as links, resolving ULIDs → #number when known. */
+function Dependencies({
+  owner,
+  repo,
+  tracker,
+  issue,
+}: {
+  owner: string;
+  repo: string;
+  tracker: Tracker;
+  issue: TrackerIssue;
+}) {
+  if (issue.blocks.length === 0 && issue.blockedBy.length === 0) return null;
+  const byId = new Map(tracker.issues.map((i) => [i.id, i]));
+
+  const render = (label: string, ids: string[], tone?: string) => (
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)]"
+      style={{ fontFamily: "var(--font-mono-src)" }}
+    >
+      <span className="text-[color:var(--ink-faint)]" style={{ color: tone }}>
+        {label}
+      </span>
+      {ids.map((id) => {
+        const target = byId.get(id);
+        return target?.number !== undefined ? (
+          <Link
+            key={id}
+            href={`/repos/${owner}/${repo}/issues/${target.number}`}
+            className="hover:text-[color:var(--accent)]"
+            title={target.title}
+          >
+            #{target.number}
+          </Link>
+        ) : (
+          <span key={id} title={id}>
+            {id.slice(-4)}
+          </span>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="mt-4 space-y-1">
+      {issue.blockedBy.length > 0
+        ? render("blocked by", issue.blockedBy, "var(--accent-deep)")
+        : null}
+      {issue.blocks.length > 0 ? render("blocks", issue.blocks) : null}
+    </div>
+  );
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@mind-studio/ui";
 
 type Item = {
   href: string;
@@ -38,14 +39,17 @@ export function MainNav({ signedIn }: { signedIn: boolean }) {
         <NavLink key={item.href} item={item} active={isActive(pathname, item)} />
       ))}
       {signedIn ? (
-        <Link
-          href="/repos/new"
-          aria-label="New repo"
-          className="ml-1 whitespace-nowrap rounded border border-[color:var(--accent)] px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent)] transition-colors hover:bg-[color:var(--accent)] hover:text-[color:var(--paper)] sm:ml-2 sm:px-3"
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="ml-1 whitespace-nowrap text-[11px] uppercase tracking-[0.18em] sm:ml-2"
         >
-          <span aria-hidden>+</span>
-          <span className="ml-1 hidden sm:inline">New</span>
-        </Link>
+          <Link href="/repos/new" aria-label="New repo">
+            <span aria-hidden>+</span>
+            <span className="ml-1 hidden sm:inline">New</span>
+          </Link>
+        </Button>
       ) : null}
     </nav>
   );

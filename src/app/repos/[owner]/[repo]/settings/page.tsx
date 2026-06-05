@@ -84,6 +84,8 @@ export default async function RepoSettingsPage({ params }: PageProps) {
               name={name}
               visibility={repo.visibility}
               defaultBranch={repo.defaultBranch}
+              proposalsEnabled={repo.proposalsEnabled}
+              collabEnabled={repo.collabEnabled}
             />
           </Section>
 

@@ -2,6 +2,73 @@
 
 What shipped in each iteration. Most-recent at the top.
 
+## v0.9 — Public proposals (LDN inbox), live co-authoring, `.mind` tracker, theming (2026-06-05)
+
+A collaboration-and-intake iteration: outsiders can now propose work, drafts are
+co-written in real time, the Issues board reads a pod-native `.mind` tracker, and
+the whole surface picks up a light/dark/neo theme.
+
+### Public issue proposals — a pod-native LDN inbox
+
+- **Anyone (incl. logged-out) can _propose_ an issue.** `POST
+  /api/repos/{o}/{r}/issues/propose` is intentionally unauthenticated (no
+  `requireOwner`, no CSRF); abuse control is a `proposalCreate` per-IP rate-limit
+  bucket + title/body size caps + a per-repo `proposals_enabled` flag (migration
+  `016_proposals.sql`) + owner dismissal.
+- **Proposals are [Linked Data Notifications](https://www.w3.org/TR/ldn/)**
+  (`as:Announce`) dropped into a pod-native `ldp:inbox` at
+  `{podRoot}/codespaces/{repo}/inbox/` — `src/lib/solid/inbox.ts`. The inbox is
+  owner-read / public-write: `setInboxAcl` (`containers.ts`) gives the owner
+  `Read/Write/Control` and, only under `INBOX_PUBLIC_APPEND=1`, `foaf:Agent
+  acl:Append` (never read, never `acl:default`). Writes are bridge-mediated with
+  the owner's delegated fetch; the repo advertises `ldp:inbox` on `<#repo>` for
+  discovery. New `as:`/`ldp:` namespaces + `solidgit:IssueProposal` in `vocab.ts`.
+- **Owner surface** — `/repos/{o}/{r}/proposals` (owner-only tab, no count badge
+  by design — the count is a pod round-trip) lists the inbox. **Accept**
+  (`POST .../inbox/{id}/accept`) mints a `needs-triage` `.mind` issue (proposer
+  recorded as provenance in the body) then deletes the notification; **Dismiss**
+  (`DELETE .../inbox/{id}`) just deletes it. Public propose form at
+  `/repos/{o}/{r}/issues/propose`.
+- Tests: `inbox-acl.test.ts` (ACL shape) + `inbox-roundtrip.test.ts`
+  (serialize → list → delete + hostile-Turtle injection) against an in-memory pod.
+
+### Live co-authoring on issue/epic drafts
+
+- **Real-time multiplayer drafts** — `/repos/{o}/{r}/issues/draft/{id}` is a Yjs
+  room: several people co-write one draft with live cursors via a y-websocket
+  relay (`relay/server.ts`, `npm run relay`, :3012 — no persistence, no pod
+  creds). TipTap editor (`@tiptap/*`, `tiptap-markdown`) with the Collaboration
+  extension; `src/lib/collab/` (`draft-doc.ts`, `config.ts`). Per-repo
+  `collab_enabled` flag (migration `017_collab.sql`); off → local-only (IndexedDB,
+  no relay).
+- **Issue-vs-epic hint** — `suggest-kind.ts` reads the draft markdown and
+  pre-sets the Kind toggle (keyword/structure heuristic); `suggest-kind.test.ts`.
+
+### `.mind` git tracker (the Issues board's read model)
+
+- **Pod-native `.mind` tracker** — `src/lib/tracker/` (`parse`/`read`/`build`/
+  `author`/`model`) folds append-only event Markdown into board state.
+  `scripts/tracker-build.ts` (`tracker:build` / `tracker:check`) + a calendar fold
+  (`calendar-build.ts`). New `mind-issues` / `mind-epics` API routes and an epic
+  draft flow. Tests: `tracker-parse.test.ts`, `create-epic.test.ts`. N3 types in
+  `src/types/n3.d.ts`.
+
+### Theming + misc
+
+- **Light / dark / neo themes** — `src/components/theme-shell.tsx` +
+  `theme-toggle.tsx`, `src/lib/theme/neo.ts`, applied across `layout.tsx`,
+  `globals.css`, `main-nav.tsx` and the repo/profile/issue surfaces. (Supersedes
+  the v0.6 note that `theme-toggle.tsx` was removed — it's back as the user-facing
+  toggle.)
+- **Packages** — OCI blob uploads now reject oversize layers up front by declared
+  `Content-Length` and cumulative chunk size (`oci-uploads.ts` +
+  `packages-oci-blob-cap.test.ts`); empty-state "push tokens" link now points to
+  Settings → tokens instead of the code browser.
+
+`tsc` clean, 55 unit tests pass (16 files), `smoke:db` 9/9 (migrations 016/017).
+Integration coverage (live-CSS propose→accept→git-push, relay round-trip) remains
+the PRODUCTION-READINESS §3.2 backlog.
+
 ## v0.8.1 — Mind Packages: web UI, `/v2` version-ping fix, live verification (2026-06-01)
 
 The packages feature was API/CLI-only; this adds the dashboard surface and

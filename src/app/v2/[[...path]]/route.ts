@@ -81,6 +81,8 @@ export async function POST(req: Request, { params }: Params) {
   const digest = new URL(req.url).searchParams.get("digest");
   if (digest) {
     // Monolithic single-POST upload: the whole blob is in this request.
+    const tooBig = oversizeByContentLength(req);
+    if (tooBig) return tooBig;
     const bytes = new Uint8Array(await req.arrayBuffer());
     if (bytes.byteLength > 0) return finalizeBlob(repo, target.name, bytes, digest);
   }
@@ -108,6 +110,11 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!repo) return ociError(404, "NAME_UNKNOWN", "repository not found");
   if (!authenticatePackagePush(repo.id, req)) return unauthorized(target.name);
 
+  const tooBig = oversizeByContentLength(req);
+  if (tooBig) {
+    abortUpload(target.uuid);
+    return tooBig;
+  }
   const bytes = new Uint8Array(await req.arrayBuffer());
   const size = appendChunk(target.uuid, bytes);
   if (size === null) {
@@ -142,6 +149,11 @@ export async function PUT(req: Request, { params }: Params) {
 
     const digest = new URL(req.url).searchParams.get("digest");
     if (!digest) return ociError(400, "DIGEST_INVALID", "missing digest on upload finalize");
+    const tooBig = oversizeByContentLength(req);
+    if (tooBig) {
+      abortUpload(target.uuid);
+      return tooBig;
+    }
     const trailing = new Uint8Array(await req.arrayBuffer());
     const full = finishUpload(target.uuid, trailing);
     if (full === null) {
@@ -399,6 +411,24 @@ function unauthorized(name: OciName): NextResponse {
       },
     },
   );
+}
+
+/**
+ * Reject an oversize blob upload by its declared `Content-Length` *before* the
+ * body is buffered into memory. OCI v0 buffers each blob in RAM (see
+ * `oci-uploads.ts`), so a multi-GB layer would OOM the bridge during
+ * `req.arrayBuffer()` — long before the post-buffer caps in `appendChunk`/
+ * `finalizeBlob` ever run. A truthful `Content-Length` lets us 413 up front; a
+ * lying or absent one still hits the cumulative cap downstream.
+ */
+function oversizeByContentLength(req: Request): NextResponse | null {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > QUOTAS.maxPackageBlobBytes) {
+    return quota(
+      new QuotaExceededError("maxPackageBlobBytes", QUOTAS.maxPackageBlobBytes, declared),
+    );
+  }
+  return null;
 }
 
 function quota(e: QuotaExceededError): NextResponse {

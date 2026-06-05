@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import {
+  Button,
+  buttonVariants,
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@mind-studio/ui";
 
 /**
  * Manual workflow re-run trigger. Fires-and-forgets via the runs API,
@@ -15,7 +28,6 @@ export function RerunButton({ owner, repo }: { owner: string; repo: string }) {
   const [error, setError] = useState<string | null>(null);
 
   async function trigger() {
-    if (!confirm(`Re-run the workflow for ${owner}/${repo}?`)) return;
     setBusy(true);
     setError(null);
     try {
@@ -39,14 +51,33 @@ export function RerunButton({ owner, repo }: { owner: string; repo: string }) {
 
   return (
     <div className="inline-flex items-center gap-3">
-      <button
-        type="button"
-        onClick={trigger}
-        disabled={busy}
-        className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 py-1 text-sm text-[color:var(--paper)] hover:bg-[color:var(--accent-deep)] disabled:opacity-50"
-      >
-        {busy ? "Triggering…" : "Re-run"}
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button type="button" variant="outline" size="sm" disabled={busy}>
+            {busy ? "Triggering…" : "Re-run"}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Re-run workflow?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Re-run the workflow for {owner}/{repo}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="confirm-cancel">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="confirm-accept"
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={trigger}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {error ? (
         <span className="text-sm text-[color:var(--status-bad)]">{error}</span>
       ) : null}

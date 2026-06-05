@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
+import { repoPath } from "@/lib/git/backend";
+import { readGitTracker } from "@/lib/tracker/read";
+import { RepoTabs } from "../../repo-tabs";
 import { NewIssueForm } from "./new-issue-form";
 
 export const dynamic = "force-dynamic";
@@ -14,37 +17,38 @@ export default async function NewIssuePage({ params }: PageProps) {
   const repo = getRepo(owner, name);
   if (!repo) notFound();
 
+  const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  if (!tracker) notFound();
+
+  // Categories: value is the lowercase config id (the label); the author resolves
+  // it back to the `.mind` `type:`. Epics: slug + title (General handled inline).
+  const categories = tracker.categories.map((c) => ({ id: c.label, label: c.label }));
+  const epics = tracker.epics.map((e) => ({ slug: e.slug, title: e.title }));
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-10 sm:py-12">
       <p className="section-mark">
-        <Link
-          href={`/repos/${owner}/${name}/issues`}
-          className="link"
-        >
-          ← {owner}/{name}/issues
+        <Link href={`/repos/${owner}/${name}/issues`} className="link">
+          ← issues
         </Link>
       </p>
       <h1
-        className="display mt-3 text-3xl"
+        className="mt-3 display text-3xl"
         style={{ fontFamily: "var(--font-display)" }}
       >
-        New <em>issue</em>.
+        New issue
       </h1>
-      <p className="mt-3 max-w-xl text-sm text-[color:var(--ink-soft)]">
-        Filed against{" "}
-        <code className="kbd">
-          {repo.owner}/{repo.name}
-        </code>
-        . Written to your pod at{" "}
-        <code className="kbd">
-          /codespaces/{repo.name}/issues/&hellip;
-        </code>
-        .
-      </p>
 
-      <hr className="hairline my-8" />
+      <RepoTabs owner={owner} name={name} active="issues" />
 
-      <NewIssueForm owner={owner} repo={name} />
+      <div className="mt-6">
+        <NewIssueForm
+          owner={owner}
+          repo={name}
+          categories={categories}
+          epics={epics}
+        />
+      </div>
     </div>
   );
 }

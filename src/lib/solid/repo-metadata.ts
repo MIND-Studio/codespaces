@@ -2,6 +2,7 @@ import "server-only";
 import type { Repo, PagesConfig } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { ensureInbox, inboxContainerUrl } from "@/lib/solid/inbox";
 import { NS } from "@/lib/vocab";
 
 /**
@@ -38,6 +39,7 @@ function renderTurtle(repo: Repo, pages: PagesConfig | null): string {
     `@prefix solidgit: <${NS.solidgit}>.`,
     `@prefix dcterms: <${NS.dcterms}>.`,
     `@prefix xsd: <${NS.xsd}>.`,
+    `@prefix ldp: <${NS.ldp}>.`,
     "",
     "<#repo>",
     "    a solidgit:Repository ;",
@@ -61,6 +63,12 @@ function renderTurtle(repo: Repo, pages: PagesConfig | null): string {
       `    solidgit:pagesTarget <${pages.targetContainer}>`,
     );
   }
+  // Advertise the proposal inbox. `ldp:inbox` makes it discoverable by any
+  // LDN-aware agent (the spec hook); `solidgit:proposalsEnabled` records
+  // whether the bridge currently accepts proposals for this repo.
+  lines[lines.length - 1] += " ;";
+  lines.push(`    solidgit:proposalsEnabled ${repo.proposalsEnabled ? "true" : "false"} ;`);
+  lines.push(`    ldp:inbox <${inboxContainerUrl(repo)}>`);
   lines[lines.length - 1] += " .";
   lines.push("");
   return lines.join("\n");
@@ -110,6 +118,10 @@ async function writeRepoMetadataOnce(
       repo.ownerWebId,
     );
     await ensureContainer(authed.fetch, metadataContainer(repo));
+    // Provision the LDN proposal inbox while we already hold the owner's
+    // authenticated fetch. Idempotent — only the first call writes the
+    // append-only ACL.
+    await ensureInbox(authed.fetch, repo);
 
     const url = metadataUrl(repo);
     const body = renderTurtle(repo, pages);

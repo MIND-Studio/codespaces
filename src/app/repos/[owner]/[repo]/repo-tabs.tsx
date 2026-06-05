@@ -1,12 +1,20 @@
 import "server-only";
 import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { countIssuesByStatus } from "@/lib/registry/issues";
+import { repoPath } from "@/lib/git/backend";
+import { readGitTracker } from "@/lib/tracker/read";
 import { countOpenPullRequests } from "@/lib/registry/pulls";
 import { listPackages } from "@/lib/packages/store";
 import { readSession } from "@/lib/auth/session";
 import { NavTabs } from "./nav-tabs";
 
-type ActiveKey = "code" | "issues" | "pulls" | "runs" | "packages" | "settings";
+type ActiveKey =
+  | "code"
+  | "issues"
+  | "pulls"
+  | "runs"
+  | "packages"
+  | "proposals"
+  | "settings";
 
 export async function RepoTabs({
   owner,
@@ -23,7 +31,12 @@ export async function RepoTabs({
   const session = await readSession();
   const isOwner = session?.webId === repo.ownerWebId;
 
-  const issueCounts = countIssuesByStatus(repo.id);
+  // Open-issue badge reflects the repo's .mind tracker (the same source the
+  // /issues board renders), so the tab count matches the board.
+  const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  const openIssueCount = tracker
+    ? tracker.issues.filter((i) => i.open).length
+    : 0;
   const openPullCount = countOpenPullRequests(repo.id);
 
   // Distinct published artifacts, counting each (type, name) once — an OCI
@@ -51,7 +64,7 @@ export async function RepoTabs({
           key: "issues",
           href: `/repos/${owner}/${name}/issues`,
           label: "Issues",
-          count: issueCounts.open,
+          count: openIssueCount,
           active: active === "issues",
         },
         {
@@ -76,6 +89,15 @@ export async function RepoTabs({
         },
         ...(isOwner
           ? [
+              // Owner-only. No count: reading the count means a pod round-trip,
+              // and this tab renders on every repo subpage — the Proposals page
+              // itself shows the inbox size.
+              {
+                key: "proposals",
+                href: `/repos/${owner}/${name}/proposals`,
+                label: "Proposals",
+                active: active === "proposals",
+              },
               {
                 key: "settings",
                 href: `/repos/${owner}/${name}/settings`,

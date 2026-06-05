@@ -1,14 +1,38 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import {
+  Button,
+  Input,
+  Textarea,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@mind-studio/ui";
 
-export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
+export type CategoryOption = { id: string; label: string };
+export type EpicOption = { slug: string; title: string };
+
+type Props = {
+  owner: string;
+  repo: string;
+  categories: CategoryOption[];
+  epics: EpicOption[];
+};
+
+const PRIORITIES = ["urgent", "high", "normal", "low"];
+
+export function NewIssueForm({ owner, repo, categories, epics }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [type, setType] = useState(categories[0]?.id ?? "feature");
+  const [epic, setEpic] = useState("general");
+  const [priority, setPriority] = useState("normal");
   const [body, setBody] = useState("");
-  const [priority, setPriority] = useState<"low" | "normal" | "high">("normal");
-  const [labels, setLabels] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,112 +41,122 @@ export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await authedFetch(`/api/repos/${owner}/${repo}/issues`, {
+      const res = await authedFetch(`/api/repos/${owner}/${repo}/mind-issues`, {
         method: "POST",
         body: JSON.stringify({
-          title,
-          body,
+          title: title.trim(),
+          type,
+          epic,
           priority,
-          labels: labels
-            .split(",")
-            .map((l) => l.trim())
-            .filter(Boolean),
+          body: body.trim() || undefined,
         }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 401) {
+          throw new Error("Sign in as the repo owner to create issues.");
+        }
         throw new Error(data.error ?? `request failed: ${res.status}`);
       }
       const { issue } = (await res.json()) as { issue: { number: number } };
       router.push(`/repos/${owner}/${repo}/issues/${issue.number}`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSubmitting(false);
     }
   }
 
+  const labelClass =
+    "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
+  const mono = { fontFamily: "var(--font-mono-src)" };
+
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5 text-sm">
       <label className="flex flex-col gap-1.5">
-        <span
-          className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
+        <span className={labelClass} style={mono}>
           Title
         </span>
-        <input
+        <Input
           type="text"
           required
-          maxLength={200}
+          maxLength={160}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="One-line summary of the issue"
-          className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-          disabled={submitting}
-        />
-      </label>
-
-      <label className="flex flex-col gap-1.5">
-        <span
-          className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Body
-        </span>
-        <textarea
-          rows={10}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Markdown welcome. Describe what should change and why."
-          className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 leading-relaxed outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
-          style={{ fontFamily: "var(--font-mono-src)" }}
+          placeholder="Short, imperative summary"
           disabled={submitting}
         />
       </label>
 
       <div className="flex flex-wrap gap-5">
-        <label className="flex flex-col gap-1.5">
-          <span
-            className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            Priority
+        <label className="flex min-w-[150px] flex-1 flex-col gap-1.5">
+          <span className={labelClass} style={mono}>
+            Type
           </span>
-          <select
-            value={priority}
-            onChange={(e) =>
-              setPriority(e.target.value as "low" | "normal" | "high")
-            }
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-            disabled={submitting}
-          >
-            <option value="low">low</option>
-            <option value="normal">normal</option>
-            <option value="high">high</option>
-          </select>
+          <Select value={type} onValueChange={setType} disabled={submitting}>
+            <SelectTrigger style={mono}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent style={mono}>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
 
-        <label className="flex min-w-[200px] flex-1 flex-col gap-1.5">
-          <span
-            className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
-            Labels <span className="text-[color:var(--ink-trace)]">·</span>{" "}
-            comma-separated
+        <label className="flex min-w-[150px] flex-1 flex-col gap-1.5">
+          <span className={labelClass} style={mono}>
+            Epic
           </span>
-          <input
-            type="text"
-            value={labels}
-            onChange={(e) => setLabels(e.target.value)}
-            placeholder="bug, docs, good-first-issue"
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-            disabled={submitting}
-          />
+          <Select value={epic} onValueChange={setEpic} disabled={submitting}>
+            <SelectTrigger style={mono}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent style={mono}>
+              <SelectItem value="general">General (un-epic&apos;d)</SelectItem>
+              {epics.map((e) => (
+                <SelectItem key={e.slug} value={e.slug}>
+                  {e.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+
+        <label className="flex min-w-[150px] flex-1 flex-col gap-1.5">
+          <span className={labelClass} style={mono}>
+            Priority
+          </span>
+          <Select value={priority} onValueChange={setPriority} disabled={submitting}>
+            <SelectTrigger style={mono}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent style={mono}>
+              {PRIORITIES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className={labelClass} style={mono}>
+          Description <span className="lowercase tracking-normal">(markdown)</span>
+        </span>
+        <Textarea
+          rows={10}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={"## What\n\n…\n\n## Acceptance criteria\n\n- [ ] …"}
+          disabled={submitting}
+        />
+      </label>
 
       {error ? (
         <p
@@ -130,8 +164,7 @@ export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
           style={{
             borderColor: "var(--status-bad)",
             color: "var(--status-bad)",
-            background:
-              "color-mix(in srgb, var(--status-bad) 8%, transparent)",
+            background: "color-mix(in srgb, var(--status-bad) 8%, transparent)",
           }}
         >
           {error}
@@ -139,21 +172,11 @@ export function NewIssueForm({ owner, repo }: { owner: string; repo: string }) {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-4 pt-1">
-        <button
-          type="submit"
-          disabled={submitting || title.trim().length === 0}
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-5 py-2 text-[color:var(--paper)] transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {submitting ? "Submitting…" : "Submit issue"}
-        </button>
-        <p
-          className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          agents fire on create ·{" "}
-          <span style={{ color: "var(--ink-soft)" }}>
-            coder runs immediately
-          </span>
+        <Button type="submit" disabled={submitting || title.trim().length === 0}>
+          {submitting ? "Creating…" : "Create issue"}
+        </Button>
+        <p className={labelClass} style={mono}>
+          writes a <code>.mind</code> issue + open event · folded &amp; pushed to the repo
         </p>
       </div>
     </form>

@@ -263,7 +263,7 @@ function PackagesEmptyState({ owner, name }: { owner: string; name: string }) {
         Publish npm packages, container images, or generic files to this repo
         and they show up here — the bytes are stored in the owner&apos;s pod,
         addressed by digest. Auth reuses this repo&apos;s{" "}
-        <Link href={`/repos/${owner}/${name}`} className="link">
+        <Link href={`/repos/${owner}/${name}/settings#tokens`} className="link">
           push tokens
         </Link>
         .

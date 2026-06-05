@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@mind-studio/ui";
 
 /**
  * Polite "you need to sign in to do this" card. Used in two places:
@@ -41,42 +42,32 @@ export function SignInWall({
     <aside
       role="status"
       aria-live="polite"
-      className={`overflow-hidden rounded border border-[color:var(--accent)]/40 bg-[color:var(--accent)]/8`}
+      className={`overflow-hidden rounded-lg border border-primary/40 bg-primary/8`}
     >
       <div
-        className={`flex items-center justify-between gap-3 border-b border-[color:var(--accent)]/25 bg-[color:var(--accent)]/10 px-4 ${compact ? "py-1.5" : "py-2"} text-[10px] uppercase tracking-[0.22em] text-[color:var(--accent-deep)]`}
-        style={{ fontFamily: "var(--font-mono-src)" }}
+        className={`flex items-center justify-between gap-3 border-b border-primary/25 bg-primary/10 px-4 ${compact ? "py-1.5" : "py-2"} font-mono text-[10px] uppercase tracking-[0.22em] text-primary`}
       >
         <span>// sign in required</span>
       </div>
       <div className={compact ? "px-4 py-3" : "px-4 py-4 sm:px-5 sm:py-5"}>
-        <p
-          className={`${compact ? "text-sm" : "text-base"} text-[color:var(--ink)]`}
-        >
+        <p className={`${compact ? "text-sm" : "text-base"} text-foreground`}>
           You need a session to <strong>{action}</strong>.
         </p>
-        <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ink-soft)]">
+        <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
           The bridge never sees your pod password — sign-in happens against
           your own pod, and the bridge only stores the resulting refresh
           token (encrypted at rest).
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Link
-            href={loginHref}
-            className="inline-block rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 py-1.5 text-sm text-[color:var(--paper)] hover:bg-[color:var(--accent-deep)]"
-          >
-            Sign in
-          </Link>
-          <Link
-            href={signupHref}
-            className="inline-block rounded border border-[color:var(--accent)] bg-transparent px-3 py-1.5 text-sm text-[color:var(--accent)] hover:bg-[color:var(--accent)]/10"
-          >
-            Create account
-          </Link>
+          <Button asChild size="sm">
+            <Link href={loginHref}>Sign in</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href={signupHref}>Create account</Link>
+          </Button>
           <Link
             href={connectHref}
-            className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
+            className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:text-primary"
           >
             or connect an external pod →
           </Link>

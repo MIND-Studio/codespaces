@@ -3,6 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import {
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@mind-studio/ui";
 
 type Props = {
   owner: string;
@@ -93,7 +102,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           bad input and surfaces a clean error inline, so the client-side
           hint is unnecessary.
         */}
-        <input
+        <Input
           type="text"
           required
           maxLength={64}
@@ -104,7 +113,6 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
-          className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
           style={{ fontFamily: "var(--font-mono-src)" }}
           disabled={submitting}
         />
@@ -125,18 +133,23 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           >
             Visibility
           </span>
-          <select
+          <Select
             value={visibility}
-            onChange={(e) =>
-              setVisibility(e.target.value as "public" | "private")
+            onValueChange={(value) =>
+              setVisibility(value as "public" | "private")
             }
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
-            style={{ fontFamily: "var(--font-mono-src)" }}
             disabled={submitting}
           >
-            <option value="public">public</option>
-            <option value="private">private (push token also required to clone)</option>
-          </select>
+            <SelectTrigger style={{ fontFamily: "var(--font-mono-src)" }}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent style={{ fontFamily: "var(--font-mono-src)" }}>
+              <SelectItem value="public">public</SelectItem>
+              <SelectItem value="private">
+                private (push token also required to clone)
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </label>
 
         <label className="flex min-w-[200px] flex-1 flex-col gap-1.5">
@@ -146,14 +159,13 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           >
             Default branch
           </span>
-          <input
+          <Input
             type="text"
             value={defaultBranch}
             onChange={(e) => setDefaultBranch(e.target.value)}
             placeholder="main"
             spellCheck={false}
             autoComplete="off"
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)] disabled:opacity-50"
             style={{ fontFamily: "var(--font-mono-src)" }}
             disabled={submitting}
           />
@@ -175,13 +187,12 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-4 pt-1">
-        <button
+        <Button
           type="submit"
           disabled={submitting || name.trim().length === 0}
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-5 py-2 text-[color:var(--paper)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {submitting ? "Creating…" : "Create repo"}
-        </button>
+        </Button>
         <p
           className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}

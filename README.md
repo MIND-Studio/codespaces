@@ -239,10 +239,56 @@ else, so identical layers dedup across your repos.
 > (`crane`/`skopeo` round-trips are verified working). A remote bridge needs TLS
 > regardless (the prod Caddy stack provides it).
 
-> **OCI v0 limits:** uploads buffer in memory (capped by `MAX_PACKAGE_BLOB_BYTES`),
-> so very large layers aren't supported yet; auth is HTTP-Basic only (no bearer
+> **OCI v0 limits:** uploads buffer in memory, so very large layers aren't
+> supported yet — a blob exceeding `MAX_PACKAGE_BLOB_BYTES` (by declared
+> `Content-Length` or cumulative chunk size) is rejected up front with a `413`
+> rather than OOMing the bridge; auth is HTTP-Basic only (no bearer
 > token endpoint); no `?mount=` cross-repo blob mount. See
 > [`docs/PACKAGES-PLAN.md`](./docs/PACKAGES-PLAN.md).
+
+## Proposals (a pod-native LDN inbox)
+
+Only the repo owner can create issues directly. **Anyone else — including
+logged-out visitors — can _propose_ one.** A proposal is a
+[Linked Data Notification](https://www.w3.org/TR/ldn/) the bridge drops into a
+pod-native `ldp:inbox` it provisions in the owner's pod:
+
+```
+{podRoot}/codespaces/{repo}/inbox/          ← the ldp:inbox (advertised on <#repo>)
+{podRoot}/codespaces/{repo}/inbox/{uuid}.ttl ← one proposal (as:Announce)
+```
+
+The inbox is **write for the public, read for the owner**: the owner gets
+`acl:Read/Write/Control`; the public gets nothing by default (writes are
+bridge-mediated) or, with `INBOX_PUBLIC_APPEND=1`, `acl:Append` only — they can
+POST a notification but never list or read the inbox.
+
+Flow: a visitor submits at `/repos/{o}/{r}/issues/propose` → the proposal lands
+in the inbox → the owner reviews it on the **Proposals** tab
+(`/repos/{o}/{r}/proposals`) → **Accept** mints a `.mind` issue at `needs-triage`
+(the proposer's identity recorded as provenance in the body; the normal triage →
+`ready-for-agent` flow takes over), or **Dismiss** deletes the notification.
+Nothing reaches the tracker until the owner accepts.
+
+Guardrails (the propose endpoint is public): a per-IP rate limit
+(`proposalCreate`), title/description size caps, a per-repo `proposalsEnabled`
+toggle (Settings → General), and the owner's ability to dismiss. Because it's
+intentionally unauthenticated, the CSRF guard does **not** apply to propose — the
+rate-limiter is the abuse control.
+
+```bash
+# Anonymous proposal — no cookie, no CSRF token:
+curl -fsS -X POST http://localhost:3010/api/repos/alice/hello/issues/propose \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Add a dark theme","body":"Blinding at night.","contact":"bob@example.com"}'
+# → 202; appears on alice's Proposals tab for triage.
+```
+
+> **v0 scope:** writes are bridge-mediated with the owner's delegated fetch, so
+> the owner must have a live `/connect` identity for proposals to land. Direct
+> cross-origin LDN POSTs from a browser straight to the pod aren't wired
+> (`INBOX_PUBLIC_APPEND=1` opens that for server-to-server senders). No
+> auto-triage agent yet — accept/dismiss is owner-driven.
 
 ## Endpoints
 
@@ -251,7 +297,8 @@ else, so identical layers dedup across your repos.
 | GET | `/` | Landing |
 | GET | `/repos`, `/repos/{o}/{r}` | Dashboard, repo detail |
 | GET | `/repos/{o}/{r}/{tree,blob}/...` | Code browser |
-| GET | `/repos/{o}/{r}/{issues,pulls,runs,packages,settings}` | Repo subpages (Packages lists published artifacts) |
+| GET | `/repos/{o}/{r}/{issues,pulls,runs,packages,proposals,settings}` | Repo subpages (Packages lists published artifacts; Proposals is the owner's inbox) |
+| GET | `/repos/{o}/{r}/issues/propose` | Public "propose an issue" form (no sign-in needed) |
 | GET | `/people`, `/people/{owner}` | Owner directory + profile view |
 | GET | `/profile`, `/profile/ai-providers` | User profile + BYOK AI keys |
 | GET | `/connect`, `/identities` | Pod authorization + connected pods |
@@ -263,6 +310,8 @@ else, so identical layers dedup across your repos.
 | GET POST | `/api/repos/{o}/{r}/tokens` · DELETE `/{id}` | Push-token CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues` · GET PATCH `/{n}` | Issue CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues/{n}/comments` | Issue comments |
+| POST | `/api/repos/{o}/{r}/issues/propose` | **Public** issue proposal → owner's pod inbox (rate-limited, no auth) |
+| GET | `/api/repos/{o}/{r}/inbox` · POST `/{id}/accept` · DELETE `/{id}` | Owner-only: list proposals, accept (mint needs-triage issue), dismiss |
 | GET | `/api/repos/{o}/{r}/issues/{n}/agent-runs` | Agent runs for an issue |
 | GET POST | `/api/repos/{o}/{r}/pulls` · GET `/{n}` · POST `/{n}/merge` · `/{n}/close` | PR CRUD |
 | GET POST | `/api/repos/{o}/{r}/pulls/{n}/preview` | Read · (re)build per-PR static preview |
@@ -325,6 +374,7 @@ refuses to start when any of the **required** secrets are missing or wrong size
 | `BRIDGE_ADMIN_TOKEN` / `BRIDGE_METRICS_TOKEN` | unset (endpoint disabled) | Bearer for `/api/admin/reconcile` and `/api/metrics` |
 | `BRIDGE_CORS_ALLOWED_ORIGINS` | (none) | Extra origins permitted by the `/api/*` CORS allowlist |
 | `BRIDGE_ENABLE_SIGNUP` | unset | Set `1` to enable `POST /api/signup` + `/signup` page |
+| `INBOX_PUBLIC_APPEND` | unset | Set `1` to also grant `foaf:Agent acl:Append` on the proposal inbox (direct LDN POSTs). Default: bridge-mediated writes only, inbox not publicly writable. |
 | `MAX_REPOS_PER_OWNER` / `MAX_TOKENS_PER_REPO` / `MAX_RUNS_PER_OWNER_PER_DAY` / `MAX_DISK_PER_REPO_BYTES` | 50 / 10 / 500 / 1 GiB | Per-owner quotas (return 429 `QUOTA_EXCEEDED`) |
 | `MAX_PACKAGE_BLOB_BYTES` / `MAX_PACKAGE_BYTES_PER_REPO` | 100 MiB / 2 GiB | Package registry: single-artifact cap (also an in-memory OOM guard) + per-repo total (return 413 `QUOTA_EXCEEDED`) |
 | `OPENROUTER_API_KEY` | unset | Bridge-wide fallback key. Enables the env-only `openrouter` driver, and serves as the coder driver's fallback when a repo owner hasn't configured BYOK at `/profile/ai-providers`. The coder driver itself is always registered. |
@@ -343,8 +393,11 @@ npm run smoke:db    # apply registry migrations against a throwaway DB
 npx tsc --noEmit    # type check
 ```
 
-8 unit tests pass. Integration tests (Smart HTTP round-trip, live-CSS publish,
-OIDC roundtrip, concurrent push, reconciler) are the §3.2 backlog in
+The unit suite passes (path-traversal, push-tokens, publisher walk, quotas, the
+`packages-*` suites, and the `inbox-*` suites — inbox ACL shape + a
+serialize→list→delete round-trip against an in-memory pod). Integration tests
+(Smart HTTP round-trip, live-CSS publish + the propose→accept→`.mind` git-push
+flow, OIDC roundtrip, concurrent push, reconciler) are the §3.2 backlog in
 PRODUCTION-READINESS.
 
 ## Layout
@@ -353,7 +406,7 @@ PRODUCTION-READINESS.
 - `src/lib/registry/` — SQLite + numbered SQL migrations under `migrations/`
 - `src/lib/git/` — Bare repo creation, Smart HTTP CGI delegation, checkout/diff/merge
 - `src/lib/pages/` — Publisher, publish-lock, reconciler, MIME map
-- `src/lib/solid/` — Containers, ACLs, OIDC delegation, profile dereferencing, repo-metadata
+- `src/lib/solid/` — Containers, ACLs, OIDC delegation, profile dereferencing, repo-metadata, proposal `inbox` (LDN)
 - `src/lib/workflows/` — `.mind/workflow.yml` parser + native/Docker runners
 - `src/lib/agents/` — Dispatch, registry, drivers (`echo`/`openrouter`/`coder`/`codex`)
 - `src/lib/packages/` — Mind Packages: content-addressed pod store, index, npm + OCI protocols, upload sessions, push-token auth

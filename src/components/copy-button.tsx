@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@mind-studio/ui";
 
 /**
  * One-shot clipboard copy with a short success indicator. Falls back
@@ -29,17 +30,18 @@ export function CopyButton({
   }
 
   const base =
-    "text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)] disabled:opacity-50 cursor-pointer";
+    "h-auto px-1.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-primary";
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={trigger}
       disabled={copied}
       className={className ? `${base} ${className}` : base}
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
       {copied ? "✓ copied" : label}
-    </button>
+    </Button>
   );
 }

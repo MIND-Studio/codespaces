@@ -7,7 +7,7 @@ The user-facing README is the source of truth for commands, endpoints, ports, en
 # Agent-only notes (not in README)
 
 - The parent `/Users/heussers/develop/mind/CLAUDE.md` describes a *different* project (Mind Cube — a Raspberry Pi AI assistant). Ignore it here. The relevant parent doc is `mind-prototypes/CLAUDE.md`.
-- **`npm test` runs vitest** (path-traversal, push-tokens, publisher walk, quotas, and the four `packages-*` suites — 32 tests as of v0.8.1). `npm run smoke:db` applies registry migrations against a throwaway DB; `npx tsc --noEmit` type-checks. Integration tests (live-CSS publish, Smart-HTTP round-trip, OIDC) are still backlog — see PRODUCTION-READINESS §3.2.
+- **`npm test` runs vitest** (path-traversal, push-tokens, publisher walk, quotas, the four `packages-*` suites, and the two `inbox-*` suites — 55 tests as of the proposals/LDN-inbox change). `npm run smoke:db` applies registry migrations against a throwaway DB; `npx tsc --noEmit` type-checks. Integration tests (live-CSS publish, Smart-HTTP round-trip, OIDC) are still backlog — see PRODUCTION-READINESS §3.2.
 - The README's command list omits a few `tsx` scripts: `seed:profiles`, `seed:workflows`, `import:repo`, `smoke:db`. See `scripts/` and `package.json`.
 - Wiping `.css-data/` invalidates every OIDC dynamic-client registration; bridge identity rows in SQLite go stale and you must re-authorize via `/connect`. **This also blocks package/Pages writes:** the write path (`getOwnerFetch`) never falls back to seeded creds once a *stale* delegated identity exists, even in dev — re-`/connect`, or delete the identity (`DELETE /api/identities/{webId}`) and set `ALLOW_SEEDED_FALLBACK=1` (dev-only).
 - `.git-data/repos/{owner}/{name}.git/hooks/post-receive` bakes `BRIDGE_PUBLIC_URL` at *creation* time. Changing the env var later means re-creating the repo or `sed`-ing the hook file.
@@ -17,8 +17,16 @@ The user-facing README is the source of truth for commands, endpoints, ports, en
 - Three formats (`npm`/`oci`/`file`) share one content-addressed `PodContentStore`; bytes go to `{podRoot}/public/packages/blobs/sha256/…`, the SQLite index (`015_packages.sql`) maps `(repo,type,name,version)` → digest. Auth reuses repo **push tokens**. Design rationale: `docs/adr/0001-mind-packages-in-the-bridge.md`.
 - **`/v2/` needs `skipTrailingSlashRedirect: true`** (`next.config.ts`): docker's version ping is `GET /v2/` *with* the slash, and a 308 → `/v2` reads as "not a v2 registry". Don't remove it.
 - **`docker login` over plain `localhost` does NOT work on Docker Desktop** (daemon-in-VM forces HTTPS). For a real CLI round-trip use `crane`/`skopeo` with `--insecure` against `host.docker.internal:3010`, or add `insecure-registries`. The wire protocol itself is fine.
-- OCI blob uploads buffer **in memory** (capped by `MAX_PACKAGE_BLOB_BYTES`) — no streaming yet, so very large layers fail. Manifests are indexed by tag *and* digest; raw layers/configs live in the CAS only.
+- OCI blob uploads buffer **in memory** (capped by `MAX_PACKAGE_BLOB_BYTES`) — no streaming yet. Oversize blobs are rejected with a `413` *before* the body is buffered (declared `Content-Length` guard in the `/v2` route, plus the cumulative-size check in `oci-uploads.ts`), so a huge layer 413s instead of OOMing the bridge; genuinely large layers still need the streaming follow-up. Manifests are indexed by tag *and* digest; raw layers/configs live in the CAS only.
 - The CSRF header for mutating `/api/*` routes is `X-CSRF-Token` (cookie `mc-csrf`); `/api/auth/login` also requires an `Origin` (or `Sec-Fetch-Site`) same-origin signal.
+
+## Issue proposals — the LDN inbox (`src/lib/solid/inbox.ts`)
+
+- `POST /api/repos/{o}/{r}/issues/propose` is the **one intentionally-unauthenticated mutating route** — anyone (incl. logged-out) can propose an issue. It deliberately does NOT run the CSRF/`requireOwner` guards; abuse control is the `proposalCreate` per-IP rate limit + title/body size caps + the per-repo `proposals_enabled` flag (migration `016`) + owner dismissal. Don't "fix" it by adding `requireOwner`.
+- Proposals are LDN notifications (`as:Announce`) in a pod-native `ldp:inbox` at `{podRoot}/codespaces/{repo}/inbox/`, provisioned (container + append-only `.acl`) inside `writeRepoMetadata`. The inbox is owner-read / public-write: `setInboxAcl` gives the owner `Read/Write/Control` and, only under `INBOX_PUBLIC_APPEND=1`, `foaf:Agent acl:Append` (never read, never `acl:default`).
+- **Writes are bridge-mediated with the owner's delegated fetch** (`getOwnerFetch`), so an anonymous proposal still needs the owner to have a live `/connect` identity (or dev seeded fallback) — the inbox ACL stays owner-only-writable by default. The repo advertises `ldp:inbox` on `<#repo>` for discovery.
+- Accept (`POST .../inbox/{id}/accept`, owner-only) mints a normal `.mind` issue at `needs-triage` via `createMindIssue` (author = owner, proposer recorded as provenance **in the body** — the tracker fold carries no per-issue labels, so don't expect a `proposal` label on the board) and then **deletes** the inbox resource. Dismiss (`DELETE .../inbox/{id}`) just deletes it. The owner triages from needs-triage as usual.
+- The propose→accept→git-push flow and live-CSS inbox I/O are integration-only (need a pod + a real bare repo). The offline unit tests (`tests/inbox-acl.test.ts`, `tests/inbox-roundtrip.test.ts`) cover the ACL shape and a serialize→list→delete round-trip by mocking `getOwnerFetch` with an in-memory pod.
 
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
@@ -32,7 +40,7 @@ The two prototypes in `marketplaces-prototypes/` share a Solid stack (Community 
 
 # Turbopack CSS hot-reload is unreliable
 
-If a CSS change isn't visible — even after restarting the dev server — the cached bundle in `.next/` is stale. `rm -rf .next && npm run dev` forces a fresh compile. Verified once: a new `.markdown-body ul { list-style-type: disc; }` rule kept being absent from the served bundle until the cache was wiped.
+If a CSS change isn't visible — even after restarting the dev server — the cached bundle in `.next/` is stale. `rm -rf .next && npm run dev` forces a fresh compile (or just `npm run dev:clean`, which wipes `.next` before starting). Verified once: a new `.markdown-body ul { list-style-type: disc; }` rule kept being absent from the served bundle until the cache was wiped.
 
 # Workflow runner auto-detects Docker
 
