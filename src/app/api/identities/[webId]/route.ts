@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteIdentity, getIdentityByWebId } from "@/lib/registry/identities";
+import { clearCachedSession } from "@/lib/solid/oidc-server";
 import { requireOwner, clearSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -29,6 +30,9 @@ export async function DELETE(_req: Request, { params }: Params) {
   const auth = await requireOwner(decoded);
   if (!auth.ok) return auth.response;
   const ok = deleteIdentity(decoded);
+  // Drop any in-process cached fetch so a disconnected identity stops serving
+  // pod writes off a still-valid access token (MC-176).
+  clearCachedSession(decoded);
   if (!ok) {
     return NextResponse.json(
       { error: "identity not found" },
