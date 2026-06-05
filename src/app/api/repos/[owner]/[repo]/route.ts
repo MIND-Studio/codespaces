@@ -48,7 +48,8 @@ export async function PATCH(req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { visibility, defaultBranch } = (body ?? {}) as Record<string, unknown>;
+  const { visibility, defaultBranch, proposalsEnabled, collabEnabled } =
+    (body ?? {}) as Record<string, unknown>;
 
   try {
     const updated = updateRepo(owner, name, {
@@ -58,6 +59,10 @@ export async function PATCH(req: Request, { params }: Params) {
           : undefined,
       defaultBranch:
         typeof defaultBranch === "string" ? defaultBranch : undefined,
+      proposalsEnabled:
+        typeof proposalsEnabled === "boolean" ? proposalsEnabled : undefined,
+      collabEnabled:
+        typeof collabEnabled === "boolean" ? collabEnabled : undefined,
     });
     writeRepoMetadata(updated, getPagesConfig(updated.id)).catch((err) => {
       console.warn(

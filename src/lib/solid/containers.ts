@@ -80,3 +80,56 @@ export async function setPublicReadAcl(
     );
   }
 }
+
+/**
+ * Idempotently PUT an append-only inbox ACL onto `containerUrl` (a
+ * Linked Data Notifications inbox). The owner gets Read/Write/Control with
+ * `acl:default` so they (and only they) can list and read the proposals
+ * that land here. When `publicAppend` is set, `foaf:Agent` (anyone,
+ * including unauthenticated) additionally gets `acl:Append` — they can POST
+ * a new notification but, crucially, get **no `acl:default`**, so they can
+ * neither read the listing nor any sibling notification. That asymmetry is
+ * the whole point of an inbox: write-only for the public, read for the owner.
+ *
+ * By default `publicAppend` is off — the bridge mediates every write with
+ * the owner's delegated fetch (validated + rate-limited), so the pod ACL
+ * stays owner-only-writable. Flip it on to also accept direct LDN POSTs
+ * from external Solid agents.
+ */
+export async function setInboxAcl(
+  fetcher: typeof fetch,
+  containerUrl: string,
+  ownerWebId: string,
+  opts: { publicAppend?: boolean } = {},
+): Promise<void> {
+  const aclUrl = `${containerUrl}.acl`;
+  const publicRule = opts.publicAppend
+    ? `
+<#public-append>
+    a acl:Authorization;
+    acl:agentClass foaf:Agent;
+    acl:accessTo <${containerUrl}>;
+    acl:mode acl:Append.
+`
+    : "";
+  const body = `@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+
+<#owner>
+    a acl:Authorization;
+    acl:agent <${ownerWebId}>;
+    acl:accessTo <${containerUrl}>;
+    acl:default <${containerUrl}>;
+    acl:mode acl:Read, acl:Write, acl:Control.
+${publicRule}`;
+  const res = await fetcher(aclUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "text/turtle" },
+    body,
+  });
+  if (!res.ok) {
+    throw new Error(
+      `failed to set inbox ACL on ${aclUrl}: ${res.status} ${res.statusText}`,
+    );
+  }
+}

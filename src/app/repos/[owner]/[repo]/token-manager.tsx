@@ -1,6 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Button,
+  Input,
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+  buttonVariants,
+} from "@mind-studio/ui";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
 type TokenSummary = {
@@ -58,7 +72,6 @@ export function TokenManager({
   }
 
   async function revoke(id: number) {
-    if (!confirm(`Revoke token #${id}? This cannot be undone.`)) return;
     setBusy(true);
     setError(null);
     try {
@@ -88,23 +101,18 @@ export function TokenManager({
           >
             Label
           </span>
-          <input
+          <Input
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. my laptop"
-            className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5"
             disabled={busy}
             maxLength={64}
           />
         </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[color:var(--paper)] disabled:opacity-50"
-        >
+        <Button type="submit" variant="default" size="sm" disabled={busy}>
           {busy ? "…" : "Mint token"}
-        </button>
+        </Button>
       </form>
 
       {error ? (
@@ -144,13 +152,33 @@ export function TokenManager({
                   #{t.id} · created {formatDate(t.createdAt)}
                 </p>
               </div>
-              <button
-                onClick={() => revoke(t.id)}
-                disabled={busy}
-                className="rounded border border-[color:var(--status-bad)] px-3 py-1 text-[color:var(--status-bad)] hover:bg-[color:var(--status-bad)] hover:text-[color:var(--paper)] disabled:opacity-50"
-              >
-                Revoke
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={busy}>
+                    Revoke
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Revoke token #{t.id}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Revoke token #{t.id}? This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel data-testid="confirm-cancel">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      data-testid="confirm-accept"
+                      className={buttonVariants({ variant: "destructive" })}
+                      onClick={() => revoke(t.id)}
+                    >
+                      Confirm
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </li>
           ))}
         </ul>

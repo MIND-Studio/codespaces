@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@mind-studio/ui";
 import { listRepos, getRepoById, getPagesConfig } from "@/lib/registry/repos";
 import {
   countAllRuns,
@@ -225,64 +226,38 @@ function HeroCtas({
   if (!signedIn) {
     return (
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <Link
-          href="/signup"
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Create your pod →
-        </Link>
-        <Link
-          href="/login"
-          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Sign in
-        </Link>
-        <Link
-          href="/repos"
-          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Browse repos
-        </Link>
+        <Button asChild>
+          <Link href="/signup">Create your pod →</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/login">Sign in</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/repos">Browse repos</Link>
+        </Button>
       </div>
     );
   }
   return (
     <div className="mt-8 flex flex-wrap items-center gap-3">
       {myLatestRepo ? (
-        <Link
-          href={`/repos/${myLatestRepo.owner}/${myLatestRepo.name}`}
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Resume {myLatestRepo.owner}/{myLatestRepo.name} →
-        </Link>
+        <Button asChild>
+          <Link href={`/repos/${myLatestRepo.owner}/${myLatestRepo.name}`}>
+            Resume {myLatestRepo.owner}/{myLatestRepo.name} →
+          </Link>
+        </Button>
       ) : (
-        <Link
-          href="/repos/new"
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] transition-opacity hover:opacity-90"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          + Create your first repo
-        </Link>
+        <Button asChild>
+          <Link href="/repos/new">+ Create your first repo</Link>
+        </Button>
       )}
-      <Link
-        href="/repos"
-        className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
-        Open dashboard →
-      </Link>
+      <Button asChild variant="outline">
+        <Link href="/repos">Open dashboard →</Link>
+      </Button>
       {ownerSlug ? (
-        <Link
-          href={`/people/${ownerSlug}`}
-          className="rounded border border-[color:var(--ink-trace)] px-4 py-2 text-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
-          Your profile
-        </Link>
+        <Button asChild variant="outline">
+          <Link href={`/people/${ownerSlug}`}>Your profile</Link>
+        </Button>
       ) : null}
     </div>
   );
@@ -496,13 +471,9 @@ function StepCard({
       <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
         {body}
       </p>
-      <Link
-        href={cta.href}
-        className="mt-1 inline-block self-start text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent)] hover:text-[color:var(--accent-deep)]"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
-        {cta.label}
-      </Link>
+      <Button asChild variant="link" className="mt-1 h-auto self-start p-0">
+        <Link href={cta.href}>{cta.label}</Link>
+      </Button>
     </li>
   );
 }

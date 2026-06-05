@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Input } from "@mind-studio/ui";
 
 type Tab = "login" | "register";
 
@@ -114,19 +115,17 @@ function TabButton({
   label: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
       role="tab"
       aria-selected={active}
+      variant={active ? "default" : "ghost"}
+      size="sm"
       onClick={onClick}
-      className="flex-1 rounded px-3 py-1.5 transition-colors"
-      style={{
-        background: active ? "var(--accent-soft)" : "transparent",
-        color: active ? "var(--accent-deep)" : "var(--ink-soft)",
-      }}
+      className="flex-1"
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -177,7 +176,7 @@ function LoginPanel({
     <div className="flex flex-col gap-5 text-sm">
       <form onSubmit={submit} className="flex flex-col gap-3">
         <FieldLabel name="Email">
-          <input
+          <Input
             type="email"
             required
             value={email}
@@ -185,50 +184,39 @@ function LoginPanel({
             autoComplete="email"
             disabled={busy}
             autoFocus
-            className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-            style={{ borderColor: "var(--ink-trace)" }}
           />
         </FieldLabel>
         <FieldLabel name="Password">
-          <input
+          <Input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             disabled={busy}
-            className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-            style={{ borderColor: "var(--ink-trace)" }}
           />
         </FieldLabel>
 
         {error ? <ErrorBox>{error}</ErrorBox> : null}
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-1 rounded border bg-transparent px-4 py-2 transition-colors disabled:opacity-50"
-          style={{
-            borderColor: "var(--accent)",
-            color: "var(--accent)",
-            fontFamily: "var(--font-mono-src)",
-          }}
-        >
+        <Button type="submit" disabled={busy} className="mt-1">
           {busy ? "Signing in…" : "Sign in →"}
-        </button>
+        </Button>
       </form>
 
       <div className="border-t pt-3" style={{ borderColor: "var(--ink-trace)" }}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
-          className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] transition-colors hover:text-[color:var(--accent)]"
+          className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-muted-foreground"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
           <span aria-hidden>{advancedOpen ? "▾" : "▸"}</span>
           Use a different pod
-        </button>
+        </Button>
         {advancedOpen ? (
           <div className="mt-3">
             <ExternalPodPanel
@@ -312,7 +300,7 @@ function RegisterPanel({
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 text-sm">
       <FieldLabel name="Email">
-        <input
+        <Input
           type="email"
           required
           value={email}
@@ -320,12 +308,10 @@ function RegisterPanel({
           autoComplete="email"
           disabled={busy}
           autoFocus
-          className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-          style={{ borderColor: "var(--ink-trace)" }}
         />
       </FieldLabel>
       <FieldLabel name="Password (≥8 chars)">
-        <input
+        <Input
           type="password"
           required
           minLength={8}
@@ -333,12 +319,10 @@ function RegisterPanel({
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
           disabled={busy}
-          className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-          style={{ borderColor: "var(--ink-trace)" }}
         />
       </FieldLabel>
       <FieldLabel name="Pod handle (lower-case slug)">
-        <input
+        <Input
           type="text"
           required
           // No `pattern=` attribute: the /v RegExp flag rejects the
@@ -351,9 +335,7 @@ function RegisterPanel({
           onChange={(e) => setPodName(e.target.value)}
           autoComplete="off"
           disabled={busy}
-          className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
           style={{
-            borderColor: "var(--ink-trace)",
             fontFamily: "var(--font-mono-src)",
           }}
         />
@@ -361,25 +343,12 @@ function RegisterPanel({
 
       {error ? <ErrorBox>{error}</ErrorBox> : null}
 
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-1 rounded border bg-transparent px-4 py-2 transition-colors disabled:opacity-50"
-        style={{
-          borderColor: "var(--accent)",
-          color: "var(--accent)",
-          fontFamily: "var(--font-mono-src)",
-        }}
-      >
+      <Button type="submit" disabled={busy} className="mt-1">
         {busy ? "Creating pod…" : "Create account →"}
-      </button>
-      <button
-        type="button"
-        onClick={onSwitchToLogin}
-        className="text-xs text-[color:var(--ink-soft)] underline-offset-2 hover:text-[color:var(--accent)] hover:underline"
-      >
+      </Button>
+      <Button type="button" variant="link" size="sm" onClick={onSwitchToLogin}>
         Already have a pod? Sign in instead.
-      </button>
+      </Button>
     </form>
   );
 }
@@ -445,14 +414,12 @@ function ExternalPodPanel({
       className="flex flex-col gap-3 text-sm"
     >
       <FieldLabel name="Your pod's OIDC issuer">
-        <input
+        <Input
           type="url"
           value={issuer}
           onChange={(e) => setIssuer(e.target.value)}
           placeholder="https://pod.example.com/"
-          className="rounded border bg-[color:var(--paper)] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
           style={{
-            borderColor: "var(--ink-trace)",
             fontFamily: "var(--font-mono-src)",
           }}
           required
@@ -489,18 +456,17 @@ function ExternalPodPanel({
 
       {error ? <ErrorBox>{error}</ErrorBox> : null}
 
-      <button
+      <Button
         type="submit"
+        variant="outline"
+        size="sm"
         disabled={busy}
-        className="rounded border bg-transparent px-3 py-1.5 transition-colors disabled:opacity-50"
         style={{
-          borderColor: "var(--ink-trace)",
-          color: "var(--ink-soft)",
           fontFamily: "var(--font-mono-src)",
         }}
       >
         {busy ? "Waiting for pod…" : "Authorize via popup →"}
-      </button>
+      </Button>
       <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
         <span style={{ color: "var(--accent)" }}>// </span>
         external pods log you in at their own URL — the bridge never sees

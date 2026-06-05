@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
 import { SignInWall } from "@/components/sign-in-wall";
+import { Button } from "@mind-studio/ui";
 
 /**
  * Issue-page actions:
@@ -84,17 +85,20 @@ export function IssueActions({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={toggle}
           disabled={busy !== null}
-          className="inline-block rounded border border-[color:var(--ink-trace)] px-3 py-1.5 text-sm hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-50"
         >
           {busy === "toggle" ? "…" : status === "open" ? "Close issue" : "Reopen issue"}
-        </button>
+        </Button>
         {status === "open" ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={rerunCoder}
             disabled={busy !== null || hasOpenRun}
             title={
@@ -102,14 +106,13 @@ export function IssueActions({
                 ? "A coder run is already in flight"
                 : "Re-fire the coder on this issue (auto-fires on create + comment)"
             }
-            className="inline-block rounded border border-[color:var(--accent)] bg-[color:var(--paper)] px-3 py-1.5 text-sm text-[color:var(--accent)] hover:bg-[color:var(--accent)] hover:text-[color:var(--paper)] disabled:opacity-50"
           >
             {busy === "run"
               ? "Dispatching…"
               : hasOpenRun
                 ? "Coder running…"
                 : "Re-run coder"}
-          </button>
+          </Button>
         ) : null}
       </div>
       {unauthed ? (

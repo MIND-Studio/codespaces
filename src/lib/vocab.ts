@@ -17,4 +17,9 @@ export const NS = {
   sioc: "http://rdfs.org/sioc/ns#",
   foaf: "http://xmlns.com/foaf/0.1/",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  // `ldp:` advertises the repo's `ldp:inbox` (Linked Data Notifications);
+  // `as:` (ActivityStreams) types each proposal notification as an
+  // `as:Announce` carrying an `as:actor` so any LDN-aware tool can read it.
+  ldp: "http://www.w3.org/ns/ldp#",
+  as: "https://www.w3.org/ns/activitystreams#",
 } as const;

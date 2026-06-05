@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useDeferredValue, useId, useMemo, useState } from "react";
+import { Button, Input } from "@mind-studio/ui";
 import {
   formatAbsoluteIso,
   formatDuration,
@@ -85,7 +86,7 @@ export function RepoList({
             >
               ›
             </span>
-            <input
+            <Input
               id={filterId}
               type="text"
               value={filter}
@@ -95,19 +96,21 @@ export function RepoList({
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
-              className="w-full bg-transparent text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-faint)] outline-none"
+              className="w-full border-0 bg-transparent p-0 h-auto text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-faint)] shadow-none outline-none focus-visible:ring-0"
               style={{ fontFamily: "var(--font-mono-src)" }}
             />
             {filter ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setFilter("")}
                 className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
                 style={{ fontFamily: "var(--font-mono-src)" }}
                 aria-label="Clear filter"
               >
                 clear
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
@@ -399,23 +402,17 @@ function SortChip({
   label: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant={active ? "default" : "outline"}
+      size="sm"
       onClick={onClick}
       aria-pressed={active}
-      className="text-[10px] uppercase tracking-[0.22em] px-2.5 py-1 transition-colors"
-      style={{
-        fontFamily: "var(--font-mono-src)",
-        border: "1px solid",
-        borderColor: active ? "var(--accent)" : "var(--ink-trace)",
-        color: active ? "var(--accent-deep)" : "var(--ink-soft)",
-        background: active
-          ? "color-mix(in srgb, var(--accent) 14%, transparent)"
-          : "transparent",
-      }}
+      className="text-[10px] uppercase tracking-[0.22em]"
+      style={{ fontFamily: "var(--font-mono-src)" }}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -476,9 +473,14 @@ function FilterEmptyState({
       </p>
       <p className="mt-2 text-[color:var(--ink-soft)]">
         Try a shorter substring, or{" "}
-        <button type="button" onClick={onClear} className="link">
+        <Button
+          type="button"
+          variant="link"
+          onClick={onClear}
+          className="link h-auto p-0"
+        >
           clear the filter
-        </button>
+        </Button>
         .{" "}
         {signedIn ? (
           <>

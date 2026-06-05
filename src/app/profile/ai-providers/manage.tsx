@@ -2,6 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+  buttonVariants,
+} from "@mind-studio/ui";
 import { authedFetch } from "@/lib/auth/csrf-client";
 import type {
   ProviderSpec,
@@ -131,10 +150,12 @@ function DefaultSelector({
 
       <form onSubmit={submit} className="mt-5 flex max-w-2xl flex-col gap-5 text-sm">
         <Field label="Provider">
-          <select
-            value={provider}
-            onChange={(e) => {
-              const next = e.target.value as ProviderName | "";
+          <Select
+            // Radix Select can't use "" as an item value, so map the
+            // "bridge default" sentinel to "__none__" at the boundary.
+            value={provider === "" ? "__none__" : provider}
+            onValueChange={(raw) => {
+              const next = (raw === "__none__" ? "" : raw) as ProviderName | "";
               setProvider(next);
               const spec = providers.find((p) => p.name === next);
               // Pre-fill model with the first curated option for that
@@ -147,20 +168,26 @@ function DefaultSelector({
               }
             }}
             disabled={busy}
-            className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
           >
-            <option value="">— bridge default —</option>
-            {providers.map((p) => {
-              const has = configured.some((c) => c.provider === p.name);
-              return (
-                <option key={p.name} value={p.name} disabled={!has}>
-                  {p.label}
-                  {has ? "" : " (no key configured)"}
-                </option>
-              );
-            })}
-          </select>
+            <SelectTrigger
+              className="w-full max-w-xs"
+              style={{ fontFamily: "var(--font-mono-src)" }}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— bridge default —</SelectItem>
+              {providers.map((p) => {
+                const has = configured.some((c) => c.provider === p.name);
+                return (
+                  <SelectItem key={p.name} value={p.name} disabled={!has}>
+                    {p.label}
+                    {has ? "" : " (no key configured)"}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         </Field>
 
         {selectedSpec ? (
@@ -168,41 +195,49 @@ function DefaultSelector({
             <Field label="Model" hint={`opencode will be invoked with: -m ${selectedSpec.opencodeModelPrefix}/${model || "<model>"}`}>
               <div className="flex flex-col gap-2">
                 {!custom ? (
-                  <select
+                  <Select
                     value={model}
-                    onChange={(e) => setModel(e.target.value)}
+                    onValueChange={(v) => setModel(v)}
                     disabled={busy}
-                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
-                    style={{ fontFamily: "var(--font-mono-src)" }}
                   >
-                    {selectedSpec.models.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label} {m.note ? `· ${m.note}` : ""} ({m.id})
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      className="w-full"
+                      style={{ fontFamily: "var(--font-mono-src)" }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedSpec.models.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.label} {m.note ? `· ${m.note}` : ""} ({m.id})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
-                  <input
+                  <Input
                     type="text"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     placeholder={selectedSpec.models[0]?.id ?? "model-id"}
                     disabled={busy}
-                    className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
+                    className="w-full"
                     style={{ fontFamily: "var(--font-mono-src)" }}
                   />
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="sm"
                   onClick={() => {
                     setCustom((c) => !c);
                     if (custom) setModel(selectedSpec.models[0]?.id ?? "");
                   }}
-                  className="inline-flex min-h-[40px] items-center self-start rounded px-2 -mx-2 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
+                  className="self-start px-2 -mx-2 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
                   style={{ fontFamily: "var(--font-mono-src)" }}
                 >
                   {custom ? "← pick from list" : "use custom model id →"}
-                </button>
+                </Button>
               </div>
             </Field>
             {!hasKey ? (
@@ -215,14 +250,16 @@ function DefaultSelector({
         ) : null}
 
         <div className="flex flex-wrap items-center gap-4 pt-2">
-          <button
+          <Button
             type="submit"
+            variant="default"
+            size="sm"
             disabled={busy || !dirty}
-            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            className="uppercase tracking-[0.18em]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             <span>{busy ? "saving…" : "Save default"}</span>
-          </button>
+          </Button>
           {!dirty && !error ? (
             <span
               className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
@@ -285,7 +322,6 @@ function ProviderCard({
   }
 
   async function remove() {
-    if (!confirm(`Remove your ${spec.label} key? The coder will fall back to the bridge default until you add a new one.`)) return;
     setBusy(true);
     setError(null);
     try {
@@ -361,58 +397,90 @@ function ProviderCard({
                 </span>
               ) : null}
             </span>
-            <input
+            <Input
               type="password"
               autoComplete="off"
               spellCheck={false}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               disabled={busy}
-              className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] min-h-[40px] px-3 py-2 outline-none transition-colors focus:border-[color:var(--accent)]"
+              className="w-full"
               style={{ fontFamily: "var(--font-mono-src)" }}
             />
           </label>
-          <button
+          <Button
             type="submit"
+            variant="default"
+            size="sm"
             disabled={busy || apiKey.trim().length < 8}
-            className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] disabled:opacity-40"
+            className="uppercase tracking-[0.18em]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             <span>{busy ? "saving…" : "Save key"}</span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               setOpen(false);
               setApiKey("");
               setError(null);
             }}
-            className="rounded border border-[color:var(--ink-trace)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--ink-soft)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+            className="uppercase tracking-[0.18em]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             Cancel
-          </button>
+          </Button>
         </form>
       ) : (
         <div className="mt-3 flex flex-wrap gap-3">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => setOpen(true)}
-            className="rounded border border-[color:var(--accent)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]"
+            className="uppercase tracking-[0.18em]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             {configured ? "Replace key" : "Add key"}
-          </button>
+          </Button>
           {configured ? (
-            <button
-              type="button"
-              onClick={remove}
-              disabled={busy}
-              className="rounded border border-[color:var(--status-bad)] min-h-[40px] px-4 py-2 text-[12px] uppercase tracking-[0.18em] text-[color:var(--status-bad)] hover:bg-[color:var(--status-bad)] hover:text-[color:var(--paper)] disabled:opacity-40"
-              style={{ fontFamily: "var(--font-mono-src)" }}
-            >
-              Remove
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={busy}
+                  className="uppercase tracking-[0.18em]"
+                  style={{ fontFamily: "var(--font-mono-src)" }}
+                >
+                  Remove
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove your {spec.label} key?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Remove your {spec.label} key? The coder will fall back to the
+                    bridge default until you add a new one.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel data-testid="confirm-cancel">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    data-testid="confirm-accept"
+                    className={buttonVariants({ variant: "destructive" })}
+                    onClick={remove}
+                  >
+                    Confirm
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           ) : null}
         </div>
       )}

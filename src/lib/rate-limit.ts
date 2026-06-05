@@ -111,6 +111,10 @@ export const RATE_LIMITS = {
   // Issue create — guards against agent-dispatch budget exhaustion via
   // mass-filed issues. 20 / minute.
   issueCreate: { capacity: 20, refillPerSec: 20 / 60 },
+  // Issue proposal — the *public* propose endpoint, so this is the main
+  // abuse control on an unauthenticated write into the owner's pod inbox.
+  // Deliberately tight: 5 burst, ~1/min refill, keyed per IP.
+  proposalCreate: { capacity: 5, refillPerSec: 1 / 60 },
   // OIDC start — guards against issuer-discovery probing. 10 / 30s.
   authStart: { capacity: 10, refillPerSec: 10 / 30 },
   // Agent dispatch — burns LLM budget. 5 / 30s per IP.

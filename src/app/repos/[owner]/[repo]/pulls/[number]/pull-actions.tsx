@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import { Button } from "@mind-studio/ui";
 
 /**
  * Merge/close buttons for an open PR. Both fire server actions through
@@ -45,22 +46,23 @@ export function PullActions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => fire("merge")}
           disabled={busy !== null}
-          className="rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-2 text-sm text-[color:var(--paper)] disabled:opacity-50"
         >
           {busy === "merge" ? "Merging…" : "Merge pull request"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => fire("close")}
           disabled={busy !== null}
-          className="rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-4 py-2 text-sm text-[color:var(--ink-soft)] disabled:opacity-50"
         >
           {busy === "close" ? "Closing…" : "Close without merging"}
-        </button>
+        </Button>
       </div>
       {error ? (
         <p className="text-sm text-[color:var(--status-bad)]">{error}</p>

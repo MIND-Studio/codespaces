@@ -11,9 +11,12 @@ import { randomUUID } from "node:crypto";
  * restart drops them and the client just re-pushes — acceptable, since the CAS
  * makes re-pushes idempotent.
  *
- * Chunks accumulate in memory, so total upload size is capped by the caller
- * (MAX_PACKAGE_BLOB_BYTES). Streaming straight to the pod is the documented
- * follow-up that lifts the large-layer ceiling.
+ * Chunks accumulate in memory, so total upload size is capped at
+ * MAX_PACKAGE_BLOB_BYTES. The /v2 route enforces that cap on the declared
+ * `Content-Length` *before* buffering a body, and again on the cumulative size
+ * here — an oversize upload gets a 413 instead of OOMing the bridge. Streaming
+ * straight to the pod is the documented follow-up that lifts the ceiling
+ * entirely (so genuinely large layers can be pushed, not just rejected early).
  */
 
 type Session = { chunks: Uint8Array[]; size: number };

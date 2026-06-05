@@ -4,19 +4,26 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3010",
+    "dev:clean": "rm -rf .next && next dev -p 3010",
     "build": "next build",
     "start": "next start -p 3010",
     "smoke:db": "tsx scripts/smoke-db.ts",
     "reinstall:hooks": "tsx scripts/reinstall-hooks.ts",
     "backup:registry": "tsx scripts/backup-registry.ts",
     "reconcile:pages": "tsx scripts/reconcile-pages.ts",
+    "tracker:build": "tsx scripts/tracker-build.ts",
+    "tracker:check": "tsx scripts/tracker-build.ts --check",
+    "calendar:build": "tsx scripts/calendar-build.ts",
+    "calendar:check": "tsx scripts/calendar-build.ts --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:tracker": "tsx scripts/seed-tracker-demo.ts",
     "seed:profiles": "tsx scripts/seed-profiles.ts",
     "seed:workflows": "tsx scripts/seed-workflows-demo.ts",
     "seed:readmes": "tsx scripts/brand-pod-readmes.ts",
-    "import:repo": "tsx scripts/import-repo.ts"
+    "import:repo": "tsx scripts/import-repo.ts",
+    "relay": "tsx relay/server.ts"
   },
   "dependencies": {
     "@inrupt/solid-client": "^3.0.0",
@@ -24,13 +31,28 @@
     "@inrupt/solid-client-authn-node": "^3.1.0",
     "@mind-studio/core": "^0.1.1",
     "@mind-studio/ui": "^0.1.0",
+    "@tiptap/extension-collaboration": "^2.11.5",
+    "@tiptap/extension-collaboration-cursor": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.27.2",
+    "@tiptap/extension-task-item": "^2.11.5",
+    "@tiptap/extension-task-list": "^2.11.5",
+    "@tiptap/pm": "^2.11.5",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
     "better-sqlite3": "^12.10.0",
+    "lib0": "^0.2.117",
     "marked": "^18.0.4",
+    "n3": "^1.26.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
-    "yaml": "^2.9.0"
+    "tiptap-markdown": "^0.8.10",
+    "y-indexeddb": "^9.0.12",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^3.0.0",
+    "yaml": "^2.9.0",
+    "yjs": "^13.6.20"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -38,10 +60,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.5.13",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "ws": "^8.18.0"
   },
   "overrides": {
     "postcss": "^8.5.10"

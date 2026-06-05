@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@mind-studio/ui";
 import type { Identity } from "@/lib/registry/identities";
 import { formatAbsoluteIso, formatRelativeTime } from "@/lib/format";
 import { authedFetch } from "@/lib/auth/csrf-client";
@@ -187,14 +188,15 @@ function DisconnectControl({
 }) {
   if (!confirming) {
     return (
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={onArm}
         disabled={busy}
-        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--ink-trace)] px-3 py-2 text-sm text-[color:var(--ink-soft)] hover:border-[color:var(--status-bad)] hover:text-[color:var(--status-bad)] disabled:opacity-50"
       >
         Disconnect
-      </button>
+      </Button>
     );
   }
   return (
@@ -203,24 +205,26 @@ function DisconnectControl({
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
       <span style={{ color: "var(--ink-soft)" }}>are you sure?</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={onCancel}
         disabled={busy}
-        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--ink-trace)] px-3 py-2 hover:text-[color:var(--ink)] disabled:opacity-50"
-        style={{ color: "var(--ink-soft)" }}
+        data-testid="confirm-cancel"
       >
         cancel
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="destructive"
+        size="sm"
         onClick={onConfirm}
         disabled={busy}
-        className="inline-flex min-h-[40px] items-center rounded border border-[color:var(--status-bad)] px-3 py-2 disabled:opacity-50"
-        style={{ color: "var(--status-bad)" }}
+        data-testid="confirm-accept"
       >
         {busy ? "revoking…" : "revoke"}
-      </button>
+      </Button>
     </div>
   );
 }

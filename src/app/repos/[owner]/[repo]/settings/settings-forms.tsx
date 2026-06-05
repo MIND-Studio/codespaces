@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button, Input } from "@mind-studio/ui";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
 // -----------------------------------------------------------------------
@@ -13,21 +14,30 @@ export function GeneralForm({
   name,
   visibility: initialVisibility,
   defaultBranch: initialBranch,
+  proposalsEnabled: initialProposals,
+  collabEnabled: initialCollab,
 }: {
   owner: string;
   name: string;
   visibility: "public" | "private";
   defaultBranch: string;
+  proposalsEnabled: boolean;
+  collabEnabled: boolean;
 }) {
   const router = useRouter();
   const [visibility, setVisibility] = useState(initialVisibility);
   const [defaultBranch, setDefaultBranch] = useState(initialBranch);
+  const [proposalsEnabled, setProposalsEnabled] = useState(initialProposals);
+  const [collabEnabled, setCollabEnabled] = useState(initialCollab);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const dirty =
-    visibility !== initialVisibility || defaultBranch !== initialBranch;
+    visibility !== initialVisibility ||
+    defaultBranch !== initialBranch ||
+    proposalsEnabled !== initialProposals ||
+    collabEnabled !== initialCollab;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +48,12 @@ export function GeneralForm({
     try {
       const res = await authedFetch(`/api/repos/${owner}/${name}`, {
         method: "PATCH",
-        body: JSON.stringify({ visibility, defaultBranch }),
+        body: JSON.stringify({
+          visibility,
+          defaultBranch,
+          proposalsEnabled,
+          collabEnabled,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -64,21 +79,18 @@ export function GeneralForm({
       >
         <div className="flex gap-2">
           {(["public", "private"] as const).map((v) => (
-            <button
+            <Button
               key={v}
               type="button"
+              variant={visibility === v ? "default" : "outline"}
+              size="sm"
               onClick={() => setVisibility(v)}
               disabled={busy}
-              className={[
-                "rounded border px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] transition-colors",
-                visibility === v
-                  ? "border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent-deep)]"
-                  : "border-[color:var(--ink-trace)] text-[color:var(--ink-soft)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]",
-              ].join(" ")}
+              className="uppercase tracking-[0.18em]"
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
               {v}
-            </button>
+            </Button>
           ))}
         </div>
       </Field>
@@ -87,15 +99,57 @@ export function GeneralForm({
         label="Default branch"
         hint="Used by Mind Pages as the source branch when none is specified. Renaming here does not move refs server-side."
       >
-        <input
+        <Input
           type="text"
           value={defaultBranch}
           onChange={(e) => setDefaultBranch(e.target.value)}
           maxLength={64}
           disabled={busy}
-          className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+          className="w-full max-w-xs"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />
+      </Field>
+
+      <Field
+        label="Issue proposals"
+        hint="When on, anyone (including logged-out visitors) can propose an issue. Proposals land in your pod inbox for review on the Proposals tab — they aren't added to the tracker until you accept them."
+      >
+        <label className="inline-flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={proposalsEnabled}
+            onChange={(e) => setProposalsEnabled(e.target.checked)}
+            disabled={busy}
+            className="h-4 w-4 accent-[color:var(--accent)]"
+          />
+          <span
+            className="text-[12px] uppercase tracking-[0.18em]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            {proposalsEnabled ? "open" : "closed"}
+          </span>
+        </label>
+      </Field>
+
+      <Field
+        label="Live multiplayer"
+        hint="When on, an issue/epic draft is co-edited in real time — share the draft link and several people write together with live cursors. When off, drafting still works but stays local to your browser (no relay, no presence)."
+      >
+        <label className="inline-flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={collabEnabled}
+            onChange={(e) => setCollabEnabled(e.target.checked)}
+            disabled={busy}
+            className="h-4 w-4 accent-[color:var(--accent)]"
+          />
+          <span
+            className="text-[12px] uppercase tracking-[0.18em]"
+            style={{ fontFamily: "var(--font-mono-src)" }}
+          >
+            {collabEnabled ? "live" : "local-only"}
+          </span>
+        </label>
       </Field>
 
       <FormFooter
@@ -198,13 +252,13 @@ export function PagesForm({
         label="Source branch"
         hint="Pushes to other branches are stored but not published."
       >
-        <input
+        <Input
           type="text"
           value={sourceBranch}
           onChange={(e) => setSourceBranch(e.target.value)}
           maxLength={64}
           disabled={busy}
-          className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+          className="w-full max-w-xs"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />
       </Field>
@@ -213,12 +267,12 @@ export function PagesForm({
         label="Source path"
         hint={"Subdirectory inside the repo to publish. Use '/' for the whole repo."}
       >
-        <input
+        <Input
           type="text"
           value={sourcePath}
           onChange={(e) => setSourcePath(e.target.value)}
           disabled={busy}
-          className="w-full max-w-xs rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+          className="w-full max-w-xs"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />
       </Field>
@@ -227,13 +281,13 @@ export function PagesForm({
         label="Target container"
         hint="Solid container URL on the owner's pod. The publisher creates files inside it; ACLs are managed by the pod."
       >
-        <input
+        <Input
           type="url"
           value={targetContainer}
           onChange={(e) => setTargetContainer(e.target.value)}
           disabled={busy}
           placeholder="https://your-pod.example/public/sites/hello/"
-          className="w-full rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--accent)]"
+          className="w-full"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />
       </Field>
@@ -307,31 +361,26 @@ export function DangerZone({ owner, name }: { owner: string; name: string }) {
         Type <code className="kbd">{expected}</code> to confirm:
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <input
+        <Input
           type="text"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           disabled={busy}
           placeholder={expected}
-          className="min-w-[16rem] rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper)] px-3 py-1.5 outline-none transition-colors focus:border-[color:var(--status-bad)]"
+          className="min-w-[16rem]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         />
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           onClick={destroy}
           disabled={!enabled}
-          className="inline-flex items-center gap-3 rounded border px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] transition-colors disabled:opacity-40"
-          style={{
-            borderColor: "var(--status-bad)",
-            color: "var(--status-bad)",
-            background: enabled
-              ? "color-mix(in srgb, var(--status-bad) 8%, transparent)"
-              : "transparent",
-            fontFamily: "var(--font-mono-src)",
-          }}
+          className="uppercase tracking-[0.18em]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
         >
           <span>{busy ? "dropping…" : "Delete repository"}</span>
-        </button>
+        </Button>
       </div>
       {error ? (
         <p className="mt-3 text-[color:var(--status-bad)]">{error}</p>
@@ -386,14 +435,16 @@ function FormFooter({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-4 pt-2">
-      <button
+      <Button
         type="submit"
+        variant="default"
+        size="sm"
         disabled={busy || !dirty}
-        className="inline-flex items-center gap-3 rounded border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 py-1.5 text-[12px] uppercase tracking-[0.18em] text-[color:var(--paper)] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        className="uppercase tracking-[0.18em]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         <span>{busy ? "saving…" : label}</span>
-      </button>
+      </Button>
       {!dirty && !error ? (
         <span
           className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@mind-studio/ui";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
 type SignedInProps = {
@@ -30,13 +31,15 @@ export function AuthCta(props: Props) {
     return <UserMenu session={props.session} />;
   }
   return (
-    <Link
-      href="/login"
-      className="inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded border border-[color:var(--accent)] px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent)] transition-colors hover:bg-[color:var(--accent)] hover:text-[color:var(--paper)] sm:px-3"
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="shrink-0"
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
-      Sign in
-    </Link>
+      <Link href="/login">Sign in</Link>
+    </Button>
   );
 }
 
@@ -165,7 +168,7 @@ function UserMenu({ session }: { session: SignedInProps }) {
           type="button"
           role="menuitem"
           onClick={signOut}
-          className="block w-full px-3 py-2 text-left text-[color:var(--ink-soft)] hover:bg-[color:var(--paper-soft)] hover:text-[color:var(--accent)]"
+          className="block w-full px-3 py-2 text-left text-muted-foreground hover:bg-card hover:text-primary"
         >
           Sign out
         </button>
@@ -174,18 +177,19 @@ function UserMenu({ session }: { session: SignedInProps }) {
 
   return (
     <>
-      <button
+      <Button
         ref={buttonRef}
-        type="button"
+        variant="ghost"
+        size="icon-sm"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         title={session.displayName}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--ink-trace)] bg-[color:var(--accent-soft)] text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent-deep)] transition-colors hover:border-[color:var(--accent)]"
+        className="h-8 w-8 rounded-full border border-[color:var(--ink-trace)] bg-[color:var(--accent-soft)] text-[11px] uppercase tracking-[0.18em] text-[color:var(--accent-deep)] hover:border-[color:var(--accent)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         {session.initials}
-      </button>
+      </Button>
       {mounted && menu ? createPortal(menu, document.body) : null}
     </>
   );
