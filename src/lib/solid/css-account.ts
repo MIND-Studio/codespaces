@@ -261,7 +261,7 @@ export async function runPasswordLoginOidcFlow(input: {
   // (isLoggedIn:true) but the very first forced refresh on the publish path has
   // nothing to spend → `isLoggedIn:false` → "WebID … needs to reauthorize via
   // /connect (refresh token failed)", permanently. Verified against
-  // pod.mindpods.org: `{}` → no refresh token; `{ remember: true }` → a 43-char
+  // pods.mindpods.org: `{}` → no refresh token; `{ remember: true }` → a 43-char
   // refresh token is stored and subsequent publishes refresh cleanly. (MC-176.)
   const consent = await reqJson(consentUrl, jar, {
     method: "POST",

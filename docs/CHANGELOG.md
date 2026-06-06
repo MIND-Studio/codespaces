@@ -17,7 +17,7 @@ to `codespaces.mindpods.org` as `v0.1.21`.
   CSS to **remember** the grant, and CSS v7 only issues a refresh token for a
   remembered consent. Fix: `body: { remember: true }`. `startAuthFlow` already
   requests `offline_access` (SDK default), so the remembered consent was the
-  missing piece. Verified against pod.mindpods.org (`{}` → no refresh token;
+  missing piece. Verified against pods.mindpods.org (`{}` → no refresh token;
   `{ remember: true }` → a 43-char refresh token stored, publishes refresh
   cleanly).
 
