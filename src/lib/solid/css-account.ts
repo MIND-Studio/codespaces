@@ -252,9 +252,20 @@ export async function runPasswordLoginOidcFlow(input: {
   }
 
   // Step 7: post consent.
+  //
+  // `remember: true` is load-bearing, not a UX nicety. CSS v7 only grants the
+  // `offline_access` scope — and therefore only issues a **refresh token** —
+  // when the consent is "remembered". With an empty body CSS returns an access
+  // token but no refresh token, even though the auth request asked for
+  // `offline_access` and `prompt=consent`. The bridge then succeeds at connect
+  // (isLoggedIn:true) but the very first forced refresh on the publish path has
+  // nothing to spend → `isLoggedIn:false` → "WebID … needs to reauthorize via
+  // /connect (refresh token failed)", permanently. Verified against
+  // pod.mindpods.org: `{}` → no refresh token; `{ remember: true }` → a 43-char
+  // refresh token is stored and subsequent publishes refresh cleanly. (MC-176.)
   const consent = await reqJson(consentUrl, jar, {
     method: "POST",
-    body: {},
+    body: { remember: true },
   });
   if (consent.status >= 400) {
     throw new HttpError(
