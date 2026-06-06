@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
 import { getDb } from "@/lib/registry/db";
 import { getEnv } from "@/lib/env";
+import { version } from "../../../../package.json";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,6 +123,7 @@ export async function GET() {
     {
       ok,
       service: "codespaces",
+      version,
       ts: new Date().toISOString(),
       checks,
     },
