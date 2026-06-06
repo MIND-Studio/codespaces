@@ -2,7 +2,9 @@
  * RDF vocabularies used when writing repository metadata into a Solid pod.
  *
  * `solidgit:` is the project-local namespace for the small set of terms
- * the bridge invents (`Repository`, `Issue`, `Comment`, …). It is not yet
+ * the bridge invents (`Repository`, `Issue`, `Comment`, `PullRequest`, the
+ * `closesIssue` predicate, the membership terms `Membership` / `Member` /
+ * `agent` / `role` / `members`, …). It is not yet
  * a published spec; the URI is intentionally a `.local` placeholder so it
  * doesn't pretend to be globally resolvable.
  *

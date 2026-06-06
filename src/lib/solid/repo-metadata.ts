@@ -3,6 +3,7 @@ import type { Repo, PagesConfig } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 import { ensureInbox, inboxContainerUrl } from "@/lib/solid/inbox";
+import { ensureMembers, membersUrl } from "@/lib/solid/members";
 import { NS } from "@/lib/vocab";
 
 /**
@@ -68,7 +69,10 @@ function renderTurtle(repo: Repo, pages: PagesConfig | null): string {
   // whether the bridge currently accepts proposals for this repo.
   lines[lines.length - 1] += " ;";
   lines.push(`    solidgit:proposalsEnabled ${repo.proposalsEnabled ? "true" : "false"} ;`);
-  lines.push(`    ldp:inbox <${inboxContainerUrl(repo)}>`);
+  lines.push(`    ldp:inbox <${inboxContainerUrl(repo)}> ;`);
+  // Advertise the membership roster so a member-aware tool (and the bridge's
+  // own `requireMember`) can discover WebID→role from the pod (ADR-0002).
+  lines.push(`    solidgit:members <${membersUrl(repo)}>`);
   lines[lines.length - 1] += " .";
   lines.push("");
   return lines.join("\n");
@@ -122,6 +126,10 @@ async function writeRepoMetadataOnce(
     // authenticated fetch. Idempotent — only the first call writes the
     // append-only ACL.
     await ensureInbox(authed.fetch, repo);
+    // Provision the (initially empty) membership roster + its ACL. Idempotent —
+    // skips the write when a roster already exists, so members survive a
+    // settings re-save (ADR-0002).
+    await ensureMembers(authed.fetch, repo);
 
     const url = metadataUrl(repo);
     const body = renderTurtle(repo, pages);

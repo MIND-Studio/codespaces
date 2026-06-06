@@ -3,6 +3,8 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
+import type { Repo } from "@/lib/registry/repos";
+import { resolveMemberRole, ROLE_RANK, type MemberRole } from "@/lib/solid/members";
 
 /**
  * Session cookie format:
@@ -239,6 +241,38 @@ export async function requireOwner(
     };
   }
   return r;
+}
+
+/**
+ * Like requireOwner, but authorizes any repo **member** whose role meets
+ * `minRole` (reader < writer < admin), per ADR-0002. The repo owner is an
+ * implicit `admin` and is authorized without a pod read. A non-owner's role
+ * is resolved from the pod-native `members.ttl` roster (read with the owner's
+ * delegated fetch) — the bridge stays the sole writer; a member is a
+ * capability the bridge enforces, not a WAC write-principal on the owner's
+ * pod. CSRF + session checks are inherited from `requireSession`.
+ *
+ * Pass the **registry** `Repo` (not request-body fields), otherwise the
+ * authorization target is attacker-controlled.
+ */
+export async function requireMember(
+  repo: Repo,
+  minRole: MemberRole,
+): Promise<{ ok: true; webId: string } | { ok: false; response: NextResponse }> {
+  const r = await requireSession();
+  if (!r.ok) return r;
+  // Owner short-circuit — implicit admin, no pod round-trip for the common case.
+  if (r.webId === repo.ownerWebId) return r;
+  const role = await resolveMemberRole(repo, r.webId);
+  if (role && ROLE_RANK[role] >= ROLE_RANK[minRole]) return r;
+  return {
+    ok: false,
+    response: failure(
+      403,
+      "FORBIDDEN",
+      `requires '${minRole}' membership on this repo`,
+    ),
+  };
 }
 
 /**
