@@ -7,7 +7,7 @@ credentials** — it's a dumb pipe that forwards Yjs deltas + awareness (live
 cursors) between peers. The durable store is git/`.mind` (the draft is committed
 on "Create"); a per-browser IndexedDB cache covers reconnects.
 
-Vendored verbatim from `mind-whiteboard-v1/relay/` because the relay is
+Vendored verbatim from `whiteboard/relay/` because the relay is
 content-agnostic — it has no idea whether it's syncing a whiteboard or an issue
 draft.
 

@@ -1,7 +1,7 @@
 /**
  * mind-codespaces collab relay — an EPHEMERAL y-websocket room broker.
  *
- * Vendored verbatim from mind-whiteboard-v1/relay/server.ts (it's
+ * Vendored verbatim from whiteboard/relay/server.ts (it's
  * content-agnostic — room = WS path, it just brokers Yjs sync + awareness for
  * whatever doc the clients put in the room). codespaces uses it for the
  * collaborative issue/epic composer (rooms `mc:issue-draft:<owner>/<repo>/<id>`).

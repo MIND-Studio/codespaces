@@ -121,7 +121,7 @@ export async function GET() {
   return NextResponse.json(
     {
       ok,
-      service: "mind-codespaces-v0",
+      service: "codespaces",
       ts: new Date().toISOString(),
       checks,
     },

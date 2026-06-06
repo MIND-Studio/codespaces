@@ -8,7 +8,7 @@
  *   BACKUP_DIR=/srv/backups npm run backup:registry
  *
  * Pair with cron:
- *   0 * * * * cd /opt/mind-codespaces/mind-codespaces-v0 && npm run backup:registry >> /var/log/mind-backup.log 2>&1
+ *   0 * * * * cd /opt/mind-codespaces/codespaces && npm run backup:registry >> /var/log/mind-backup.log 2>&1
  *
  * Then ship the resulting .db files off-host nightly (rsync, S3, etc.).
  * Restore: stop the bridge, replace .registry-data/registry.db with the
