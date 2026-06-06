@@ -16,12 +16,12 @@ state of everything is *derived* — never hand-set. No app required to read or 
 > **The path carries immutable context. The `events/` log carries state.**
 
 A folder name only ever encodes facts that never change — the epic, the topic, the date it was
-filed. Everything that *moves* — open → in-progress → done, who claimed it, priority, labels,
+filed. Everything that *moves* — todo → doing → review → done, who claimed it, priority, labels,
 links — lives in the issue's `events/` log. Current state is the **fold** of that log.
 
 | Lives in the **path** (immutable) | Lives in **`events/`** (mutable) |
 |---|---|
-| epic (`01-pod-owned-collaboration/`) | current state (open → in-progress → done) |
+| epic (`01-pod-owned-collaboration/`) | current state (todo → doing → review → done) |
 | topic slug (`pr-pod-native-turtle/`) | who claimed it, when, ttl |
 | created-at date (`2026-05-31-…/`) | priority/label changes, handoffs, links |
 

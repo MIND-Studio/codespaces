@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-06T0124Z
-to: ready-for-human
+to: review
 ---
 
 **The issue's primary hypothesis is falsified — do NOT just add `offline_access`.**

@@ -29,10 +29,10 @@ function provenanceFooter(p: Proposal): string {
 }
 
 /**
- * Accept a proposal: mint a `.mind` issue at needs-triage from it, then
+ * Accept a proposal: mint a `.mind` issue at todo from it, then
  * consume (delete) the inbox notification. Owner-only. The owner chooses
  * the issue `type` (default `feature`) and `priority` (default `normal`);
- * the normal needs-triage → ready-for-agent flow takes over from there.
+ * the normal todo → doing → review flow takes over from there.
  */
 export async function POST(req: Request, { params }: Params) {
   const { owner, repo: name, id } = await params;

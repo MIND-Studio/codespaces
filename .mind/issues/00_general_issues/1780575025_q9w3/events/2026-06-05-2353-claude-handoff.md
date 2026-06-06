@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-05T2353Z
-to: ready-for-human
+to: review
 ---
 
 **What changed (the delta):** `loadAuthedFetchForWebId` (`src/lib/solid/oidc-server.ts`) now wraps `getSessionFromStorage` in try/catch and normalizes a *thrown* refresh failure (a dead dynamic-client registration after a `.css-data` wipe → `invalid_client`/network) into `OidcRefreshFailedError`, the same structured error the returns-not-logged-in case already raised. Previously a thrown refresh escaped raw, slipped past `getOwnerFetch`'s `instanceof OidcRefreshFailedError` catch, and surfaced as an opaque 500 — the "silent write failure with no clear cause."

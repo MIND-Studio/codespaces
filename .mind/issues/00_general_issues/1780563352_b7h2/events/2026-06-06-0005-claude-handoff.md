@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-06T0005Z
-to: ready-for-human
+to: review
 ---
 
 **Verdict: acceptance is met by current code; the delta was the missing regression test, now added.**

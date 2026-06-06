@@ -24,8 +24,8 @@ describe("parseTrackerTrio", () => {
     const t = parseTrackerTrio(trio, "alice", "codespaces-tracker")!;
     expect(t).not.toBeNull();
     const byId = new Map(t.states.map((s) => [s.id, s]));
-    expect(byId.get("NeedsTriage")?.open).toBe(true);
-    expect(byId.get("InProgress")?.open).toBe(true);
+    expect(byId.get("Todo")?.open).toBe(true);
+    expect(byId.get("Doing")?.open).toBe(true);
     expect(byId.get("Done")?.open).toBe(false);
     expect(byId.get("Wontfix")?.open).toBe(false);
     expect(t.categories.map((c) => c.id).sort()).toContain("Bug");
@@ -79,7 +79,7 @@ describe("parseTrackerTrio", () => {
 @prefix : <#> .
 :Issue a rdfs:Class .
 :Category a rdfs:Class .
-:InProgress a rdfs:Class ; rdfs:label "In progress" ; rdfs:subClassOf flow:Open , :Issue .
+:Doing a rdfs:Class ; rdfs:label "Doing" ; rdfs:subClassOf flow:Open , :Issue .
 :Bug a rdfs:Class ; rdfs:label "Bug" ; rdfs:subClassOf :Category .
 :this a flow:Tracker ; flow:issueClass :Issue ; flow:issueCategory :Category .
 `;
@@ -87,13 +87,13 @@ describe("parseTrackerTrio", () => {
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix mc: <https://mindpods.org/ns/codespaces-tracker#> .
 @prefix : <tracker.ttl#> .
-<#01XINPR0009> wf:tracker :this ; mc:number 9 ; dc:title "Assigned one" ;
-    a :InProgress , :Bug ;
+<#01XDOIN0009> wf:tracker :this ; mc:number 9 ; dc:title "Assigned one" ;
+    a :Doing , :Bug ;
     wf:assignee <http://localhost:3011/claude/profile/card#me> .
 `;
     const t = parseTrackerTrio({ tracker, epics: null, state }, "alice", "demo")!;
     const issue = t.issues.find((i) => i.number === 9)!;
-    expect(issue.stateId).toBe("InProgress");
+    expect(issue.stateId).toBe("Doing");
     expect(issue.open).toBe(true);
     expect(issue.categoryId).toBe("Bug");
     expect(issue.assignee).toBe(
@@ -126,7 +126,7 @@ describe("parseTrackerTrio", () => {
 @prefix : <#> .
 :Issue a rdfs:Class .
 :Category a rdfs:Class .
-:InProgress a rdfs:Class ; rdfs:label "In progress" ; rdfs:subClassOf flow:Open , :Issue .
+:Doing a rdfs:Class ; rdfs:label "Doing" ; rdfs:subClassOf flow:Open , :Issue .
 :Done a rdfs:Class ; rdfs:label "Done" ; rdfs:subClassOf flow:Closed , :Issue .
 :Bug a rdfs:Class ; rdfs:label "Bug" ; rdfs:subClassOf :Category .
 :this a flow:Tracker ; flow:issueClass :Issue ; flow:issueCategory :Category .
@@ -135,7 +135,7 @@ describe("parseTrackerTrio", () => {
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix mc: <https://mindpods.org/ns/codespaces-tracker#> .
 @prefix : <tracker.ttl#> .
-<#01XOPEN0001> wf:tracker :this ; mc:number 1 ; dc:title "Open one" ; a :InProgress , :Bug .
+<#01XOPEN0001> wf:tracker :this ; mc:number 1 ; dc:title "Open one" ; a :Doing , :Bug .
 <#01XDONE0002> wf:tracker :this ; mc:number 2 ; dc:title "Closed one" ; a :Done , :Bug .
 `;
     const t = parseTrackerTrio({ tracker, epics: null, state }, "alice", "demo")!;

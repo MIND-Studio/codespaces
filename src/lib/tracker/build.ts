@@ -208,7 +208,7 @@ function foldEvents(
     if (Array.isArray(data.blocks)) blocks = data.blocks.map(String);
     if (data.kind === "claim") holder = data.actor != null ? String(data.actor) : holder;
     else if (data.kind === "release") holder = undefined;
-    else if (data.to != null && data.to !== "in-progress") holder = undefined;
+    else if (data.to != null && data.to !== "doing") holder = undefined;
   }
   return { state, holder, blocks, modified: lastAt != null ? ymd(lastAt) : undefined };
 }

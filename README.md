@@ -265,9 +265,9 @@ POST a notification but never list or read the inbox.
 
 Flow: a visitor submits at `/repos/{o}/{r}/issues/propose` → the proposal lands
 in the inbox → the owner reviews it on the **Proposals** tab
-(`/repos/{o}/{r}/proposals`) → **Accept** mints a `.mind` issue at `needs-triage`
-(the proposer's identity recorded as provenance in the body; the normal triage →
-`ready-for-agent` flow takes over), or **Dismiss** deletes the notification.
+(`/repos/{o}/{r}/proposals`) → **Accept** mints a `.mind` issue at `todo`
+(the proposer's identity recorded as provenance in the body; the normal
+`todo → doing → review` flow takes over), or **Dismiss** deletes the notification.
 Nothing reaches the tracker until the owner accepts.
 
 Guardrails (the propose endpoint is public): a per-IP rate limit
@@ -312,7 +312,7 @@ curl -fsS -X POST http://localhost:3010/api/repos/alice/hello/issues/propose \
 | GET POST | `/api/repos/{o}/{r}/issues` · GET PATCH `/{n}` | Issue CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues/{n}/comments` | Issue comments |
 | POST | `/api/repos/{o}/{r}/issues/propose` | **Public** issue proposal → owner's pod inbox (rate-limited, no auth) |
-| GET | `/api/repos/{o}/{r}/inbox` · POST `/{id}/accept` · DELETE `/{id}` | Owner-only: list proposals, accept (mint needs-triage issue), dismiss |
+| GET | `/api/repos/{o}/{r}/inbox` · POST `/{id}/accept` · DELETE `/{id}` | Owner-only: list proposals, accept (mint todo issue), dismiss |
 | GET | `/api/repos/{o}/{r}/issues/{n}/agent-runs` | Agent runs for an issue |
 | GET POST | `/api/repos/{o}/{r}/pulls` · GET `/{n}` · POST `/{n}/merge` · `/{n}/close` | PR CRUD |
 | GET POST | `/api/repos/{o}/{r}/pulls/{n}/preview` | Read · (re)build per-PR static preview |

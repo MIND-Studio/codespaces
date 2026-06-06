@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-05T1810Z
-to: ready-for-human
+to: review
 ---
 
 Built the 413-reject branch. Added an `oversizeByContentLength()` guard in the `/v2` route
