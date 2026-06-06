@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { log } from "@/lib/log";
 
 /**
  * Content-addressed blob store backed by a Solid pod (see
@@ -78,18 +79,42 @@ export class PodContentStore {
     return res.ok;
   }
 
-  /** Read a blob's bytes, or null if it's gone (404). */
+  /**
+   * Read a blob's bytes, or null if it's gone (404).
+   *
+   * The CAS lives under the owner's `public/` container, so the bytes can be
+   * mutated out-of-band by any pod app (or corrupted in transit). Being
+   * content-addressed, integrity is checkable for free: we re-hash what came
+   * back and **refuse to serve** (throw + log a `security` warning) anything
+   * whose digest doesn't match the one requested. A swapped or corrupted blob
+   * must never round-trip as authentic.
+   */
   async open(digest: string): Promise<Uint8Array | null> {
-    const res = await this.opts.fetch(this.blobUrl(stripSha(digest)), {
+    const want = stripSha(digest).toLowerCase();
+    const res = await this.opts.fetch(this.blobUrl(want), {
       method: "GET",
     });
     if (res.status === 404) return null;
     if (!res.ok) {
       throw new Error(
-        `content-store GET ${this.blobUrl(stripSha(digest))} failed: ${res.status}`,
+        `content-store GET ${this.blobUrl(want)} failed: ${res.status}`,
       );
     }
-    return new Uint8Array(await res.arrayBuffer());
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const got = createHash("sha256").update(bytes).digest("hex");
+    if (got !== want) {
+      log.warn("content-store blob digest mismatch — refusing to serve", {
+        security: true,
+        url: this.blobUrl(want),
+        requested: `sha256:${want}`,
+        actual: `sha256:${got}`,
+        size: bytes.byteLength,
+      });
+      throw new Error(
+        `content-store integrity check failed for ${this.blobUrl(want)}: requested sha256:${want}, got sha256:${got}`,
+      );
+    }
+    return bytes;
   }
 
   /**
