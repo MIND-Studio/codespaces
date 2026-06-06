@@ -60,15 +60,15 @@ async function Masthead() {
   return (
     <header className="border-b border-border bg-card">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-3 sm:gap-8 sm:px-10 sm:py-5">
-        <Link href="/" className="flex shrink-0 items-baseline gap-3">
-          <span className="display whitespace-nowrap text-lg tracking-tight sm:text-2xl">
+        <Link href="/" className="flex min-w-0 items-baseline gap-3">
+          <span className="display truncate text-base tracking-tight sm:text-2xl">
             Mind <em>Codespaces</em>
           </span>
           <span className="hidden whitespace-nowrap text-[10px] uppercase tracking-[0.22em] text-muted-foreground lg:inline">
             <span className="text-primary">●</span> solid git bridge
           </span>
         </Link>
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <MainNav signedIn={!!session} />
           <span
             aria-hidden

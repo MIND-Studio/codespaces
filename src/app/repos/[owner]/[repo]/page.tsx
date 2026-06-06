@@ -137,7 +137,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
         <aside className="space-y-8 lg:border-l lg:border-[color:var(--ink-trace)] lg:pl-8">
           <SidebarSection title="Clone URL">
-            <CloneUrlBlock url={cloneUrl} />
+            <CloneUrlBlock url={cloneUrl} repoHref={`/repos/${repo.owner}/${repo.name}`} />
             <p className="mt-2 text-[11px] leading-relaxed text-[color:var(--ink-soft)]">
               For private repos, prefix with a token:{" "}
               <code className="kbd">http://USER:TOKEN@…</code>.
@@ -1189,7 +1189,7 @@ function SidebarUrl({
   );
 }
 
-function CloneUrlBlock({ url }: { url: string }) {
+function CloneUrlBlock({ url, repoHref }: { url: string; repoHref: string }) {
   return (
     <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
       <div className="flex items-center justify-between gap-2 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-3 py-1.5">
@@ -1205,7 +1205,15 @@ function CloneUrlBlock({ url }: { url: string }) {
         className="m-0 px-3 py-2 overflow-x-auto text-[0.78rem] leading-[1.5] whitespace-pre bg-[color:var(--paper)] max-w-full"
         style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
       >
-        {url}
+        <a
+          href={repoHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open repository page"
+          className="text-[color:var(--ink)] underline-offset-2 hover:underline"
+        >
+          {url}
+        </a>
       </pre>
     </div>
   );

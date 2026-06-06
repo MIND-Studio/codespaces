@@ -15,6 +15,7 @@ import {
   type IssueComment,
 } from "@/lib/registry/issues";
 import { commentUrl, writeCommentToPod } from "@/lib/solid/issues";
+import { writePullToPod } from "@/lib/solid/pulls";
 import { upsertPullRequest } from "@/lib/registry/pulls";
 import { STATIC_EXPORT_RULES } from "@/lib/agents/prompt-fragments";
 
@@ -438,6 +439,10 @@ export const codexDriver: Driver = {
         issueId: issue.id,
       });
       log(`[codex] opened pull request #${pull.number}`);
+      // Mirror the agent-authored PR to the owner's pod, best-effort (#142).
+      writePullToPod(repo, pull).catch((err) => {
+        log(`[codex] writePullToPod for #${pull.number} failed: ${err}`);
+      });
 
       if (wantsComment) {
         const noteBody = [

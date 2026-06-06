@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { readGitTracker, groupByEpic } from "@/lib/tracker/read";
+import { groupByEpic } from "@/lib/tracker/read";
+import { readRepoTracker } from "@/lib/tracker/source";
 import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
 import { RelativeTime } from "@/components/relative-time";
 import { RepoTabs } from "../repo-tabs";
@@ -29,7 +29,7 @@ export default async function IssuesListPage({
   const status: StatusFilter =
     statusParam === "closed" || statusParam === "all" ? statusParam : "open";
 
-  const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  const tracker = await readRepoTracker(repo, owner, name);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-10 sm:py-12">

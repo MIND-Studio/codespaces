@@ -15,6 +15,7 @@ import {
   type IssueComment,
 } from "@/lib/registry/issues";
 import { commentUrl, writeCommentToPod } from "@/lib/solid/issues";
+import { writePullToPod } from "@/lib/solid/pulls";
 import { upsertPullRequest } from "@/lib/registry/pulls";
 import { validateName } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
@@ -581,6 +582,12 @@ export const coderDriver: Driver = {
         issueId: issue.id,
       });
       log(`[coder] opened pull request #${pull.number}`);
+      // Mirror the agent-authored PR to the owner's pod as canonical Turtle,
+      // best-effort (#142). No `authorWebId` → the renderer omits the creator
+      // triple, which the round-trip test pins as valid.
+      writePullToPod(repo, pull).catch((err) => {
+        log(`[coder] writePullToPod for #${pull.number} failed: ${err}`);
+      });
 
       if (wantsComment) {
         const noteBody = [
