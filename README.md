@@ -308,6 +308,7 @@ curl -fsS -X POST http://localhost:3010/api/repos/alice/hello/issues/propose \
 | GET PATCH DELETE | `/api/repos/{o}/{r}` | Detail, update, delete |
 | GET PUT | `/api/repos/{o}/{r}/pages` | Read, write Pages config |
 | GET POST | `/api/repos/{o}/{r}/tokens` · DELETE `/{id}` | Push-token CRUD |
+| GET POST | `/api/repos/{o}/{r}/members` · DELETE `/{webid}` | Member roster (pod-native `members.ttl`): reader-read, admin-write (ADR-0002) |
 | GET POST | `/api/repos/{o}/{r}/issues` · GET PATCH `/{n}` | Issue CRUD |
 | GET POST | `/api/repos/{o}/{r}/issues/{n}/comments` | Issue comments |
 | POST | `/api/repos/{o}/{r}/issues/propose` | **Public** issue proposal → owner's pod inbox (rate-limited, no auth) |
