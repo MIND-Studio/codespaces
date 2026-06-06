@@ -2,6 +2,66 @@
 
 What shipped in each iteration. Most-recent at the top.
 
+## v0.10 — Membership capability, pod-mirrored tracker, refresh-token hardening (2026-06-06)
+
+Closes the pod-owned-collaboration epic's first wave: the Pages publish path now
+mints a usable refresh token, repos carry a pod-native member roster, and the
+`.mind` tracker is mirrored into the pod as the canonical render source. Shipped
+to `codespaces.mindpods.org` as `v0.1.21`.
+
+### Pages publish: refresh-token fix (MC-176)
+
+- **Newly-connected / scripted identities couldn't publish Pages** —
+  `…/public/sites/<repo>/` 404'd with "refresh token failed". Root cause: the
+  bridge's scripted CSS consent POST (`src/lib/solid/css-account.ts`) didn't ask
+  CSS to **remember** the grant, and CSS v7 only issues a refresh token for a
+  remembered consent. Fix: `body: { remember: true }`. `startAuthFlow` already
+  requests `offline_access` (SDK default), so the remembered consent was the
+  missing piece. Verified against pod.mindpods.org (`{}` → no refresh token;
+  `{ remember: true }` → a 43-char refresh token stored, publishes refresh
+  cleanly).
+
+### Repo membership — a bridge-enforced capability (MC-157, ADR-0002)
+
+- **Pod-native `members.ttl` roster** (`src/lib/solid/members.ts`) records
+  WebID → `reader|writer|admin` in the owner's pod, owner-writable, bridge-read
+  via the owner's delegated fetch. `requireMember(repo, minRole)` is the
+  enforcement primitive (owner = implicit admin, no pod read). Private repos
+  grant each member `acl:Read` on `pulls/` + the roster doc; the owner stays
+  **sole writer** (P0-R2 — a member never gets direct WAC write). New
+  `GET/POST /api/repos/{o}/{r}/members`, `DELETE …/members/{webid}`;
+  `solidgit:members` advertised on `<#repo>`. Tests: `members-roundtrip.test.ts`
+  (9). Deliberately **additive** — the ~30 existing `requireOwner` collab routes
+  are not yet migrated to `requireMember` (a Settings → Members UI + the route
+  migration are the epic's next steps).
+
+### `.mind` tracker mirrored into the pod (MC-160)
+
+- The repo's `flow:Tracker` is mirrored to
+  `{pod}/codespaces/{repo}/.mind/{tracker,epics,state}.ttl` (multi-doc,
+  public-read) from the **post-receive hook** — fire-and-forget + fail-soft, so
+  a pod hiccup never blocks the push (`src/lib/solid/tracker-pod.ts`). The
+  dashboard reads **pod-first with a git-blob fallback**
+  (`src/lib/tracker/source.ts`), and the Registry `issues` index is a
+  **projection** of the pod tracker (`src/lib/registry/issue-projection.ts`,
+  reuses `004_issues`). Tests: `tracker-pod.test.ts`, `issue-projection.test.ts`.
+
+### Auth / identity hardening (MC-150, MC-173)
+
+- **Identities survive a bridge restart** — per-session DPoP keypair + refresh
+  token persist AES-256-GCM in SQLite, rehydrated from storage on boot, killing
+  the re-connect loop (`tests/identity-storage-restart.test.ts`).
+- **A dead delegated registration is surfaced, not silent** — the SDK's
+  `invalid_client` / not-logged-in throws normalise to `OidcRefreshFailedError`
+  → `OwnerFetchUnavailableError("needs-reauthorization")` pointing at `/connect`,
+  and (per P0-R2) never falls back to seeded creds when a stale delegated
+  identity exists (`tests/oidc-refresh-normalize.test.ts`,
+  `tests/fetch-for-owner.test.ts`).
+
+`tsc` clean, 94 unit tests pass (24 files). Live-CSS round-trips (fresh-connect
+publish, member-read enforcement, pod mirror/read) remain the
+PRODUCTION-READINESS §3.2 integration backlog.
+
 ## v0.9 — Public proposals (LDN inbox), live co-authoring, `.mind` tracker, theming (2026-06-05)
 
 A collaboration-and-intake iteration: outsiders can now propose work, drafts are
