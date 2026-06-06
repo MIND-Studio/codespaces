@@ -4,6 +4,12 @@ import { headers } from "next/headers";
 import { getRepo, getPagesConfig, validateName } from "@/lib/registry/repos";
 import { publishPages } from "@/lib/pages/publisher";
 import { runWorkflow } from "@/lib/workflows/runner";
+import { repoPath } from "@/lib/git/backend";
+import {
+  mirrorTrackerFromGit,
+  readPodTracker,
+} from "@/lib/solid/tracker-pod";
+import { projectTrackerToRegistry } from "@/lib/registry/issue-projection";
 import { getEnv } from "@/lib/env";
 import {
   log,
@@ -98,6 +104,30 @@ export async function POST(req: Request) {
       ref,
       newRev: typeof newRev === "string" ? newRev.slice(0, 8) : null,
     });
+
+    // Mirror the repo's `.mind` tracker into the owner's pod on every push to
+    // the default branch — independent of Pages config (MC-160). The push may
+    // have updated `.mind/build/{tracker,epics,state}.ttl` (a consumer's
+    // `tracker:build`, or a bridge-authored `createMindIssue`, whose own push
+    // also lands here). Fire-and-forget + fail-soft: a pod hiccup must never
+    // block the git push. After mirroring, re-project the pod tracker into the
+    // Registry index (projection, not source).
+    if (branch === repo.defaultBranch) {
+      withCorrelationId(cid, () => {
+        mirrorTrackerFromGit(repo, repoPath(owner, name), ref)
+          .then(async (mirrored) => {
+            if (!mirrored) return;
+            const tracker = await readPodTracker(repo, owner, name);
+            if (tracker) projectTrackerToRegistry(repo, tracker);
+          })
+          .catch((err) => {
+            log.warn("post_receive.tracker_mirror_failed", {
+              repo: `${owner}/${name}`,
+              error: (err as Error).message ?? String(err),
+            });
+          });
+      });
+    }
 
     if (branchMatches) {
       scheduled = "workflow";

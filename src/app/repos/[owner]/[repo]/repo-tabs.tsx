@@ -1,7 +1,6 @@
 import "server-only";
 import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { readGitTracker } from "@/lib/tracker/read";
+import { readRepoTracker } from "@/lib/tracker/source";
 import { countOpenPullRequests } from "@/lib/registry/pulls";
 import { listPackages } from "@/lib/packages/store";
 import { readSession } from "@/lib/auth/session";
@@ -32,8 +31,8 @@ export async function RepoTabs({
   const isOwner = session?.webId === repo.ownerWebId;
 
   // Open-issue badge reflects the repo's .mind tracker (the same source the
-  // /issues board renders), so the tab count matches the board.
-  const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  // /issues board renders, pod-first), so the tab count matches the board.
+  const tracker = await readRepoTracker(repo, owner, name);
   const openIssueCount = tracker
     ? tracker.issues.filter((i) => i.open).length
     : 0;

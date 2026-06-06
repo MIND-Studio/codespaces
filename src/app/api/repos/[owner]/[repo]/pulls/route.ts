@@ -4,6 +4,7 @@ import { listPullRequests, upsertPullRequest } from "@/lib/registry/pulls";
 import { listBranches } from "@/lib/git/objects";
 import { repoPath } from "@/lib/git/backend";
 import { requireOwner } from "@/lib/auth/session";
+import { writePullToPod } from "@/lib/solid/pulls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,6 +109,17 @@ export async function POST(req: Request, { params }: Params) {
           : auth.webId,
       issueId: typeof issueId === "number" ? issueId : null,
     });
+
+    // Mirror the PR to the owner's pod as canonical Turtle, best-effort
+    // (mirrors how issues are written). A pod hiccup must never block the
+    // PR open, so we fire-and-forget and only log on failure (#142).
+    writePullToPod(repo, pull).catch((err) => {
+      console.warn(
+        `[pulls.POST] writePullToPod for ${owner}/${name}#${pull.number} failed:`,
+        err,
+      );
+    });
+
     return NextResponse.json({ pull }, { status: 201 });
   } catch (e) {
     if (e instanceof RegistryError) {

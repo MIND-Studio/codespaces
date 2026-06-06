@@ -55,16 +55,50 @@ describe("parseTrackerTrio", () => {
     expect(i128.categoryId).toBe("Feature");
     expect(i128.epicSlug).toBe("pod-owned-collaboration");
 
-    // #150: un-epic'd (General), in progress, has an assignee.
+    // #150: un-epic'd (General). Its open/closed + assignee state churn as it's
+    // worked (and every issue eventually lands at Done), so only the structural
+    // join — that it resolves to the General bucket — is asserted against the
+    // live board; the state/assignee joins are covered deterministically against
+    // fixed inline trios below.
     const i150 = byNum.get(150)!;
     expect(i150.epicSlug).toBeUndefined();
-    expect(i150.open).toBe(true);
-    expect(i150.assignee).toBeTruthy();
 
     // #142 blocks two issues (resolved to their ULID local names).
     const i142 = byNum.get(142)!;
     expect(i142.blocks.length).toBe(2);
     expect(i142.afk).toBe(true);
+  });
+
+  it("joins wf:assignee onto an issue (deterministic, board-independent)", () => {
+    // A minimal trio mirroring the real base scheme: tracker.ttl declares the
+    // classes at `<#…>`, state.ttl references them via the `tracker.ttl#` prefix
+    // and carries the issue with a wf:assignee. Decoupled from the live board so
+    // claiming/handing-off issues never breaks this assertion.
+    const tracker = `@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix flow: <http://www.w3.org/2005/01/wf/flow#> .
+@prefix : <#> .
+:Issue a rdfs:Class .
+:Category a rdfs:Class .
+:InProgress a rdfs:Class ; rdfs:label "In progress" ; rdfs:subClassOf flow:Open , :Issue .
+:Bug a rdfs:Class ; rdfs:label "Bug" ; rdfs:subClassOf :Category .
+:this a flow:Tracker ; flow:issueClass :Issue ; flow:issueCategory :Category .
+`;
+    const state = `@prefix wf: <http://www.w3.org/2005/01/wf/flow#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix mc: <https://mindpods.org/ns/codespaces-tracker#> .
+@prefix : <tracker.ttl#> .
+<#01XINPR0009> wf:tracker :this ; mc:number 9 ; dc:title "Assigned one" ;
+    a :InProgress , :Bug ;
+    wf:assignee <http://localhost:3011/claude/profile/card#me> .
+`;
+    const t = parseTrackerTrio({ tracker, epics: null, state }, "alice", "demo")!;
+    const issue = t.issues.find((i) => i.number === 9)!;
+    expect(issue.stateId).toBe("InProgress");
+    expect(issue.open).toBe(true);
+    expect(issue.categoryId).toBe("Bug");
+    expect(issue.assignee).toBe(
+      "http://localhost:3011/claude/profile/card#me",
+    );
   });
 
   it("groups issues by epic with a trailing General bucket", () => {
@@ -83,11 +117,31 @@ describe("parseTrackerTrio", () => {
     expect(groups[0].kind).toBe("general");
   });
 
-  it("counts open vs closed for the status filter", () => {
-    const t = parseTrackerTrio(trio, "alice", "codespaces-tracker")!;
+  it("partitions open vs closed for the status filter (board-independent)", () => {
+    // Asserted against a fixed inline trio with exactly one Open and one Closed
+    // issue rather than the live board — every real issue eventually lands at
+    // Done, so a live `open > 0` assertion is not durable.
+    const tracker = `@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix flow: <http://www.w3.org/2005/01/wf/flow#> .
+@prefix : <#> .
+:Issue a rdfs:Class .
+:Category a rdfs:Class .
+:InProgress a rdfs:Class ; rdfs:label "In progress" ; rdfs:subClassOf flow:Open , :Issue .
+:Done a rdfs:Class ; rdfs:label "Done" ; rdfs:subClassOf flow:Closed , :Issue .
+:Bug a rdfs:Class ; rdfs:label "Bug" ; rdfs:subClassOf :Category .
+:this a flow:Tracker ; flow:issueClass :Issue ; flow:issueCategory :Category .
+`;
+    const state = `@prefix wf: <http://www.w3.org/2005/01/wf/flow#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix mc: <https://mindpods.org/ns/codespaces-tracker#> .
+@prefix : <tracker.ttl#> .
+<#01XOPEN0001> wf:tracker :this ; mc:number 1 ; dc:title "Open one" ; a :InProgress , :Bug .
+<#01XDONE0002> wf:tracker :this ; mc:number 2 ; dc:title "Closed one" ; a :Done , :Bug .
+`;
+    const t = parseTrackerTrio({ tracker, epics: null, state }, "alice", "demo")!;
     const open = t.issues.filter((i) => i.open).length;
     const closed = t.issues.length - open;
-    expect(open).toBeGreaterThan(0);
-    expect(closed).toBeGreaterThan(0); // #128 Done
+    expect(open).toBe(1);
+    expect(closed).toBe(1);
   });
 });
