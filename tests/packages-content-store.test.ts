@@ -103,4 +103,20 @@ describe("PodContentStore", () => {
     const missing = await store.open("sha256:" + "0".repeat(64));
     expect(missing).toBeNull();
   });
+
+  it("open() refuses to serve a blob whose bytes don't match the requested digest", async () => {
+    const { PodContentStore } = await import("@/lib/packages/content-store");
+    const pod = makeFakePod();
+    const store = new PodContentStore({ podRoot, ownerWebId, fetch: pod.fetcher });
+
+    // Save a blob, then corrupt the stored bytes in place at the SAME CAS path
+    // (simulates a swapped/corrupted pod resource served under its digest URL).
+    const ref = await store.save(new Uint8Array(Buffer.from("authentic")));
+    const url = store.blobUrl(ref.digest.slice("sha256:".length));
+    expect(pod.store.has(url)).toBe(true);
+    pod.store.set(url, new Uint8Array(Buffer.from("tampered")));
+
+    // Re-hash on read catches the mismatch: throw, never the bytes.
+    await expect(store.open(ref.digest)).rejects.toThrow(/integrity check failed/);
+  });
 });
