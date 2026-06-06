@@ -4,7 +4,7 @@
  *   npm run import:repo -- [--source DIR] [--owner OWNER] [--name NAME] [--branch BRANCH]
  *
  * Defaults are tuned for the `mind/compass` example:
- *   --source  /Users/heussers/develop/mind/compass
+ *   --source  ~/develop/mind/compass
  *   --owner   mind
  *   --name    compass
  *   --branch  main
@@ -32,7 +32,7 @@ function parseArgs(): Args {
     return argv[i + 1];
   };
   return {
-    source: get("--source", "/Users/heussers/develop/mind/compass"),
+    source: get("--source", `${process.env.HOME}/develop/mind/compass`),
     owner: get("--owner", "mind"),
     name: get("--name", "compass"),
     branch: get("--branch", "main"),

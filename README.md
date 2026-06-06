@@ -1,7 +1,7 @@
-# mind-codespaces-v0
+# codespaces
 
 Solid Git Bridge prototype — `git push` your site into your own Solid Pod,
-with a workflow runner and issue-driven agents on top. Sibling of `mind-market-v0`.
+with a workflow runner and issue-driven agents on top.
 
 See [`docs/IDEA.md`](./docs/IDEA.md) for the vision and current shape,
 [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) for what shipped in each iteration,
@@ -338,7 +338,7 @@ curl -fsS -X POST http://localhost:3010/api/repos/alice/hello/issues/propose \
 | CommunitySolidServer (single instance) | 3011 |
 | Bridge / Next.js | 3010 |
 
-`mind-codespaces-v0` deliberately uses `:3011` so it can run alongside
+`codespaces` deliberately uses `:3011` so it can run alongside
 `mind-market-v0` (which uses `:3001` and `:3002` for its CSS instances).
 
 ## Demo users

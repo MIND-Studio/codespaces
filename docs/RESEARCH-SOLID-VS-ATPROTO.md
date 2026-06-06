@@ -70,7 +70,7 @@ These are not opinions, they are deliberate omissions in the spec ([Solid Protoc
 4. **RDF parsing tax at scale.** Every container listing carries `ldp:contains` triples — fine for a folder with 50 files, painful with 10k. ACL evaluation walks the container chain on every request.
 5. **WAC vs ACP fragmentation.** CSS supports both; Inrupt ESS is ACP-only; NSS is WAC-only. No automatic translator. You have to pick.
 6. **No first-class delegation.** Solid-OIDC has no narrowed, time-bound, capability-style grant. SAI (Solid Application Interoperability) is the draft answer but is not implemented in CSS. Today, "give this agent write access to repos/foo/ only for the next hour" requires custom infrastructure.
-7. **No discoverability across pods.** No global index. Every cross-pod feature needs an app-managed index — which is *exactly* why `mind-codespaces-v0` already maintains a SQLite cache.
+7. **No discoverability across pods.** No global index. Every cross-pod feature needs an app-managed index — which is *exactly* why `codespaces` already maintains a SQLite cache.
 8. **Spec is a Draft Community Group Report, not a W3C Recommendation.** Stable enough to ship; unstable enough to surprise.
 
 ### Practical takeaway

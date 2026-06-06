@@ -6,7 +6,7 @@ repo metadata, issues, and the published site all live in the pod (pull requests
 still registry-only in v0); the bridge is replaceable glue. This is one app in the wider
 [Mind protocol](https://mind-studio.github.io/mind-specification/); terms below are
 canonical at the protocol level, with a `_v0 status_` note where this prototype
-(`mind-codespaces-v0`) deliberately diverges from the spec.
+(`codespaces`) deliberately diverges from the spec.
 
 ## Language
 

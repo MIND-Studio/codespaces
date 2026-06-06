@@ -30,7 +30,7 @@ The v0 prototype is built for neither — it is a single-tenant, single-pod, sin
 
 These are independent of which production shape you target. The rest of the document assumes they are done.
 
-1. **Rotate `OPENROUTER_API_KEY`.** A live `sk-or-v1-…` value is present in `mind-codespaces-v0/.env.local` on disk. Even though `.env*` is gitignored, treat this as leaked — any image, backup, or screen-share covers it. Rotate at https://openrouter.ai/keys, then move the new key into a real secrets store (Docker secret, sealed-secret, Vault).
+1. **Rotate `OPENROUTER_API_KEY`.** A live `sk-or-v1-…` value is present in `codespaces/.env.local` on disk. Even though `.env*` is gitignored, treat this as leaked — any image, backup, or screen-share covers it. Rotate at https://openrouter.ai/keys, then move the new key into a real secrets store (Docker secret, sealed-secret, Vault).
 2. **Do not expose the bridge or CSS on a public address** until P0 is complete. With current code, anyone reachable on `:3010` can take over Alice's pod (see §2.1 for the full chain).
 3. **Update `.gitignore` to cover `dev.log`** — currently checked into the working tree.
 

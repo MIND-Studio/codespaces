@@ -1,7 +1,7 @@
 # Deployment — alpha on Hetzner CX33
 
 Live alpha state, access patterns, and operational runbook for the
-mind-codespaces-v0 prototype as deployed 2026-05-25.
+codespaces prototype as deployed 2026-05-25.
 
 For the architectural shape (security floor, compose layout, env vars),
 see [`infra/prod/README.md`](../infra/prod/README.md) and
@@ -128,7 +128,7 @@ ssh mind-codespaces 'cd /opt/mind-codespaces/infra/prod && docker compose --env-
 ### Push code changes from your laptop (no GitHub yet)
 
 ```bash
-# From mind-codespaces-v0/ on your laptop.
+# From codespaces/ on your laptop.
 # Specific .env excludes (NOT --exclude=.env*; that would eat .env.example):
 rsync -avz --delete \
   --exclude='node_modules/' --exclude='.next/' \

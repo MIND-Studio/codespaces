@@ -6,7 +6,7 @@ and the messaging boundaries we don't cross.
 
 > **A note on naming.** The product is **Mind Codespaces** today.
 > *MindShell* is the eventual umbrella brand once the four sibling
-> prototypes (`mind-market-v0`, `mind-codespaces-v0`, `mind-os-v0`,
+> prototypes (`mind-market-v0`, `codespaces`, `mind-os-v0`,
 > `mind-social-network-v0`) unify into one platform. Until that
 > consolidation happens, everything user-facing in this codebase uses
 > **Mind Codespaces**. The brand values — user-owned data, calm voice,

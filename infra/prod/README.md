@@ -43,7 +43,7 @@ The CSS host (`pod.<domain>`) is meant to be open — that's a public pod server
 
 ```bash
 git clone <your-fork-or-this-repo> /opt/mind-codespaces
-cd /opt/mind-codespaces/mind-codespaces-v0/infra/prod
+cd /opt/mind-codespaces/codespaces/infra/prod
 ```
 
 (The path doesn't matter; this README assumes `/opt/mind-codespaces/`.)
@@ -76,7 +76,7 @@ sudo chown 1000:1000 /var/lib/mind/coder-work /var/lib/mind/agent-logs
 The coder driver shells out to `docker run mind-codespaces/coder:latest`. That image isn't on Docker Hub; build it locally once:
 
 ```bash
-cd /opt/mind-codespaces/mind-codespaces-v0
+cd /opt/mind-codespaces/codespaces
 docker build -t mind-codespaces/coder:latest infra/coder
 ```
 
@@ -89,7 +89,7 @@ docker pull node:22-alpine
 ## 6. Start the stack
 
 ```bash
-cd /opt/mind-codespaces/mind-codespaces-v0/infra/prod
+cd /opt/mind-codespaces/codespaces/infra/prod
 docker compose --env-file .env up -d --build
 ```
 

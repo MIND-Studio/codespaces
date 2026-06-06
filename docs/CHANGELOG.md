@@ -444,5 +444,5 @@ Entire P0 list from `docs/PRODUCTION-READINESS.md` shipped. Highlights:
   state (CSS keeps it under `.account/`). If you `rm -rf .css-data`, you need
   to re-authorize via `/connect`. Existing identities in the bridge's SQLite
   become stale.
-- Both prototypes (`mind-market-v0`, `mind-codespaces-v0`) currently share the
+- Both prototypes (`mind-market-v0`, `codespaces`) currently share the
   same `:3011` port for their CSS instances. Run one at a time.

@@ -1,6 +1,6 @@
 # Mind Codespaces — vision, architecture, verdict
 
-A standalone-readable account of what `mind-codespaces-v0` is, why it exists,
+A standalone-readable account of what `codespaces` is, why it exists,
 how it's shaped, and an honest read on whether it's worth turning into a
 product. Replaces the original milestone-centric PRD now that the milestone
 list is itself an artefact — see [`CHANGELOG.md`](./CHANGELOG.md) for the

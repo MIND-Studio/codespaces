@@ -6,7 +6,7 @@ The user-facing README is the source of truth for commands, endpoints, ports, en
 
 # Agent-only notes (not in README)
 
-- The parent `/Users/heussers/develop/mind/CLAUDE.md` describes a *different* project (Mind Cube — a Raspberry Pi AI assistant). Ignore it here. The relevant parent doc is `mind-prototypes/CLAUDE.md`.
+- A parent-folder `CLAUDE.md` may describe a *different* project (Mind Cube — a Raspberry Pi AI assistant). Ignore it here.
 - **`npm test` runs vitest** (path-traversal, push-tokens, publisher walk, quotas, the four `packages-*` suites, and the two `inbox-*` suites — 57 tests as of the proposals/LDN-inbox change). `npm run smoke:db` applies registry migrations against a throwaway DB; `npx tsc --noEmit` type-checks. Integration tests (live-CSS publish, Smart-HTTP round-trip, OIDC) are still backlog — see PRODUCTION-READINESS §3.2.
 - The README's command list omits a few `tsx` scripts: `seed:profiles`, `seed:workflows`, `import:repo`, `smoke:db`. See `scripts/` and `package.json`.
 - Wiping `.css-data/` invalidates every OIDC dynamic-client registration; bridge identity rows in SQLite go stale and you must re-authorize via `/connect`. **This also blocks package/Pages writes:** the write path (`getOwnerFetch`) never falls back to seeded creds once a *stale* delegated identity exists, even in dev — re-`/connect`, or delete the identity (`DELETE /api/identities/{webId}`) and set `ALLOW_SEEDED_FALLBACK=1` (dev-only).
@@ -50,7 +50,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # This is NOT the Solid setup you assume
 
-The two prototypes in `marketplaces-prototypes/` share a Solid stack (Community Solid Server v7 via Docker) but are otherwise independent apps with their own ports and data dirs. Before changing anything Solid-related, skim `src/lib/solid/` here AND in `../mind-market-v0/src/lib/solid/` — the patterns differ.
+This app uses a Solid stack (Community Solid Server v7 via Docker). Before changing anything Solid-related, skim `src/lib/solid/` here.
 
 # Turbopack CSS hot-reload is unreliable
 
