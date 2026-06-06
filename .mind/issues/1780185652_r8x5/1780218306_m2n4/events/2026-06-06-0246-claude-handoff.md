@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-06T0246Z
-to: ready-for-human
+to: review
 prev: 01JZW0B3S0CLAUDE0CLAIM157
 ---
 

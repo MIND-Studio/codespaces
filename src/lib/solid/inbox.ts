@@ -17,7 +17,7 @@ import { NS } from "@/lib/vocab";
  * The repo's Linked Data Notifications inbox — a pod-native `ldp:inbox`
  * where anyone (including unauthenticated visitors) can drop an *issue
  * proposal*. The owner alone can list and read it; accepting a proposal
- * mints a `.mind` issue at `needs-triage`, dismissing deletes the
+ * mints a `.mind` issue at `todo`, dismissing deletes the
  * notification. The container is the untrusted staging area; the `.mind`
  * tracker stays owner-authored.
  *

@@ -175,7 +175,7 @@ function openEventFrontmatter(opts: {
     `actor: ${JSON.stringify(opts.authorWebId)}`,
     "actorKind: human",
     `at: ${opts.atIso}`,
-    "to: needs-triage",
+    "to: todo",
     `type: ${opts.type}`,
     `priority: ${opts.priority}`,
   ];

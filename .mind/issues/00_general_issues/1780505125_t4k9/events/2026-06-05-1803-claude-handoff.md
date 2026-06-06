@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-05T1803Z
-to: ready-for-human
+to: review
 ---
 
 Built the delta: added `dev:clean` to package.json (`rm -rf .next && next dev -p 3010`).

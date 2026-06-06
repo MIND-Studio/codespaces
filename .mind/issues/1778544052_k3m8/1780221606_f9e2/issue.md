@@ -9,7 +9,7 @@ created: 2026-05-31T10:00Z
 epic: EPIC_2026-05-12_E001
 milestone: v0.9
 afk: true                       # safe for an AFK agent to pick up
-# NO `state:` here. Current state = fold of events/ (latest is ready-for-human).
+# NO `state:` here. Current state = fold of events/.
 # Display handle MC-0142 is derived by the build, not stored.
 ---
 

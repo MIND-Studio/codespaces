@@ -34,7 +34,7 @@ ls calendar/                                 # milestones in date order (filenam
   **lowest ULID wins**; the loser backs off. A claim past its ttl is stale — reclaimable.
 - **Suggest, don't decide.** Put recommendations in the event body or `.ai/suggestions/`.
   Never author the human's decision. **Never self-close** — hand back with a `handoff`
-  event to `ready-for-human`.
+  event to `review`.
 - **Respect gates.** Do not pick up issues labelled `human-only`, `needs-design`, or `blocked`.
 - **Ship via** an `agent/issue-<handle>` draft branch; record it with a `link` event.
 

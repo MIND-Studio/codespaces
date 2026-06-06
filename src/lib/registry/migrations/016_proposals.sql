@@ -3,7 +3,7 @@
 -- A non-owner — including an unauthenticated visitor — can *propose* an
 -- issue, which lands as a Linked Data Notification in the owner's pod
 -- inbox (`{podRoot}/codespaces/{repo}/inbox/`). The owner later accepts a
--- proposal (minting a `.mind` issue at needs-triage) or dismisses it.
+-- proposal (minting a `.mind` issue at todo) or dismisses it.
 --
 -- This flag lets an owner turn the public propose endpoint off per-repo.
 -- Default on (1) so existing repos accept proposals after migrating.

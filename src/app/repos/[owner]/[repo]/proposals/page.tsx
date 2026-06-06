@@ -59,7 +59,7 @@ export default async function ProposalsPage({ params }: PageProps) {
       <p className="mt-2 text-sm text-[color:var(--ink-soft)]">
         Issue proposals submitted to this repo&apos;s pod inbox. Accept one to
         mint a <code className="kbd">.mind</code> issue at{" "}
-        <code className="kbd">needs-triage</code>, or dismiss it.
+        <code className="kbd">todo</code>, or dismiss it.
       </p>
 
       <RepoTabs owner={owner} name={name} active="proposals" />

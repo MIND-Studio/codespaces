@@ -4,7 +4,7 @@ kind: handoff
 actor: "http://localhost:3011/claude/profile/card#me"
 actorKind: agent
 at: 2026-06-06T0036Z
-to: ready-for-human
+to: review
 ---
 
 **Built the full feature in one PR (per the design gate).** One tracker, mirrored into the pod, rendered from the pod, projected into the Registry.

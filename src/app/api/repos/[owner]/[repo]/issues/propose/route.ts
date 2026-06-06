@@ -19,7 +19,7 @@ const MAX_CONTACT = 200;
  * only), this accepts a proposal from **anyone** — including unauthenticated
  * visitors — and drops it as a Linked Data Notification into the owner's pod
  * inbox (`{podRoot}/codespaces/{repo}/inbox/`). The owner later accepts it
- * (minting a `.mind` issue at needs-triage) or dismisses it; nothing reaches
+ * (minting a `.mind` issue at todo) or dismisses it; nothing reaches
  * the tracker until then.
  *
  * Intentionally unauthenticated, so the `X-CSRF-Token` guard does NOT apply

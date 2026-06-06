@@ -108,7 +108,7 @@ export function ProposalActions({ owner, repo, id, categories }: Props) {
         </Select>
       </label>
       <Button type="button" onClick={accept} disabled={busy !== null}>
-        {busy === "accept" ? "Accepting…" : "Accept → needs-triage"}
+        {busy === "accept" ? "Accepting…" : "Accept → todo"}
       </Button>
       <Button
         type="button"
