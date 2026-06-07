@@ -1,3 +1,9 @@
+> **Historical / manual log.** Since 2026-06-07, releases are automated by
+> [release-please](https://github.com/googleapis/release-please) and the canonical
+> changelog is the auto-generated root [`CHANGELOG.md`](../CHANGELOG.md). This file
+> is kept for pre-automation history and design notes — don't add new release
+> entries here.
+
 # Changelog
 
 What shipped in each iteration. Most-recent at the top.
