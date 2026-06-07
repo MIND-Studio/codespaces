@@ -82,6 +82,7 @@ jobs:
             NEXT_PUBLIC_APP_DRIVE_URL=https://drive.mindpods.org
             NEXT_PUBLIC_APP_BUILDER_URL=https://builder.mindpods.org
             NEXT_PUBLIC_APP_CODESPACES_URL=https://codespaces.mindpods.org
+            NEXT_PUBLIC_FEEDBACK_INBOX=https://pods.mindpods.org/mind/codespaces-feedback/
           # Auth for installing the public @mind-studio/* packages from GitHub
           # Packages during `npm ci`. Never baked into a layer (BuildKit secret).
           secrets: |

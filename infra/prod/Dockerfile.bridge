@@ -51,6 +51,10 @@ ENV NEXT_PUBLIC_APP_DOCK_URL=$NEXT_PUBLIC_APP_DOCK_URL \
     NEXT_PUBLIC_APP_BUILDER_URL=$NEXT_PUBLIC_APP_BUILDER_URL \
     NEXT_PUBLIC_APP_CODESPACES_URL=$NEXT_PUBLIC_APP_CODESPACES_URL
 
+# App-owned feedback inbox (public-append container). Inlined at build time.
+ARG NEXT_PUBLIC_FEEDBACK_INBOX
+ENV NEXT_PUBLIC_FEEDBACK_INBOX=$NEXT_PUBLIC_FEEDBACK_INBOX
+
 # `next-env.d.ts` is gitignored (Next regenerates it on every build /
 # dev start), so it isn't in the build context from a CI `actions/checkout`.
 # `next build` auto-creates it during type-checking, so no separate step.
