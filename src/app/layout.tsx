@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { PageTransition } from "@/components/page-transition";
 import { AuthCtaServer } from "@/components/auth-cta-server";
 import { MainNav } from "@/components/main-nav";
+import { FeedbackLauncher } from "@/components/feedback-launcher";
 import { readSession } from "@/lib/auth/session";
 import { MindAppLauncher } from "@mind-studio/core/launcher";
 import { DEFAULT_APPS } from "@mind-studio/core/apps";
@@ -49,6 +50,7 @@ export default function RootLayout({
             <PageTransition>{children}</PageTransition>
           </main>
           <Colophon />
+          <FeedbackLauncher />
         </ThemeShell>
       </body>
     </html>
