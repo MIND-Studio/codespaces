@@ -73,3 +73,11 @@ The five canonical triage roles, used verbatim. See `docs/agents/triage-labels.m
 ### Domain docs
 
 Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Commits & releases
+
+Use [Conventional Commits](https://www.conventionalcommits.org) on `main`
+(`fix:` → patch, `feat:` → minor, `feat!:` / `BREAKING CHANGE:` → major). Releases,
+tags, and `CHANGELOG.md` are automated by **release-please** — never tag manually
+or hand-edit `CHANGELOG.md`. To cut a release, merge the open
+"chore(main): release X.Y.Z" PR. See the README's Releases section.
