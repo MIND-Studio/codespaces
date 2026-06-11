@@ -85,7 +85,7 @@ function EmptyState() {
       </p>
       <p className="mt-3 text-[color:var(--ink-soft)]">
         The publisher is signing writes with a shared dev account
-        (<code className="kbd">alice@mind-codespaces.local</code>). Authorize
+        (<code className="kbd">alice@mind.local</code>). Authorize
         a real pod to swap in a delegated refresh token — repos owned by
         that WebID will publish under your own identity.
       </p>

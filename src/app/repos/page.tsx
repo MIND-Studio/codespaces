@@ -16,7 +16,10 @@ export default async function ReposPage() {
   const rows: RepoRowData[] = repos.map((repo) => {
     const pages = getPagesConfig(repo.id);
     const latestRun = getLatestRunForRepo(repo.id);
-    const pagesLive = !!(pages?.enabled && pages.targetContainer);
+    const pagesEnabled = !!(pages?.enabled && pages.targetContainer);
+    // "live" requires an actual publish — an enabled-but-never-published
+    // target is a 404 on the pod, not a live site.
+    const pagesLive = pagesEnabled && pages!.lastPublishedAt != null;
     const liveUrl = pagesLive
       ? `${pages!.targetContainer}${pages!.targetContainer.endsWith("/") ? "" : "/"}index.html`
       : null;
@@ -34,6 +37,7 @@ export default async function ReposPage() {
       visibility: repo.visibility,
       defaultBranch: repo.defaultBranch,
       createdAt: repo.createdAt,
+      pagesEnabled,
       pagesLive,
       liveUrl,
       livePath: liveUrl ? pathOnly(liveUrl) : null,

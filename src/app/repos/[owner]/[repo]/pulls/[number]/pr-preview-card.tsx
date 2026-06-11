@@ -42,6 +42,10 @@ export function PrPreviewCard({
     log: "",
   });
   const logRef = useRef<HTMLPreElement | null>(null);
+  // Gate the poll until a just-fired POST has landed server-side; before
+  // that, a GET would read the PREVIOUS preview row (ready/failed/null) and
+  // clobber the optimistic "building" state, killing the poll loop.
+  const postLanded = useRef(true);
   const base = `/api/repos/${owner}/${repo}/pulls/${number}/preview`;
 
   // Poll while building.
@@ -50,10 +54,14 @@ export function PrPreviewCard({
     let cancelled = false;
     async function tick() {
       try {
+        if (!postLanded.current) return;
         const res = await fetch(base, { cache: "no-store" });
         if (!res.ok || cancelled) return;
         const body = (await res.json()) as PreviewState;
         if (cancelled) return;
+        // A null status means "no build recorded yet" — keep polling
+        // instead of clobbering back to "not built".
+        if (body.status === null) return;
         setState((prev) => ({
           status: body.status,
           url: body.url,
@@ -77,11 +85,25 @@ export function PrPreviewCard({
   }, [state.log]);
 
   async function build() {
+    postLanded.current = false;
     setState((prev) => ({ ...prev, status: "building", error: null }));
     try {
-      await authedFetch(base, { method: "POST" });
-    } catch {
-      /* the poll loop will surface any failure */
+      const res = await authedFetch(base, { method: "POST" });
+      postLanded.current = true;
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setState((prev) => ({
+          ...prev,
+          status: "failed",
+          error: body.error ?? `preview request failed (HTTP ${res.status})`,
+        }));
+      }
+    } catch (e) {
+      setState((prev) => ({
+        ...prev,
+        status: "failed",
+        error: e instanceof Error ? e.message : String(e),
+      }));
     }
   }
 

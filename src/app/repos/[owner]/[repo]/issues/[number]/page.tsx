@@ -36,6 +36,12 @@ export default async function IssueDetailPage({ params }: PageProps) {
     : undefined;
   const createdTs = issue.created ? Date.parse(issue.created) : NaN;
   const modifiedTs = issue.modified ? Date.parse(issue.modified) : NaN;
+  // The fold emits day-resolution xsd:date values; a relative time off a
+  // bare date reads as "21h ago" for an issue minted a minute ago.
+  const dateOnly = (v: string | undefined) =>
+    v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+  const createdDate = dateOnly(issue.created);
+  const modifiedDate = dateOnly(issue.modified);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-10 sm:py-12">
@@ -72,12 +78,16 @@ export default async function IssueDetailPage({ params }: PageProps) {
             </Link>
           </span>
         ) : null}
-        {Number.isFinite(createdTs) ? (
+        {createdDate ? (
+          <span>created {createdDate}</span>
+        ) : Number.isFinite(createdTs) ? (
           <span>
             created <RelativeTime ts={createdTs} />
           </span>
         ) : null}
-        {Number.isFinite(modifiedTs) ? (
+        {modifiedDate ? (
+          <span>updated {modifiedDate}</span>
+        ) : Number.isFinite(modifiedTs) ? (
           <span>
             updated <RelativeTime ts={modifiedTs} />
           </span>

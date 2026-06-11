@@ -14,7 +14,9 @@ const RDFS = "http://www.w3.org/2000/01/rdf-schema#";
 const FLOW = "http://www.w3.org/2005/01/wf/flow#";
 const DCT = "http://purl.org/dc/terms/";
 const DC = "http://purl.org/dc/elements/1.1/";
-const MC = "https://mindpods.org/ns/codespaces-tracker#";
+// Fallback only — the real mc: namespace is per-tracker (tracker.config.md
+// `namespace:`) and is sniffed from the parsed quads, see detectMcNamespace.
+const MC_FALLBACK = "https://mindpods.org/ns/codespaces-tracker#";
 
 const RDF_TYPE = RDF + "type";
 const RDFS_SUBCLASSOF = RDFS + "subClassOf";
@@ -32,14 +34,58 @@ const DCT_CREATED = DCT + "created";
 const DCT_MODIFIED = DCT + "modified";
 const DCT_DESCRIPTION = DCT + "description";
 const DC_TITLE = DC + "title";
-const MC_EPIC_CLASS = MC + "Epic";
-const MC_NUMBER = MC + "number";
-const MC_EPIC = MC + "epic";
-const MC_AFK = MC + "afk";
-const MC_BLOCKS = MC + "blocks";
-const MC_BLOCKED_BY = MC + "blockedBy";
-const MC_STATUS = MC + "status";
-const MC_ISSUE_COUNT = MC + "issueCount";
+
+/** Per-tracker mc:* term IRIs, resolved against the detected namespace. */
+type McVocab = {
+  epicClass: string;
+  number: string;
+  epic: string;
+  afk: string;
+  blocks: string;
+  blockedBy: string;
+  status: string;
+  issueCount: string;
+};
+
+function mcVocab(ns: string): McVocab {
+  return {
+    epicClass: ns + "Epic",
+    number: ns + "number",
+    epic: ns + "epic",
+    afk: ns + "afk",
+    blocks: ns + "blocks",
+    blockedBy: ns + "blockedBy",
+    status: ns + "status",
+    issueCount: ns + "issueCount",
+  };
+}
+
+const MC_LOCAL_NAMES = new Set([
+  "number",
+  "epic",
+  "afk",
+  "blocks",
+  "blockedBy",
+  "status",
+  "issueCount",
+]);
+
+/**
+ * The generator emits mc:* terms in the tracker's own namespace (frontmatter
+ * `namespace:`), so a fixed constant only ever matched the codespaces repo
+ * itself — every other tracker lost number/epic/afk/blocks on parse. Sniff
+ * the namespace from the predicates instead.
+ */
+function detectMcNamespace(idx: Index): string {
+  for (const p of idx.predicates()) {
+    const hash = p.lastIndexOf("#");
+    if (hash < 0) continue;
+    const ns = p.slice(0, hash + 1);
+    if (ns === RDF || ns === RDFS || ns === FLOW) continue;
+    if (MC_LOCAL_NAMES.has(p.slice(hash + 1))) return ns;
+  }
+  return MC_FALLBACK;
+}
 
 /**
  * A flat quad index keyed by subject IRI → predicate IRI → object terms, with
@@ -51,6 +97,7 @@ const MC_ISSUE_COUNT = MC + "issueCount";
  */
 class Index {
   private bysubj = new Map<string, Map<string, Term[]>>();
+  private predIris = new Set<string>();
 
   add(quads: Quad[]): void {
     for (const q of quads) {
@@ -60,6 +107,7 @@ class Index {
         preds = new Map();
         this.bysubj.set(s, preds);
       }
+      this.predIris.add(q.predicate.value);
       const objs = preds.get(q.predicate.value);
       if (objs) objs.push(q.object);
       else preds.set(q.predicate.value, [q.object]);
@@ -68,6 +116,10 @@ class Index {
 
   subjects(): string[] {
     return [...this.bysubj.keys()];
+  }
+
+  predicates(): string[] {
+    return [...this.predIris];
   }
 
   private objs(subj: string, pred: string): Term[] {
@@ -154,8 +206,9 @@ export function parseTrackerTrio(
   const stateById = new Map(states.map((s) => [s.classIri, s]));
   const catById = new Map(categories.map((c) => [c.classIri, c]));
 
-  const epics = parseEpics(idx);
-  const issues = parseIssues(idx, stateIris, catIris, stateById, catById);
+  const mc = mcVocab(detectMcNamespace(idx));
+  const epics = parseEpics(idx, mc);
+  const issues = parseIssues(idx, mc, stateIris, catIris, stateById, catById);
 
   return {
     title: (trackerIri && idx.strAny(trackerIri, DCT_TITLE, RDFS_LABEL)) || `${owner}/${name}`,
@@ -204,17 +257,17 @@ function parseCategories(idx: Index, categoryClassIri?: string): IssueCategory[]
     }));
 }
 
-function parseEpics(idx: Index): TrackerEpic[] {
+function parseEpics(idx: Index, mc: McVocab): TrackerEpic[] {
   return idx
     .subjects()
-    .filter((s) => idx.hasType(s, MC_EPIC_CLASS))
+    .filter((s) => idx.hasType(s, mc.epicClass))
     .map((s): TrackerEpic => ({
       slug: localName(s),
       iri: s,
-      number: idx.int(s, MC_NUMBER),
+      number: idx.int(s, mc.number),
       title: idx.strAny(s, DCT_TITLE, RDFS_LABEL) ?? localName(s),
-      status: idx.str(s, MC_STATUS),
-      issueCount: idx.int(s, MC_ISSUE_COUNT),
+      status: idx.str(s, mc.status),
+      issueCount: idx.int(s, mc.issueCount),
       description: idx.str(s, DCT_DESCRIPTION),
       created: idx.str(s, DCT_CREATED),
     }))
@@ -223,6 +276,7 @@ function parseEpics(idx: Index): TrackerEpic[] {
 
 function parseIssues(
   idx: Index,
+  mc: McVocab,
   stateIris: Set<string>,
   catIris: Set<string>,
   stateById: Map<string, IssueState>,
@@ -243,11 +297,11 @@ function parseIssues(
       const catIri = types.find((t) => catIris.has(t));
       const state = stateIri ? stateById.get(stateIri) : undefined;
       const category = catIri ? catById.get(catIri) : undefined;
-      const epicIri = idx.iri(s, MC_EPIC);
+      const epicIri = idx.iri(s, mc.epic);
       return {
         id: localName(s),
         iri: s,
-        number: idx.int(s, MC_NUMBER),
+        number: idx.int(s, mc.number),
         title: idx.strAny(s, DC_TITLE, DCT_TITLE) ?? localName(s),
         stateId: state?.id,
         stateLabel: state?.label,
@@ -258,9 +312,9 @@ function parseIssues(
         created: idx.str(s, DCT_CREATED),
         modified: idx.str(s, DCT_MODIFIED),
         assignee: idx.iri(s, WF_ASSIGNEE),
-        afk: idx.bool(s, MC_AFK),
-        blocks: idx.iris(s, MC_BLOCKS).map(localName),
-        blockedBy: idx.iris(s, MC_BLOCKED_BY).map(localName),
+        afk: idx.bool(s, mc.afk),
+        blocks: idx.iris(s, mc.blocks).map(localName),
+        blockedBy: idx.iris(s, mc.blockedBy).map(localName),
         description: idx.str(s, FLOW_DESCRIPTION),
       };
     })

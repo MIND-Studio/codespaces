@@ -125,7 +125,7 @@ function parseRequiredSecret(name: string, raw: string | undefined, byteLen: num
 }
 
 const SEEDED_DEV_PASSWORD = "dev-only-do-not-use-in-prod";
-const SEEDED_DEV_EMAIL = "alice@mind-codespaces.local";
+const SEEDED_DEV_EMAIL = "alice@mind.local";
 
 let cached: BridgeEnv | null = null;
 

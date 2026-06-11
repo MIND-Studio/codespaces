@@ -17,11 +17,19 @@ type Props = {
   repo: string;
   id: string;
   categories: { id: string; label: string }[];
+  /** False when the repo has no .mind tracker — accept would always 409. */
+  canAccept?: boolean;
 };
 
 const PRIORITIES = ["urgent", "high", "normal", "low"];
 
-export function ProposalActions({ owner, repo, id, categories }: Props) {
+export function ProposalActions({
+  owner,
+  repo,
+  id,
+  categories,
+  canAccept = true,
+}: Props) {
   const router = useRouter();
   const [type, setType] = useState(categories[0]?.id ?? "feature");
   const [priority, setPriority] = useState("normal");
@@ -107,7 +115,12 @@ export function ProposalActions({ owner, repo, id, categories }: Props) {
           </SelectContent>
         </Select>
       </label>
-      <Button type="button" onClick={accept} disabled={busy !== null}>
+      <Button
+        type="button"
+        onClick={accept}
+        disabled={busy !== null || !canAccept}
+        title={canAccept ? undefined : "Requires a .mind tracker in the repo"}
+      >
         {busy === "accept" ? "Accepting…" : "Accept → todo"}
       </Button>
       <Button

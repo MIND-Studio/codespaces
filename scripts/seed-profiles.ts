@@ -23,7 +23,7 @@ type Profile = {
 const PROFILES: Profile[] = [
   {
     owner: "alice",
-    email: "alice@mind-codespaces.local",
+    email: "alice@mind.local",
     password: "dev-only-do-not-use-in-prod",
     name: "Alice Liddell",
     bio: "Hobby gardener and pod-fluent web tinkerer. Hosts a handful of static sites from her own pod — notes, a bakery menu, the explainer you're reading.",
@@ -32,7 +32,7 @@ const PROFILES: Profile[] = [
   },
   {
     owner: "mind",
-    email: "mind@mind-codespaces.local",
+    email: "mind@mind.local",
     password: "dev-only-do-not-use-in-prod",
     name: "Mind Project",
     bio: "Reference identity for the Mind prototypes. Owns the compass demo repo and serves as the second WebID in seeded foaf:knows links.",

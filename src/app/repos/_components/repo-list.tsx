@@ -17,6 +17,7 @@ export type RepoRowData = {
   visibility: string;
   defaultBranch: string;
   createdAt: number;
+  pagesEnabled: boolean;
   pagesLive: boolean;
   liveUrl: string | null;
   livePath: string | null;
@@ -281,7 +282,7 @@ function RepoCard({
             className="text-[11px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
-            pages off
+            {row.pagesEnabled ? "pages on · not published" : "pages off"}
           </span>
         )}
       </div>

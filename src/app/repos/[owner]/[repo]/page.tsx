@@ -39,8 +39,10 @@ export default async function RepoDetailPage({ params }: PageProps) {
   const tokens = listPushTokens(repo.id);
   const bridgeBase = process.env.BRIDGE_PUBLIC_URL ?? "http://localhost:3010";
   const cloneUrl = `${bridgeBase}/api/git/${repo.owner}/${repo.name}.git`;
+  // Only link out once a publish actually landed — an enabled-but-unpublished
+  // target is a 404 on the pod.
   const publishedUrl =
-    pages?.enabled && pages.targetContainer
+    pages?.enabled && pages.targetContainer && pages.lastPublishedAt
       ? `${pages.targetContainer}${pages.targetContainer.endsWith("/") ? "" : "/"}index.html`
       : null;
 
@@ -194,7 +196,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
                   className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]"
                   style={{ fontFamily: "var(--font-mono-src)" }}
                 >
-                  off
+                  {pages?.enabled && pages.targetContainer
+                    ? "not published"
+                    : "off"}
                 </span>
               )
             }
@@ -434,6 +438,13 @@ function renderPagesStatus(
   if (!pages?.enabled || !pages.targetContainer) {
     return (
       <span className="text-[color:var(--ink-faint)]">pages off</span>
+    );
+  }
+  if (!publishedUrl) {
+    return (
+      <span className="text-[color:var(--ink-faint)]">
+        pages on · not published
+      </span>
     );
   }
   return (

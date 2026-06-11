@@ -166,16 +166,20 @@ export default async function PullDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="mt-6">
-        <PrPreviewCard
-          owner={owner}
-          repo={name}
-          number={pull.number}
-          initialStatus={pull.previewStatus}
-          initialUrl={pull.previewUrl}
-          initialError={pull.previewError}
-        />
-      </div>
+      {/* Merge/close tears the preview down, so the card (and its Build
+          button) only makes sense while the PR is open. */}
+      {pull.status === "open" ? (
+        <div className="mt-6">
+          <PrPreviewCard
+            owner={owner}
+            repo={name}
+            number={pull.number}
+            initialStatus={pull.previewStatus}
+            initialUrl={pull.previewUrl}
+            initialError={pull.previewError}
+          />
+        </div>
+      ) : null}
 
       {pull.status === "open" ? (
         <div className="mt-6">

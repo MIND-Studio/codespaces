@@ -41,7 +41,11 @@ describe("parseTrackerTrio", () => {
     const pod = t.epics[0];
     expect(pod.number).toBe(1);
     expect(pod.status).toBe("active");
-    expect(pod.issueCount).toBe(3);
+    // Board-stable: the declared mc:issueCount must match the actual epic
+    // membership join, not a count frozen at authoring time.
+    const podIssues = t.issues.filter((i) => i.epicSlug === pod.slug);
+    expect(pod.issueCount).toBe(podIssues.length);
+    expect(pod.issueCount).toBeGreaterThan(0);
   });
 
   it("joins each issue's state/category/epic across the three docs", () => {

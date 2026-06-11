@@ -83,8 +83,10 @@ export default async function LandingPage() {
     );
     if (!repo) return [];
     const pages = getPagesConfig(repo.id);
+    // Only link a demo as "live" once it actually published — otherwise the
+    // link is a 404 on the pod.
     const live =
-      pages?.enabled && pages.targetContainer
+      pages?.enabled && pages.targetContainer && pages.lastPublishedAt
         ? `${pages.targetContainer}${pages.targetContainer.endsWith("/") ? "" : "/"}index.html`
         : null;
     return [{ demo, live }];
@@ -100,37 +102,41 @@ export default async function LandingPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-10 sm:py-16">
-      <p className="section-mark">Prototype · v0</p>
-      <h1
-        className="display mt-4 text-4xl sm:text-5xl md:text-6xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        Your <em>pod</em> is your platform.
-      </h1>
-      <p
-        className="mt-4 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
-        Your code · <span style={{ color: "var(--accent)" }}>your context</span>{" "}
-        · your pod.
-      </p>
-      <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
-        Mind Codespaces is an AI-native Git platform built around your own
-        Solid Pod. Push code, file issues, let an agent draft pull requests —
-        and the artifacts, history, and AI memory stay under <em>your</em>{" "}
-        WebID. The bridge translates protocols; it doesn&apos;t own your
-        project.
-      </p>
+      <div className="draft-corners -mx-3 px-3 py-6 sm:-mx-6 sm:px-6 sm:py-8">
+        <p className="section-mark">Prototype · v0</p>
+        <h1
+          className="display mt-4 text-4xl sm:text-6xl md:text-7xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Your <em style={{ color: "var(--accent)" }}>pod</em> is your
+          platform.
+        </h1>
+        <p
+          className="mt-5 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
+          Your code ·{" "}
+          <span style={{ color: "var(--accent)" }}>your context</span> · your
+          pod.
+        </p>
+        <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
+          Mind Codespaces is an AI-native Git platform built around your own
+          Solid Pod. Push code, file issues, let an agent draft pull requests —
+          and the artifacts, history, and AI memory stay under <em>your</em>{" "}
+          WebID. The bridge translates protocols; it doesn&apos;t own your
+          project.
+        </p>
 
-      <HeroCtas
-        signedIn={signedIn}
-        ownerSlug={ownerSlug}
-        myLatestRepo={
-          myLatestRepo
-            ? { owner: myLatestRepo.owner, name: myLatestRepo.name }
-            : null
-        }
-      />
+        <HeroCtas
+          signedIn={signedIn}
+          ownerSlug={ownerSlug}
+          myLatestRepo={
+            myLatestRepo
+              ? { owner: myLatestRepo.owner, name: myLatestRepo.name }
+              : null
+          }
+        />
+      </div>
 
       <hr className="hairline my-12" />
 

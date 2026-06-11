@@ -45,8 +45,10 @@ export async function RepoTabs({
   ).size;
 
   const pages = getPagesConfig(repo.id);
+  // "Live site" only once a publish actually landed — enabled-but-unpublished
+  // pages would link to a 404 on the pod.
   const publishedUrl =
-    pages && pages.enabled && pages.targetContainer
+    pages && pages.enabled && pages.targetContainer && pages.lastPublishedAt
       ? pages.targetContainer.replace(/\/?$/, "/") + "index.html"
       : null;
 

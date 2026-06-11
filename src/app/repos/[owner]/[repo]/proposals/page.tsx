@@ -28,6 +28,9 @@ export default async function ProposalsPage({ params }: PageProps) {
   if (!isOwner) notFound();
 
   const tracker = await readGitTracker(repoPath(repo.owner, repo.name), owner, name);
+  // Accept mints a .mind issue, so it can only ever succeed once the repo has
+  // a tracker scaffold on the default branch — surface that before the click.
+  const hasTracker = tracker != null;
   const categories = (tracker?.categories.map((c) => c.label) ?? DEFAULT_CATEGORIES).map(
     (label) => ({ id: label, label }),
   );
@@ -63,6 +66,16 @@ export default async function ProposalsPage({ params }: PageProps) {
       </p>
 
       <RepoTabs owner={owner} name={name} active="proposals" />
+
+      {!hasTracker ? (
+        <section className="card mt-6 text-sm text-[color:var(--ink-soft)]">
+          No <code className="kbd">.mind</code> tracker in this repo yet —
+          proposals can be reviewed and dismissed, but{" "}
+          <strong>Accept</strong> needs{" "}
+          <code className="kbd">.mind/issues/tracker.config.md</code> on the
+          default branch.
+        </section>
+      ) : null}
 
       {podError ? (
         <section className="card mt-6 text-sm" style={{ color: "var(--status-bad)" }}>
@@ -120,6 +133,7 @@ export default async function ProposalsPage({ params }: PageProps) {
                 repo={name}
                 id={p.id}
                 categories={categories}
+                canAccept={hasTracker}
               />
             </li>
           ))}

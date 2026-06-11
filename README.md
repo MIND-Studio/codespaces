@@ -27,8 +27,8 @@ to the Docker build as the `node_auth_token` BuildKit secret (see `release.yml`)
 ## Dev setup
 
 ```bash
-# 1. Start a local Community Solid Server (two seeded users, see below)
-docker compose up -d
+# 1. Start the shared Mind Community Solid Server on :3011 (see ../SOLID-SERVER.md)
+(cd .. && docker compose up -d)
 
 # 2. Install deps and start the bridge on :3010
 npm install
@@ -335,20 +335,21 @@ curl -fsS -X POST http://localhost:3010/api/repos/alice/hello/issues/propose \
 
 | Service | Port |
 |---|---|
-| CommunitySolidServer (single instance) | 3011 |
+| shared Mind CommunitySolidServer | 3011 |
 | Bridge / Next.js | 3010 |
 
-`codespaces` deliberately uses `:3011` so it can run alongside
-`mind-market-v0` (which uses `:3001` and `:3002` for its CSS instances).
+The pod host is the **shared Mind CSS** on `:3011` (`docker compose up` at the
+workspace root — see [`../SOLID-SERVER.md`](../SOLID-SERVER.md)), no longer a
+per-app instance.
 
 ## Demo users
 
-Two accounts seeded into the local CSS instance (`infra/css/seed.json`):
+Seeded into the shared CSS (workspace-root `infra/css/seed.json`):
 
 | Email | Password | Pod | WebID |
 |---|---|---|---|
-| `alice@mind-codespaces.local` | `dev-only-do-not-use-in-prod` | `http://localhost:3011/alice/` | `http://localhost:3011/alice/profile/card#me` |
-| `mind@mind-codespaces.local`  | `dev-only-do-not-use-in-prod` | `http://localhost:3011/mind/`  | `http://localhost:3011/mind/profile/card#me` |
+| `alice@mind.local` | `dev-only-do-not-use-in-prod` | `http://localhost:3011/alice/` | `http://localhost:3011/alice/profile/card#me` |
+| `mind@mind.local`  | `dev-only-do-not-use-in-prod` | `http://localhost:3011/mind/`  | `http://localhost:3011/mind/profile/card#me` |
 
 `mind` exists so demos can show an "org" owner alongside a personal one.
 **Never reuse these credentials anywhere non-local.**

@@ -285,6 +285,12 @@ function IssueRow({
   const isBlocked = issue.stateId === "Blocked" || issue.blockedBy.length > 0;
   const excerpt = makeExcerpt(issue.description ?? "");
   const modifiedTs = issue.modified ? Date.parse(issue.modified) : NaN;
+  // The fold emits day-resolution xsd:date values; rendering those as a
+  // relative time reads as "21h ago" for an issue minted a minute ago.
+  const modifiedDateOnly =
+    issue.modified && /^\d{4}-\d{2}-\d{2}$/.test(issue.modified)
+      ? issue.modified
+      : null;
   return (
     <Link
       href={`/repos/${owner}/${repo}/issues/${issue.number}`}
@@ -315,7 +321,9 @@ function IssueRow({
             className="flex flex-col gap-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
-            {Number.isFinite(modifiedTs) ? (
+            {modifiedDateOnly ? (
+              <span>updated {modifiedDateOnly}</span>
+            ) : Number.isFinite(modifiedTs) ? (
               <span>
                 updated <RelativeTime ts={modifiedTs} />
               </span>

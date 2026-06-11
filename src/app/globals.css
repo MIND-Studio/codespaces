@@ -61,6 +61,20 @@
   --font-body: var(--mind-font-sans);
 }
 
+/* MindThemeProvider injects the ui package's theme blocks as a runtime
+   <style> in <body>, where `[data-mind-theme="mind"]` (and its `.dark`
+   variant) re-declare shadcn's NEUTRAL --accent after the :root alias
+   above — so at runtime --accent was gray-100/gray-800 in every mode and
+   every var(--accent) text/border/stamp (visibility chips, build badges,
+   link hover, the "+ new repo" button) rendered near-invisible on the
+   matching paper. Source order can't win against an injected body style;
+   the `:root[…]` prefixes out-specify it instead. */
+:root[data-mind-theme],
+:root.dark,
+:root[data-mind-theme].dark {
+  --accent: var(--primary);
+}
+
 /* Expose the bridge's semantic names as Tailwind colour/font utilities
    (`bg-paper`, `text-ink-soft`, `border-ink-trace`, `text-accent`, …). They
    now resolve to the Mind tokens above. */
@@ -105,7 +119,13 @@ footer {
   z-index: 1;
 }
 
+/* Sticky glass masthead: nav stays reachable on long pages (repo detail,
+   how-it-works). Declared here, not as a `sticky` utility — these unlayered
+   rules out-cascade Tailwind's layered utilities, so the utility would lose
+   to the `position: relative` baseline above anyway. */
 header {
+  position: sticky;
+  top: 0;
   z-index: 50;
 }
 
@@ -117,6 +137,113 @@ header {
   select {
     font-size: 16px !important;
   }
+}
+
+/* ================================================================== */
+/*  Mind — "the drafting sheet". The bridge already speaks in title-   */
+/*  blocks, stamps and `// section` marks; this layer gives the sheet  */
+/*  itself a surface: faint graph-paper grid (fades down-viewport so   */
+/*  reading areas stay clean), a glass masthead the sheet scrolls      */
+/*  under, and registration-corner ticks for the hero (.draft-corners).*/
+/* ================================================================== */
+
+[data-mind-theme="mind"] body {
+  position: relative;
+}
+
+/* Scrolls WITH the document (absolute, not fixed — a stationary grid under
+   moving content reads as a glitch) and only dresses the sheet's first
+   ~1400px, fading out before dense content regions. */
+[data-mind-theme="mind"] body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1400px;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    24px 24px,
+    24px 24px,
+    120px 120px,
+    120px 120px;
+  mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+}
+
+/* The sticky masthead stays OPAQUE in the mind brand: the CSS pipeline
+   drops backdrop-filter (verified — neo's glass header has the same quirk),
+   and a translucent bar without blur lets every heading ghost through the
+   nav while scrolling. Solid card + hairline border is the drafting look. */
+
+/* Registration-corner ticks — the hero's title-block frame. Same bracket
+   language neo uses on cards, drawn in the brand accent. */
+.draft-corners {
+  position: relative;
+}
+
+.draft-corners::before,
+.draft-corners::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  pointer-events: none;
+}
+
+.draft-corners::before {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.draft-corners::after {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Quiet, token-matched scrollbars (neo keeps its own chunky CRT ones). */
+[data-mind-theme="mind"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-mind-theme="mind"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-mind-theme="mind"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 32%, transparent);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-mind-theme="mind"] ::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
 }
 
 /* ================================================================== */
@@ -410,6 +537,8 @@ header {
   font-weight: 600;
   letter-spacing: -0.018em;
   line-height: 1.05;
+  text-wrap: balance;
+  font-variant-numeric: tabular-nums;
 }
 
 .display em {
@@ -424,9 +553,24 @@ header {
   color: var(--ink-faint);
 }
 
+/* Hairlines open with a short accent segment — a drafting measure-mark.
+   Cheap, theme-aware (accent = brand colour in mind, phosphor in neo), and
+   it gives every section rule a left-anchored point of origin. */
 .hairline {
   border: 0;
   border-top: var(--hairline) solid var(--border);
+  position: relative;
+  overflow: visible;
+}
+
+.hairline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(-1 * var(--hairline));
+  width: 2.5rem;
+  border-top: var(--hairline) solid
+    color-mix(in srgb, var(--accent) 80%, transparent);
 }
 
 .card {
@@ -434,6 +578,39 @@ header {
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.25rem 1.5rem;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+/* Interactive cards (repo rows, identity rows, …) lift like a sheet being
+   picked off the desk: accent border, slight rise, soft shadow. */
+a.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px -14px
+    color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+a.card:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+a.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+  a.card:hover {
+    transform: none;
+  }
 }
 
 .kbd {
@@ -477,6 +654,16 @@ header {
   text-decoration-color: var(--accent);
 }
 
+/* Keyboard users get the same accent the mouse gets. Scoped to the bridge's
+   own link/tab idioms — ui-package Buttons carry their own ring. */
+.link:focus-visible,
+nav a:focus-visible,
+footer a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 80%, transparent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .stamp {
   display: inline-block;
   font-family: var(--mind-font-mono);
@@ -487,6 +674,26 @@ header {
   border: 1.5px solid var(--accent);
   padding: 0.35rem 0.6rem 0.3rem;
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* Status tones — set as data-tone all over the app (merged PRs, build
+   results, closed issues, private repos) but never styled until now. */
+.stamp[data-tone="ok"] {
+  color: var(--status-ok);
+  border-color: var(--status-ok);
+  background: color-mix(in srgb, var(--status-ok) 12%, transparent);
+}
+
+.stamp[data-tone="bad"] {
+  color: var(--status-bad);
+  border-color: var(--status-bad);
+  background: color-mix(in srgb, var(--status-bad) 12%, transparent);
+}
+
+.stamp[data-tone="closed"] {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+  background: color-mix(in srgb, var(--ink-soft) 10%, transparent);
 }
 
 /* ------------------------------------------------------------------ */

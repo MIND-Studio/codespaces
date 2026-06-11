@@ -1,6 +1,6 @@
 import "server-only";
 import { createWriteStream, type WriteStream } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { getRepoById, type PagesConfig, type Repo } from "@/lib/registry/repos";
@@ -84,7 +84,12 @@ export async function buildAndPublishPreview(pull: PullRequest): Promise<void> {
     )) ?? pull.sourceSha;
 
   // SHA-guard — don't rebuild an unchanged branch that's already live.
-  if (pull.previewStatus === "ready" && pull.previewSha === liveSha) return;
+  // The POST route optimistically marks "building" before this runs, so
+  // re-assert the ready row instead of leaving the PR stuck on it.
+  if (pull.previewStatus === "ready" && pull.previewSha === liveSha) {
+    updatePullPreview(pull.id, { status: "ready", error: null });
+    return;
+  }
 
   const logName = `pr-${pull.number}-preview.log`;
   const logPath = path.join(AGENT_LOGS_DIR, logName);
@@ -143,14 +148,23 @@ export async function buildAndPublishPreview(pull: PullRequest): Promise<void> {
       sourceDir: publishDir,
     });
 
-    const url = `${target}index.html`;
+    // Deep-link index.html only when the publish root actually has one —
+    // otherwise point at the container (the pod renders a browsable listing)
+    // instead of a guaranteed 404.
+    const hasIndex = await stat(path.join(publishDir, "index.html"))
+      .then((s) => s.isFile())
+      .catch(() => false);
+    const url = hasIndex ? `${target}index.html` : target;
     updatePullPreview(pull.id, {
       status: "ready",
       url,
       sha: liveSha,
       error: null,
     });
-    log(`[preview] ready: ${url} (uploaded ${result.uploaded})`);
+    log(
+      `[preview] ready: ${url} (uploaded ${result.uploaded})` +
+        (hasIndex ? "" : " — no index.html at publish root, linking container"),
+    );
   } catch (err) {
     const message =
       err instanceof OwnerFetchUnavailableError &&

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
 import { getRepo } from "@/lib/registry/repos";
-import { getPullRequest } from "@/lib/registry/pulls";
+import { getPullRequest, updatePullPreview } from "@/lib/registry/pulls";
 import { requireOwner, requireSession } from "@/lib/auth/session";
 import { buildAndPublishPreview } from "@/lib/pages/preview";
 
@@ -51,6 +51,11 @@ async function resolve(params: Params["params"], mutating: boolean) {
 export async function POST(_req: Request, { params }: Params) {
   const r = await resolve(params, true);
   if ("error" in r) return r.error;
+  // Mark "building" BEFORE the 202 goes out, so a poll that lands right
+  // after the POST never reads the previous ready/failed row and concludes
+  // the build is already done. buildAndPublishPreview's SHA-guard restores
+  // "ready" when the rebuild turns out to be a no-op.
+  updatePullPreview(r.pull.id, { status: "building", error: null });
   // Fire-and-forget: the build streams to the preview log and lands on the
   // PR's preview_* fields; the client polls GET for progress.
   void buildAndPublishPreview(r.pull).catch((e) =>
