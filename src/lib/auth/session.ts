@@ -53,6 +53,17 @@ function sign(payload: string, secret: Buffer): string {
   return b64urlEncode(createHmac("sha256", secret).update(payload).digest());
 }
 
+/** Constant-time string compare that doesn't leak length via early return. */
+function secretEquals(a: string, b: string): boolean {
+  const ab = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  // timingSafeEqual requires equal length; HMAC both sides to a fixed width so
+  // a length mismatch doesn't short-circuit (and isn't itself a timing leak).
+  const ah = createHmac("sha256", "len").update(ab).digest();
+  const bh = createHmac("sha256", "len").update(bb).digest();
+  return timingSafeEqual(ah, bh);
+}
+
 function isSecureRequest(): boolean {
   // Production cookies are always Secure. In dev, mark Secure only when
   // the request actually arrived over HTTPS (so localhost http stays
@@ -193,6 +204,24 @@ export type AuthOk = { webId: string };
 export async function requireSession(opts?: {
   skipCsrf?: boolean;
 }): Promise<{ ok: true; webId: string } | { ok: false; response: NextResponse }> {
+  // Trusted-service bypass (prod-safe). A server-to-server caller (the builder
+  // app) that presents the shared BRIDGE_SERVICE_SECRET may act on behalf of
+  // any WebID. CSRF is waived (no browser cookies in play). Enabled only when
+  // the operator sets BRIDGE_SERVICE_SECRET; the secret is compared in constant
+  // time. The on-behalf-of WebID is asserted by the trusted caller — the bridge
+  // does NOT re-verify it, so any holder of the secret is fully trusted.
+  {
+    const env = getEnv();
+    if (env.serviceSecret) {
+      const hdrs = await headers();
+      const presented = hdrs.get("x-mind-service-secret");
+      const onBehalfOf = hdrs.get("x-mind-on-behalf-of")?.trim();
+      if (presented && onBehalfOf && secretEquals(presented, env.serviceSecret)) {
+        return { ok: true, webId: onBehalfOf };
+      }
+    }
+  }
+
   // Dev-only bypass (P0-S2 still gates the seeded *credential* path
   // separately — this just lets dev tools impersonate any WebID).
   if (!getEnv().isProd) {

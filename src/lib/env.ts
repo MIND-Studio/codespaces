@@ -54,6 +54,9 @@ export type BridgeEnv = {
 
   // Operator-only admin bearer for /api/admin/* — null disables those routes.
   adminToken: string | null;
+  // Trusted-service secret for server-to-server callers (builder) — null
+  // disables the on-behalf-of auth path.
+  serviceSecret: string | null;
 };
 
 function looksLikeLoopback(url: string): boolean {
@@ -179,6 +182,10 @@ export function getEnv(): BridgeEnv {
   const mindRunner: BridgeEnv["mindRunner"] =
     runnerRaw === "docker" || runnerRaw === "native" ? runnerRaw : "auto";
   const adminToken = process.env.BRIDGE_ADMIN_TOKEN?.trim() || null;
+  // Optional trusted-service secret. When set, a server-to-server caller (the
+  // builder app) that presents X-Mind-Service-Secret + X-Mind-On-Behalf-Of is
+  // accepted as that WebID, in prod too (CSRF waived). Null disables the path.
+  const serviceSecret = process.env.BRIDGE_SERVICE_SECRET?.trim() || null;
 
   // Validation pass.
   const errors: string[] = [];
@@ -282,6 +289,7 @@ export function getEnv(): BridgeEnv {
     coderWorkroot,
     mindRunner,
     adminToken,
+    serviceSecret,
   };
   return cached;
 }
