@@ -206,12 +206,7 @@ const ENV_FALLBACK_DEFAULT_MODEL: Record<ProviderName, string> = {
 };
 
 /** Provider preference order for the env-fallback when none is pinned. */
-const ENV_FALLBACK_ORDER: ProviderName[] = [
-  "google",
-  "openrouter",
-  "anthropic",
-  "openai",
-];
+const ENV_FALLBACK_ORDER: ProviderName[] = ["google", "openrouter", "anthropic", "openai"];
 
 /** First non-empty container env var holding `provider`'s key, or null. */
 function envKeyForProvider(provider: ProviderName): string | null {
@@ -243,9 +238,7 @@ function resolveEnvFallback(): {
   for (const provider of order) {
     const apiKey = envKeyForProvider(provider);
     if (apiKey) {
-      const model =
-        process.env.MIND_AGENT_MODEL?.trim() ||
-        ENV_FALLBACK_DEFAULT_MODEL[provider];
+      const model = process.env.MIND_AGENT_MODEL?.trim() || ENV_FALLBACK_DEFAULT_MODEL[provider];
       return { provider, model, apiKey };
     }
   }

@@ -71,8 +71,7 @@ export async function publishPages(repoId: number): Promise<{
   if (!repo) throw new Error(`repo id=${repoId} not found`);
   const pages = getPagesConfig(repoId);
   if (!pages) throw new Error(`pages config for repo id=${repoId} not found`);
-  if (!pages.enabled)
-    throw new Error(`pages not enabled for repo id=${repoId}`);
+  if (!pages.enabled) throw new Error(`pages not enabled for repo id=${repoId}`);
   if (!pages.targetContainer)
     throw new Error(`pages.targetContainer is empty for repo id=${repoId}`);
 
@@ -126,8 +125,7 @@ export async function publishDirectory(input: {
   target: string;
 }> {
   const { repo, pages, sourceDir } = input;
-  if (!pages.enabled)
-    throw new Error(`pages not enabled for repo id=${repo.id}`);
+  if (!pages.enabled) throw new Error(`pages not enabled for repo id=${repo.id}`);
   if (!pages.targetContainer)
     throw new Error(`pages.targetContainer is empty for repo id=${repo.id}`);
 
@@ -149,8 +147,7 @@ export async function publishDirectory(input: {
       authed = await getOwnerFetch(repo.ownerWebId);
     } catch (e) {
       if (e instanceof OwnerFetchUnavailableError) {
-        const status =
-          e.reason === "needs-reauthorization" ? "needs-reauth" : "failed";
+        const status = e.reason === "needs-reauthorization" ? "needs-reauth" : "failed";
         markPagesFailed(repo.id, status, e.message);
         Metrics.publishFailed(repo.owner, repo.name, status);
       } else {
@@ -235,9 +232,7 @@ async function pruneStale(
   kept: Set<string>,
 ): Promise<number> {
   const childRefs = await listContainerChildren(fetcher, containerUrl);
-  const containerBase = containerUrl.endsWith("/")
-    ? containerUrl
-    : containerUrl + "/";
+  const containerBase = containerUrl.endsWith("/") ? containerUrl : containerUrl + "/";
   let pruned = 0;
   for (const ref of childRefs) {
     if (!ref || ref === "./" || ref === ".") continue;
@@ -318,13 +313,7 @@ function parseLdpContains(body: string): string[] {
     cursor = start + KEY.length;
     while (cursor < body.length) {
       const ch = body[cursor];
-      if (
-        ch === " " ||
-        ch === "\t" ||
-        ch === "\r" ||
-        ch === "\n" ||
-        ch === ","
-      ) {
+      if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n" || ch === ",") {
         cursor += 1;
         continue;
       }

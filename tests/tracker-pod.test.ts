@@ -97,7 +97,7 @@ describe("tracker → pod mirror (MC-160)", () => {
     expect(pod.store.has(`${CONTAINER}state.ttl`)).toBe(true);
 
     // Public-read ACL: owner R/W/Control, foaf:Agent Read.
-    const acl = pod.store.get(`${CONTAINER}.acl`)!;
+    const acl = pod.store.get(`${CONTAINER}.acl`);
     expect(acl).toContain("acl:Read, acl:Write, acl:Control");
     expect(acl).toContain("foaf:Agent");
 
@@ -112,7 +112,7 @@ describe("tracker → pod mirror (MC-160)", () => {
   it("the published tracker.ttl carries the flow:Tracker shape (mind-issues can render it)", async () => {
     const { publishTrackerToPod } = await import("@/lib/solid/tracker-pod");
     await publishTrackerToPod(repo, OUTPUTS);
-    const trackerDoc = pod.store.get(`${CONTAINER}tracker.ttl`)!;
+    const trackerDoc = pod.store.get(`${CONTAINER}tracker.ttl`);
     // C6 regression guard: the same URL must be a conformant flow:Tracker with a
     // flow:stateStore pointer — what mind-issues / the SolidOS issue-pane read.
     expect(trackerDoc).toContain("a flow:Tracker");
@@ -125,12 +125,12 @@ describe("tracker → pod mirror (MC-160)", () => {
 
     const tracker = await readPodTracker(repo, "alice", "site");
     expect(tracker).not.toBeNull();
-    expect(tracker!.title.length).toBeGreaterThan(0);
-    expect(tracker!.issues.length).toBeGreaterThan(0);
+    expect(tracker?.title.length).toBeGreaterThan(0);
+    expect(tracker?.issues.length).toBeGreaterThan(0);
     // Every issue carries a display number (the board groups + links by it).
-    expect(tracker!.issues.every((i) => i.number != null)).toBe(true);
+    expect(tracker?.issues.every((i) => i.number != null)).toBe(true);
     // At least one epic was parsed from epics.ttl.
-    expect(tracker!.epics.length).toBeGreaterThan(0);
+    expect(tracker?.epics.length).toBeGreaterThan(0);
   });
 
   it("returns null when the pod has no state.ttl (caller falls back to git)", async () => {

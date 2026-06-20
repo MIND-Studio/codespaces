@@ -164,10 +164,8 @@ export function getEnv(): BridgeEnv {
   const allowSeededFallback = process.env.ALLOW_SEEDED_FALLBACK === "1";
 
   const openrouterApiKey = process.env.OPENROUTER_API_KEY?.trim() || null;
-  const agentModel =
-    process.env.MIND_AGENT_MODEL?.trim() || "qwen/qwen3-coder:free";
-  const coderImage =
-    process.env.MIND_CODER_IMAGE?.trim() || "mind-codespaces/coder:latest";
+  const agentModel = process.env.MIND_AGENT_MODEL?.trim() || "qwen/qwen3-coder:free";
+  const coderImage = process.env.MIND_CODER_IMAGE?.trim() || "mind-codespaces/coder:latest";
   const coderTimeoutMs = Number(process.env.MIND_CODER_TIMEOUT ?? 600) * 1000;
   const coderWorkroot = process.env.MIND_CODER_WORKROOT ?? null;
   const runnerRaw = (process.env.MIND_RUNNER ?? "auto").toLowerCase();

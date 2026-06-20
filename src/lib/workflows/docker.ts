@@ -28,8 +28,7 @@ import { randomBytes } from "node:crypto";
 // binary on glibc — on musl, npm's optional-deps-with-lockfile bug skips
 // `lightningcss.linux-x64-musl.node` and the build dies. Override with
 // MIND_WORKFLOW_IMAGE if a project needs a different toolchain.
-const DEFAULT_IMAGE =
-  process.env.MIND_WORKFLOW_IMAGE?.trim() || "node:22-bookworm-slim";
+const DEFAULT_IMAGE = process.env.MIND_WORKFLOW_IMAGE?.trim() || "node:22-bookworm-slim";
 const DOCKER_PROBE_TIMEOUT_MS = 3000;
 
 // Network isolation for the workflow container (§3.4):
