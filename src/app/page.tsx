@@ -206,11 +206,7 @@ export default async function LandingPage() {
           How it works
         </Link>{" "}
         walks through what lives in your pod, what happens on push, and what
-        survives if the bridge disappears. The{" "}
-        <Link href="/docs/IDEA.md" className="link">
-          IDEA doc
-        </Link>{" "}
-        has the vision, architecture, and verdict.
+        survives if the bridge disappears.
       </p>
     </div>
   );

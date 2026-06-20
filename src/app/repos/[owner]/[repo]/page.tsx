@@ -137,7 +137,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
           )}
         </main>
 
-        <aside className="space-y-8 lg:border-l lg:border-[color:var(--ink-trace)] lg:pl-8">
+        <aside className="min-w-0 space-y-8 lg:border-l lg:border-[color:var(--ink-trace)] lg:pl-8">
           <SidebarSection title="Clone URL">
             <CloneUrlBlock url={cloneUrl} repoHref={`/repos/${repo.owner}/${repo.name}`} />
             <p className="mt-2 text-[11px] leading-relaxed text-[color:var(--ink-soft)]">

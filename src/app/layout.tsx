@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeShell } from "@/components/theme-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -27,6 +27,17 @@ const fontMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+// Headline display face. Codespaces overrides only --font-display (see
+// globals.css) with an expressive grotesk so the editorial "title-block"
+// headings — and the .display em italic emphasis — read as designed rather
+// than in the shared brand's system sans. Body text is unaffected.
+const fontDisplay = Familjen_Grotesk({
+  variable: "--font-display-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "Mind Codespaces — Solid Git Bridge",
   description:
@@ -39,7 +50,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={fontMono.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${fontMono.variable} ${fontDisplay.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>

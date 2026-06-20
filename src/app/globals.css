@@ -57,7 +57,11 @@
      app's many inline `style={{fontFamily:"var(--font-display)"}}` refs keep
      working. */
   --mind-font-mono: var(--font-mono-src, ui-monospace, SFMono-Regular, Menlo, monospace);
-  --font-display: var(--mind-font-sans);
+  /* Headlines ride an expressive grotesk (Familjen Grotesk, loaded in layout
+     as --font-display-grotesk) so the editorial title-block headings carry
+     real character — with the shared Mind sans as the fallback. Body stays on
+     --mind-font-sans below, so only display headings change. */
+  --font-display: var(--font-display-grotesk, var(--mind-font-sans));
   --font-body: var(--mind-font-sans);
 }
 
