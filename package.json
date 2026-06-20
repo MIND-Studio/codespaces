@@ -15,6 +15,7 @@
     "tracker:check": "tsx scripts/tracker-build.ts --check",
     "calendar:build": "tsx scripts/calendar-build.ts",
     "calendar:check": "tsx scripts/calendar-build.ts --check",
+    "pretest": "npm run tracker:build",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
