@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Button,
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger,
   useMindTheme,
 } from "@mind-studio/ui";
+import { useEffect, useState } from "react";
 import { useBrand } from "@/components/theme-shell";
 
 /**
@@ -50,10 +50,7 @@ export function ThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuLabel>Appearance</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={mode}
-          onValueChange={(v) => setMode(v)}
-        >
+        <DropdownMenuRadioGroup value={mode} onValueChange={(v) => setMode(v)}>
           <DropdownMenuRadioItem value="light" data-testid="mode-light">
             Light
           </DropdownMenuRadioItem>

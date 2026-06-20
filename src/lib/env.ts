@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 /**
@@ -40,8 +40,8 @@ export type BridgeEnv = {
   allowSeededFallback: boolean;
 
   // Secrets
-  sessionSecret: Buffer;        // HMAC-SHA256 key for the session cookie
-  hookSecret: string;           // shared secret in post-receive hook scripts
+  sessionSecret: Buffer; // HMAC-SHA256 key for the session cookie
+  hookSecret: string; // shared secret in post-receive hook scripts
   identityEncryptionKey: Buffer; // 32-byte AES-256-GCM key for refresh-token encryption
 
   // Agents / coder
@@ -60,9 +60,7 @@ export type BridgeEnv = {
 };
 
 function looksLikeLoopback(url: string): boolean {
-  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])(:|\/|$)/.test(
-    url,
-  );
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\])(:|\/|$)/.test(url);
 }
 
 function readSecretFile(path: string): Record<string, string> | null {
@@ -137,9 +135,7 @@ export function getEnv(): BridgeEnv {
 
   const nodeEnvRaw = process.env.NODE_ENV ?? "development";
   const nodeEnv: BridgeEnv["nodeEnv"] =
-    nodeEnvRaw === "production" || nodeEnvRaw === "test"
-      ? nodeEnvRaw
-      : "development";
+    nodeEnvRaw === "production" || nodeEnvRaw === "test" ? nodeEnvRaw : "development";
   const isProd = nodeEnv === "production";
 
   // Next.js evaluates server-side modules during `next build` (static
@@ -151,18 +147,14 @@ export function getEnv(): BridgeEnv {
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const enforceProd = isProd && !isBuildPhase;
 
-  const bridgePublicUrl =
-    process.env.BRIDGE_PUBLIC_URL ?? "http://localhost:3010";
-  const bridgeInternalUrl =
-    process.env.BRIDGE_INTERNAL_URL ?? "http://127.0.0.1:3010";
+  const bridgePublicUrl = process.env.BRIDGE_PUBLIC_URL ?? "http://localhost:3010";
+  const bridgeInternalUrl = process.env.BRIDGE_INTERNAL_URL ?? "http://127.0.0.1:3010";
   const podBaseUrl = process.env.POD_BASE_URL ?? "http://localhost:3011/";
   const postReceiveCallbackUrl =
     process.env.POST_RECEIVE_CALLBACK_URL ??
     `${bridgeInternalUrl.replace(/\/$/, "")}/api/git/internal/post-receive`;
 
-  const gitDataDir = resolve(
-    process.env.GIT_DATA_DIR ?? join(process.cwd(), ".git-data", "repos"),
-  );
+  const gitDataDir = resolve(process.env.GIT_DATA_DIR ?? join(process.cwd(), ".git-data", "repos"));
   const registryDataDir = resolve(
     process.env.REGISTRY_DATA_DIR ?? join(process.cwd(), ".registry-data"),
   );
@@ -172,10 +164,8 @@ export function getEnv(): BridgeEnv {
   const allowSeededFallback = process.env.ALLOW_SEEDED_FALLBACK === "1";
 
   const openrouterApiKey = process.env.OPENROUTER_API_KEY?.trim() || null;
-  const agentModel =
-    process.env.MIND_AGENT_MODEL?.trim() || "anthropic/claude-3.5-sonnet";
-  const coderImage =
-    process.env.MIND_CODER_IMAGE?.trim() || "mind-codespaces/coder:latest";
+  const agentModel = process.env.MIND_AGENT_MODEL?.trim() || "anthropic/claude-3.5-sonnet";
+  const coderImage = process.env.MIND_CODER_IMAGE?.trim() || "mind-codespaces/coder:latest";
   const coderTimeoutMs = Number(process.env.MIND_CODER_TIMEOUT ?? 600) * 1000;
   const coderWorkroot = process.env.MIND_CODER_WORKROOT ?? null;
   const runnerRaw = (process.env.MIND_RUNNER ?? "auto").toLowerCase();

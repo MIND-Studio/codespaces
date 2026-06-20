@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { requireMember } from "@/lib/auth/session";
 import { jsonResponse } from "@/lib/http/json";
-import { removeMember } from "@/lib/solid/members";
+import { getRepo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { removeMember } from "@/lib/solid/members";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

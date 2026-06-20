@@ -1,16 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import {
   Button,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 type Props = {
   owner: string;
@@ -23,13 +23,7 @@ type Props = {
 
 const PRIORITIES = ["urgent", "high", "normal", "low"];
 
-export function ProposalActions({
-  owner,
-  repo,
-  id,
-  categories,
-  canAccept = true,
-}: Props) {
+export function ProposalActions({ owner, repo, id, categories, canAccept = true }: Props) {
   const router = useRouter();
   const [type, setType] = useState(categories[0]?.id ?? "feature");
   const [priority, setPriority] = useState("normal");
@@ -40,10 +34,10 @@ export function ProposalActions({
     setError(null);
     setBusy("accept");
     try {
-      const res = await authedFetch(
-        `/api/repos/${owner}/${repo}/inbox/${id}/accept`,
-        { method: "POST", body: JSON.stringify({ type, priority }) },
-      );
+      const res = await authedFetch(`/api/repos/${owner}/${repo}/inbox/${id}/accept`, {
+        method: "POST",
+        body: JSON.stringify({ type, priority }),
+      });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? `request failed: ${res.status}`);
@@ -75,8 +69,7 @@ export function ProposalActions({
     }
   }
 
-  const labelClass =
-    "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
+  const labelClass = "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
   const mono = { fontFamily: "var(--font-mono-src)" };
 
   return (

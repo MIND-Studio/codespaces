@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { PreviewStatus } from "@/lib/registry/pulls";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import { Button } from "@mind-studio/ui";
+import { useEffect, useRef, useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
+import type { PreviewStatus } from "@/lib/registry/pulls";
 
 const POLL_INTERVAL_MS = 1500;
 const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g; // eslint-disable-line no-control-regex
@@ -107,18 +107,9 @@ export function PrPreviewCard({
     }
   }
 
-  const tone =
-    state.status === "ready"
-      ? "ok"
-      : state.status === "failed"
-        ? "bad"
-        : undefined;
+  const tone = state.status === "ready" ? "ok" : state.status === "failed" ? "bad" : undefined;
   const buildLabel =
-    state.status === "building"
-      ? "Building…"
-      : state.status
-        ? "Rebuild preview"
-        : "Build preview";
+    state.status === "building" ? "Building…" : state.status ? "Rebuild preview" : "Build preview";
 
   return (
     <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
@@ -138,12 +129,7 @@ export function PrPreviewCard({
 
       <div className="flex flex-col gap-3 bg-[color:var(--paper)] px-5 py-4">
         {state.status === "ready" && state.url ? (
-          <a
-            href={state.url}
-            target="_blank"
-            rel="noreferrer"
-            className="link text-sm"
-          >
+          <a href={state.url} target="_blank" rel="noreferrer" className="link text-sm">
             Open preview ↗
           </a>
         ) : null}

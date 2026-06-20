@@ -26,9 +26,7 @@ export function NavTabs({ tabs }: { tabs: Tab[] }) {
           <>
             <span>{tab.label}</span>
             {typeof tab.count === "number" ? (
-              <span
-                className="rounded-sm bg-[color:var(--paper-sunk)] px-1.5 py-0.5 text-[10px] tracking-[0.14em] text-[color:var(--ink-soft)] group-hover:text-[color:var(--ink)]"
-              >
+              <span className="rounded-sm bg-[color:var(--paper-sunk)] px-1.5 py-0.5 text-[10px] tracking-[0.14em] text-[color:var(--ink-soft)] group-hover:text-[color:var(--ink)]">
                 {tab.count}
               </span>
             ) : null}
@@ -41,13 +39,7 @@ export function NavTabs({ tabs }: { tabs: Tab[] }) {
         );
         if (tab.external) {
           return (
-            <a
-              key={tab.key}
-              href={tab.href}
-              target="_blank"
-              rel="noreferrer"
-              className={className}
-            >
+            <a key={tab.key} href={tab.href} target="_blank" rel="noreferrer" className={className}>
               {content}
             </a>
           );

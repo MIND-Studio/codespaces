@@ -38,8 +38,7 @@ const NPM_NAME_RE = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
 const SEGMENT_RE = /^[a-z0-9][a-z0-9._+-]*$/i;
 // OCI image names: lowercase path components separated by `/` (the Docker
 // "repository name" grammar), e.g. `myimage` or `team/service`.
-const OCI_NAME_RE =
-  /^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:\/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$/;
+const OCI_NAME_RE = /^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:\/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$/;
 // A content digest, e.g. `sha256:<hex>` — a valid OCI manifest reference.
 const DIGEST_RE = /^sha(?:256|512):[a-f0-9]{32,128}$/i;
 
@@ -49,15 +48,9 @@ export function validatePackageName(name: string, type: PackageType): void {
   else if (type === "oci") pattern = OCI_NAME_RE;
   else pattern = SEGMENT_RE;
   const ok =
-    typeof name === "string" &&
-    name.length <= 214 &&
-    !name.includes("..") &&
-    pattern.test(name);
+    typeof name === "string" && name.length <= 214 && !name.includes("..") && pattern.test(name);
   if (!ok) {
-    throw new PackageError(
-      `invalid ${type} package name: ${JSON.stringify(name)}`,
-      "INVALID_NAME",
-    );
+    throw new PackageError(`invalid ${type} package name: ${JSON.stringify(name)}`, "INVALID_NAME");
   }
 }
 
@@ -70,10 +63,7 @@ export function validateVersion(version: string): void {
     version.includes("..") ||
     !(SEGMENT_RE.test(version) || DIGEST_RE.test(version))
   ) {
-    throw new PackageError(
-      `invalid version: ${JSON.stringify(version)}`,
-      "INVALID_VERSION",
-    );
+    throw new PackageError(`invalid version: ${JSON.stringify(version)}`, "INVALID_VERSION");
   }
 }
 
@@ -142,11 +132,7 @@ export function getPackageVersion(
 }
 
 /** All versions of one package, newest first. */
-export function listVersions(
-  repoId: number,
-  type: PackageType,
-  name: string,
-): PackageRecord[] {
+export function listVersions(repoId: number, type: PackageType, name: string): PackageRecord[] {
   return (
     getDb()
       .prepare(
@@ -159,15 +145,10 @@ export function listVersions(
 }
 
 /** Every package version in a repo (optionally filtered by type), newest first. */
-export function listPackages(
-  repoId: number,
-  type?: PackageType,
-): PackageRecord[] {
+export function listPackages(repoId: number, type?: PackageType): PackageRecord[] {
   const rows = type
     ? getDb()
-        .prepare(
-          `SELECT * FROM packages WHERE repo_id = ? AND type = ? ORDER BY created_at DESC`,
-        )
+        .prepare(`SELECT * FROM packages WHERE repo_id = ? AND type = ? ORDER BY created_at DESC`)
         .all(repoId, type)
     : getDb()
         .prepare(`SELECT * FROM packages WHERE repo_id = ? ORDER BY created_at DESC`)

@@ -21,10 +21,7 @@ export function csrfHeader(): Record<string, string> {
  * the CSRF header for state-changing requests. Use for all POST/PATCH/
  * PUT/DELETE calls from client components.
  */
-export async function authedFetch(
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> {
+export async function authedFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
   if (method !== "GET" && method !== "HEAD") {

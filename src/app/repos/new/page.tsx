@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { readSession } from "@/lib/auth/session";
-import { getUserByWebId } from "@/lib/registry/users";
 import { listRepos } from "@/lib/registry/repos";
+import { getUserByWebId } from "@/lib/registry/users";
 import { NewRepoForm } from "./new-repo-form";
 
 export const dynamic = "force-dynamic";
@@ -48,9 +48,8 @@ export default async function NewRepoPage() {
     return (
       <Shell>
         <p className="text-[color:var(--ink-soft)]">
-          Your session is signed in but we don&apos;t have an owner slug or
-          pod root on file yet. Finish signing up to register your pod with
-          this bridge.
+          Your session is signed in but we don&apos;t have an owner slug or pod root on file yet.
+          Finish signing up to register your pod with this bridge.
         </p>
         <p className="mt-4">
           <Link href="/signup" className="link">
@@ -63,11 +62,7 @@ export default async function NewRepoPage() {
 
   return (
     <Shell>
-      <NewRepoForm
-        owner={owner}
-        ownerWebId={session.webId}
-        ownerPodRoot={podRoot}
-      />
+      <NewRepoForm owner={owner} ownerWebId={session.webId} ownerPodRoot={podRoot} />
     </Shell>
   );
 }
@@ -88,11 +83,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         New <em>repo</em>.
       </h1>
       <p className="mt-4 max-w-xl text-[color:var(--ink-soft)]">
-        Creates a bare Git repository on this bridge and writes a Turtle
-        description into your pod under{" "}
-        <code className="kbd">/codespaces/{"{name}"}/index.ttl</code>. You
-        can enable Mind Pages and mint push tokens from the repo&apos;s
-        detail page afterwards.
+        Creates a bare Git repository on this bridge and writes a Turtle description into your pod
+        under <code className="kbd">/codespaces/{"{name}"}/index.ttl</code>. You can enable Mind
+        Pages and mint push tokens from the repo&apos;s detail page afterwards.
       </p>
 
       <hr className="hairline my-8" />

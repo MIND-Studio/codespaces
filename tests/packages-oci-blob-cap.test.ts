@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Issue #175 — oversize OCI blob uploads must be rejected with a 413 *before*
 // the body is buffered into memory (the bridge buffers each blob in RAM, so an
@@ -41,10 +41,11 @@ describe("OCI blob upload size cap (#175)", () => {
 
     // PATCH (append a chunk) — oversize chunk → 413, no OOM.
     const uuid = startUpload();
-    const patchReq = new Request(
-      `http://localhost/v2/alice/blobcap/blobs/uploads/${uuid}`,
-      { method: "PATCH", headers: { authorization: auth }, body: over },
-    );
+    const patchReq = new Request(`http://localhost/v2/alice/blobcap/blobs/uploads/${uuid}`, {
+      method: "PATCH",
+      headers: { authorization: auth },
+      body: over,
+    });
     const patchRes = await PATCH(patchReq, {
       params: Promise.resolve({ path: ["alice", "blobcap", "blobs", "uploads", uuid] }),
     });
@@ -62,10 +63,11 @@ describe("OCI blob upload size cap (#175)", () => {
 
     // A small chunk under the cap is NOT rejected by the guard (202 accepted).
     const okUuid = startUpload();
-    const okReq = new Request(
-      `http://localhost/v2/alice/blobcap/blobs/uploads/${okUuid}`,
-      { method: "PATCH", headers: { authorization: auth }, body: under },
-    );
+    const okReq = new Request(`http://localhost/v2/alice/blobcap/blobs/uploads/${okUuid}`, {
+      method: "PATCH",
+      headers: { authorization: auth },
+      body: under,
+    });
     const okRes = await PATCH(okReq, {
       params: Promise.resolve({ path: ["alice", "blobcap", "blobs", "uploads", okUuid] }),
     });

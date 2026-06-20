@@ -1,26 +1,26 @@
 import "server-only";
-import { readFile, readdir, lstat } from "node:fs/promises";
-import { join, relative, resolve, sep, extname } from "node:path";
+import { lstat, readdir, readFile } from "node:fs/promises";
+import { extname, join, relative, resolve, sep } from "node:path";
+import { readBranchHead, repoPath } from "@/lib/git/backend";
+import { checkoutBranchToTempDir } from "@/lib/git/checkout";
+import { clip, log, scrubWebId } from "@/lib/log";
+import { Metrics } from "@/lib/metrics";
+import { mimeForPath } from "@/lib/pages/mime";
+import { withPublishLock } from "@/lib/pages/publish-lock";
 import {
-  getRepoById,
   getPagesConfig,
-  markPagesPublished,
+  getRepoById,
   markPagesFailed,
+  markPagesPublished,
   type PagesConfig,
   type Repo,
 } from "@/lib/registry/repos";
-import { repoPath, readBranchHead } from "@/lib/git/backend";
-import { checkoutBranchToTempDir } from "@/lib/git/checkout";
+import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 import {
   getOwnerFetch,
-  OwnerFetchUnavailableError,
   type OwnerFetch,
+  OwnerFetchUnavailableError,
 } from "@/lib/solid/fetch-for-owner";
-import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
-import { mimeForPath } from "@/lib/pages/mime";
-import { withPublishLock } from "@/lib/pages/publish-lock";
-import { log, scrubWebId, clip } from "@/lib/log";
-import { Metrics } from "@/lib/metrics";
 
 // Files / directories the publisher must NEVER upload to a pod.
 // Applied during the walk, before any PUT request is sent. Symlinks of
@@ -45,21 +45,8 @@ const FORBIDDEN_FILE_PREFIXES = [
   "credentials",
   "secrets",
 ];
-const FORBIDDEN_FILE_EXTENSIONS = new Set([
-  ".pem",
-  ".key",
-  ".p12",
-  ".pfx",
-  ".asc",
-  ".crt",
-]);
-const FORBIDDEN_FILE_NAMES = new Set([
-  ".DS_Store",
-  ".netrc",
-  ".npmrc",
-  ".pypirc",
-  ".dockercfg",
-]);
+const FORBIDDEN_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".asc", ".crt"]);
+const FORBIDDEN_FILE_NAMES = new Set([".DS_Store", ".netrc", ".npmrc", ".pypirc", ".dockercfg"]);
 
 // Hard cap to keep a 5 GB asset from OOM-ing the publisher (P0-R7).
 // Files above this are skipped with a warning; eventually we should
@@ -100,16 +87,9 @@ export async function publishPages(repoId: number): Promise<{
   // Snapshot HEAD before the checkout so we can record exactly which
   // commit reached the pod. Used by the reconciler (P0-R4) to detect
   // drift when the post-receive hook silently fails.
-  const headSha = await readBranchHead(
-    repo.owner,
-    repo.name,
-    pages.sourceBranch,
-  );
+  const headSha = await readBranchHead(repo.owner, repo.name, pages.sourceBranch);
 
-  const { tempDir, cleanup } = await checkoutBranchToTempDir(
-    bare,
-    pages.sourceBranch,
-  );
+  const { tempDir, cleanup } = await checkoutBranchToTempDir(bare, pages.sourceBranch);
 
   try {
     const sourceRoot = resolveSourceDir(tempDir, pages.sourcePath);
@@ -181,12 +161,7 @@ export async function publishDirectory(input: {
       mode: authed.mode,
     });
 
-    await ensureContainerPath(
-      authed.fetch,
-      repo.ownerPodRoot,
-      target,
-      repo.ownerWebId,
-    );
+    await ensureContainerPath(authed.fetch, repo.ownerPodRoot, target, repo.ownerWebId);
 
     // Track every relative URL we just (re-)uploaded so the prune step
     // afterwards can DELETE anything the source no longer contains.
@@ -278,9 +253,7 @@ async function pruneStale(
           pruned += 1;
           console.log(`[publisher] pruned ${childAbsUrl}`);
         } else if (res.status !== 404) {
-          console.warn(
-            `[publisher] DELETE ${childAbsUrl} failed: ${res.status} ${res.statusText}`,
-          );
+          console.warn(`[publisher] DELETE ${childAbsUrl} failed: ${res.status} ${res.statusText}`);
         }
       } catch (e) {
         console.warn(`[publisher] DELETE ${childAbsUrl} threw:`, e);
@@ -306,9 +279,7 @@ async function listContainerChildren(
   });
   if (res.status === 404) return [];
   if (!res.ok) {
-    throw new Error(
-      `GET ${containerUrl} failed during prune: ${res.status} ${res.statusText}`,
-    );
+    throw new Error(`GET ${containerUrl} failed during prune: ${res.status} ${res.statusText}`);
   }
   const body = await res.text();
   return parseLdpContains(body);
@@ -376,9 +347,7 @@ async function ensureContainerPath(
   ownerWebId: string,
 ): Promise<void> {
   if (!target.startsWith(podRoot)) {
-    throw new Error(
-      `targetContainer (${target}) is not inside ownerPodRoot (${podRoot})`,
-    );
+    throw new Error(`targetContainer (${target}) is not inside ownerPodRoot (${podRoot})`);
   }
   const trail = target.slice(podRoot.length).split("/").filter(Boolean);
   let cursor = podRoot.endsWith("/") ? podRoot : podRoot + "/";
@@ -437,4 +406,3 @@ export async function* walk(dir: string): AsyncGenerator<string> {
     yield full;
   }
 }
-

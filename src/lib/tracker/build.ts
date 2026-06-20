@@ -12,7 +12,7 @@
  * `<rootDir>/.mind/issues/**` and returns the three `build/*.ttl` documents as
  * strings; the caller decides where to write them.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse as parseYaml } from "yaml";
 
@@ -100,7 +100,10 @@ function frontmatter(text: string, file: string): { data: any; body: string } {
   const end = text.indexOf("\n---", 3);
   if (end === -1) fail(`${file}: unterminated YAML frontmatter (no closing '---')`);
   const yaml = text.slice(3, end);
-  const body = text.slice(end + 4).replace(/^\r?\n/, "").trimEnd();
+  const body = text
+    .slice(end + 4)
+    .replace(/^\r?\n/, "")
+    .trimEnd();
   let data: any;
   try {
     data = parseYaml(yaml) ?? {};
@@ -164,7 +167,10 @@ function loadConfig(issuesDir: string, rootDir: string): Config {
     if (data[k] == null) fail(`tracker.config.md: missing required key "${k}"`);
   }
   const states: State[] = (data.states as any[]).map((s) => ({ ...s, label: s.label ?? s.id }));
-  const categories: Category[] = (data.categories as any[]).map((c) => ({ ...c, label: c.label ?? c.id }));
+  const categories: Category[] = (data.categories as any[]).map((c) => ({
+    ...c,
+    label: c.label ?? c.id,
+  }));
   const cfg: Config = {
     title: data.title,
     description: data.description,
@@ -190,7 +196,9 @@ function foldEvents(
   rel: string,
 ): { state: string; holder?: string; afk?: boolean; blocks: string[]; modified?: string } | null {
   if (!existsSync(eventsDir)) return null;
-  const files = readdirSync(eventsDir).filter((f) => f.endsWith(".md")).sort();
+  const files = readdirSync(eventsDir)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
   if (!files.length) return null;
   const stateIds = new Set(cfg.states.map((s) => s.id));
 
@@ -202,7 +210,8 @@ function foldEvents(
     const { data } = frontmatter(readFileSync(join(eventsDir, f), "utf8"), `${rel}/events/${f}`);
     if (data.at != null) lastAt = data.at;
     if (data.to != null) {
-      if (!stateIds.has(data.to)) fail(`${rel}/events/${f}: \`to: ${data.to}\` is not a declared state`);
+      if (!stateIds.has(data.to))
+        fail(`${rel}/events/${f}: \`to: ${data.to}\` is not a declared state`);
       state = data.to;
     }
     if (Array.isArray(data.blocks)) blocks = data.blocks.map(String);
@@ -231,10 +240,12 @@ function loadIssuesIn(cfg: Config, groupDir: string, groupRel: string): Issue[] 
     if (data.state != null)
       fail(`${rel}/issue.md: must NOT carry a \`state:\` field — state is the fold of events/`);
     const category = String(data.type);
-    if (!catIds.has(category)) fail(`${rel}/issue.md: type "${category}" not in tracker.config.md categories`);
+    if (!catIds.has(category))
+      fail(`${rel}/issue.md: type "${category}" not in tracker.config.md categories`);
 
     const folded = foldEvents(cfg, join(dir, "events"), rel);
-    if (!folded) fail(`${rel}/: no events/ — an issue needs at least an \`open\` event to have a state`);
+    if (!folded)
+      fail(`${rel}/: no events/ — an issue needs at least an \`open\` event to have a state`);
 
     issues.push({
       id: String(data.id),
@@ -264,7 +275,15 @@ function loadEpics(cfg: Config, issuesDir: string, rootDir: string): Epic[] {
   if (existsSync(generalDir) && statSync(generalDir).isDirectory()) {
     const issues = loadIssuesIn(cfg, generalDir, GENERAL_DIR);
     if (issues.length)
-      epics.push({ slug: GENERAL_DIR, number: 0, title: "General", status: "active", body: "", issues, isGeneral: true });
+      epics.push({
+        slug: GENERAL_DIR,
+        number: 0,
+        title: "General",
+        status: "active",
+        body: "",
+        issues,
+        isGeneral: true,
+      });
   }
 
   // Epics sort by their on-disk address (timestamp-prefixed ⇒ creation order);
@@ -404,7 +423,8 @@ function renderState(cfg: Config, epics: Epic[]): string {
       if (i.modified) lines.push(`dct:modified "${i.modified}"^^xsd:date`);
       if (i.assignee) lines.push(`wf:assignee <${i.assignee}>`);
       if (i.afk != null) lines.push(`mc:afk ${i.afk ? "true" : "false"}`);
-      if (i.blocks.length) lines.push(`mc:blocks ${i.blocks.map((b) => `<#${issueFrag(b)}>`).join(" , ")}`);
+      if (i.blocks.length)
+        lines.push(`mc:blocks ${i.blocks.map((b) => `<#${issueFrag(b)}>`).join(" , ")}`);
       if (i.blockedBy.length)
         lines.push(`mc:blockedBy ${i.blockedBy.map((b) => `<#${issueFrag(b)}>`).join(" , ")}`);
       lines.push(`wf:description ${ttlLong(i.body)}`);

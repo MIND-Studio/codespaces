@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, appendFileSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 import { parsePorcelain } from "@/lib/agents/drivers/coder";
 
 describe("parsePorcelain — documented git status shapes", () => {
@@ -22,9 +22,7 @@ describe("parsePorcelain — documented git status shapes", () => {
   });
 
   it("multiline output", () => {
-    expect(
-      parsePorcelain(" M index.html\n?? README.md\n"),
-    ).toEqual(["index.html", "README.md"]);
+    expect(parsePorcelain(" M index.html\n?? README.md\n")).toEqual(["index.html", "README.md"]);
   });
 
   it("quoted paths with special chars", () => {
@@ -41,16 +39,13 @@ describe("parsePorcelain — against real git output", () => {
       execSync(`git clone "${bare}" "${work}"`, { stdio: "ignore" });
       writeFileSync(join(work, "index.html"), "<!doctype html><h1>v1</h1>\n");
       execSync(`git -C "${work}" -c user.email=t@t -c user.name=t add index.html`);
-      execSync(
-        `git -C "${work}" -c user.email=t@t -c user.name=t commit -m initial`,
-        { stdio: "ignore" },
-      );
+      execSync(`git -C "${work}" -c user.email=t@t -c user.name=t commit -m initial`, {
+        stdio: "ignore",
+      });
       execSync(`git -C "${work}" push origin main`, { stdio: "ignore" });
       // Now mutate the file (the iteration scenario).
       appendFileSync(join(work, "index.html"), "<!-- patched -->\n");
-      const raw = execSync(
-        `git -C "${work}" status --porcelain -uall`,
-      ).toString();
+      const raw = execSync(`git -C "${work}" status --porcelain -uall`).toString();
       const parsed = parsePorcelain(raw.trimEnd());
       expect(parsed).toEqual(["index.html"]);
     } finally {
@@ -67,16 +62,13 @@ describe("parsePorcelain — against real git output", () => {
       execSync(`git clone "${bare}" "${work}"`, { stdio: "ignore" });
       writeFileSync(join(work, "index.html"), "<!doctype html>\n");
       execSync(`git -C "${work}" -c user.email=t@t -c user.name=t add index.html`);
-      execSync(
-        `git -C "${work}" -c user.email=t@t -c user.name=t commit -m initial`,
-        { stdio: "ignore" },
-      );
+      execSync(`git -C "${work}" -c user.email=t@t -c user.name=t commit -m initial`, {
+        stdio: "ignore",
+      });
       execSync(`git -C "${work}" push origin main`, { stdio: "ignore" });
       appendFileSync(join(work, "index.html"), "<!-- patched -->\n");
       writeFileSync(join(work, "README.md"), "# hello\n");
-      const raw = execSync(
-        `git -C "${work}" status --porcelain -uall`,
-      ).toString();
+      const raw = execSync(`git -C "${work}" status --porcelain -uall`).toString();
       const parsed = parsePorcelain(raw.trimEnd());
       expect(parsed.sort()).toEqual(["README.md", "index.html"]);
     } finally {

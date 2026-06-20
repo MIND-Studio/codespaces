@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 import { log } from "@/lib/log";
+import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 
 /**
  * Content-addressed blob store backed by a Solid pod (see
@@ -96,9 +96,7 @@ export class PodContentStore {
     });
     if (res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(
-        `content-store GET ${this.blobUrl(want)} failed: ${res.status}`,
-      );
+      throw new Error(`content-store GET ${this.blobUrl(want)} failed: ${res.status}`);
     }
     const bytes = new Uint8Array(await res.arrayBuffer());
     const got = createHash("sha256").update(bytes).digest("hex");

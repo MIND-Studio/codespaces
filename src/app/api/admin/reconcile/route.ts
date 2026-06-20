@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { reconcilePages } from "@/lib/pages/reconciler";
+import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
+import { reconcilePages } from "@/lib/pages/reconciler";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,10 +24,7 @@ export async function POST() {
   const hdrs = await headers();
   const presented = (hdrs.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!presented || presented !== env.adminToken) {
-    return NextResponse.json(
-      { error: "invalid admin token" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "invalid admin token" }, { status: 401 });
   }
   const outcomes = await reconcilePages();
   return NextResponse.json({ outcomes });

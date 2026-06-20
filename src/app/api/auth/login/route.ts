@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { startAuthFlow, completeAuthFlow } from "@/lib/solid/oidc-server";
-import { runPasswordLoginOidcFlow, CssApiError } from "@/lib/solid/css-account";
+import { NextResponse } from "next/server";
 import { issueSession } from "@/lib/auth/session";
 import { getEnv } from "@/lib/env";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { log, clip, scrubWebId } from "@/lib/log";
+import { clip, log, scrubWebId } from "@/lib/log";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { CssApiError, runPasswordLoginOidcFlow } from "@/lib/solid/css-account";
+import { completeAuthFlow, startAuthFlow } from "@/lib/solid/oidc-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,11 +42,7 @@ export async function POST(req: Request) {
   const origin = hdrs.get("origin") ?? "";
   const secFetchSite = hdrs.get("sec-fetch-site") ?? "";
   const ownOrigin = env.bridgePublicUrl.replace(/\/$/, "");
-  if (
-    origin !== ownOrigin &&
-    secFetchSite !== "same-origin" &&
-    secFetchSite !== "same-site"
-  ) {
+  if (origin !== ownOrigin && secFetchSite !== "same-origin" && secFetchSite !== "same-site") {
     return NextResponse.json(
       { error: "cross-origin login is not allowed", code: "CSRF" },
       { status: 403 },
@@ -62,18 +58,12 @@ export async function POST(req: Request) {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   if (!email || !email.includes("@") || !password) {
-    return NextResponse.json(
-      { error: "email and password are required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "email and password are required" }, { status: 400 });
   }
   const issuerRaw = typeof body.oidcIssuer === "string" ? body.oidcIssuer : env.podBaseUrl;
   const oidcIssuer = issuerRaw.endsWith("/") ? issuerRaw : `${issuerRaw}/`;
   if (!/^https?:\/\//.test(oidcIssuer)) {
-    return NextResponse.json(
-      { error: "oidcIssuer must be an http(s) URL" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "oidcIssuer must be an http(s) URL" }, { status: 400 });
   }
 
   // Start the OIDC dance — produces a redirect URL + a session in

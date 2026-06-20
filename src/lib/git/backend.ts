@@ -1,10 +1,10 @@
 import "server-only";
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
-import { writeFile, chmod, readdir, rm } from "node:fs/promises";
+import { chmod, readdir, rm, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
-import { validateName } from "@/lib/registry/repos";
 import { getEnv } from "@/lib/env";
+import { validateName } from "@/lib/registry/repos";
 
 /**
  * Resolve the bare-repo storage root. Lazy: never call getEnv() at
@@ -30,9 +30,7 @@ export function repoPath(owner: string, name: string): string {
   const path = resolve(root, owner, `${name}.git`);
   const rootWithSep = root.endsWith(sep) ? root : root + sep;
   if (!path.startsWith(rootWithSep)) {
-    throw new Error(
-      `repoPath resolved outside gitDataDir (owner=${owner} name=${name})`,
-    );
+    throw new Error(`repoPath resolved outside gitDataDir (owner=${owner} name=${name})`);
   }
   return path;
 }
@@ -81,17 +79,10 @@ export async function reinstallAllHooks(): Promise<{ count: number }> {
       if (!repoEnt.isDirectory() || !repoEnt.name.endsWith(".git")) continue;
       const repoName = repoEnt.name.replace(/\.git$/, "");
       try {
-        await installPostReceiveHook(
-          join(ownerDir, repoEnt.name),
-          ownerEnt.name,
-          repoName,
-        );
+        await installPostReceiveHook(join(ownerDir, repoEnt.name), ownerEnt.name, repoName);
         count += 1;
       } catch (e) {
-        console.warn(
-          `[backend] failed to reinstall hook for ${ownerEnt.name}/${repoName}:`,
-          e,
-        );
+        console.warn(`[backend] failed to reinstall hook for ${ownerEnt.name}/${repoName}:`, e);
       }
     }
   }
@@ -167,10 +158,7 @@ function runGit(args: string[]): Promise<void> {
 const diskSizeCache = new Map<string, { bytes: number; expires: number }>();
 const DISK_SIZE_TTL_MS = 60 * 1000;
 
-export function getRepoDiskBytes(
-  owner: string,
-  name: string,
-): Promise<number> {
+export function getRepoDiskBytes(owner: string, name: string): Promise<number> {
   const key = `${owner}/${name}`;
   const now = Date.now();
   const cached = diskSizeCache.get(key);
@@ -206,17 +194,13 @@ export function readBranchHead(
   branch: string,
 ): Promise<string | null> {
   if (!/^[A-Za-z0-9._/-]+$/.test(branch)) {
-    return Promise.reject(
-      new Error(`refusing unsafe branch name ${JSON.stringify(branch)}`),
-    );
+    return Promise.reject(new Error(`refusing unsafe branch name ${JSON.stringify(branch)}`));
   }
   const repo = repoPath(owner, name);
   return new Promise((resolveFn) => {
-    const child = spawn(
-      "git",
-      ["-C", repo, "rev-parse", "--verify", `refs/heads/${branch}`],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
+    const child = spawn("git", ["-C", repo, "rev-parse", "--verify", `refs/heads/${branch}`], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let stdout = "";
     child.stdout.on("data", (d) => (stdout += d.toString()));
     child.on("error", () => resolveFn(null));

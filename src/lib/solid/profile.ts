@@ -1,11 +1,11 @@
 import "server-only";
 import {
+  getContainedResourceUrlAll,
   getSolidDataset,
-  getThing,
   getStringNoLocale,
+  getThing,
   getUrl,
   getUrlAll,
-  getContainedResourceUrlAll,
 } from "@inrupt/solid-client";
 
 const FOAF = "http://xmlns.com/foaf/0.1/";
@@ -34,9 +34,7 @@ export async function fetchProfile(webId: string): Promise<ProfileSummary> {
   const document = stripFragment(webId);
   const [dataset, rawTurtle] = await Promise.all([
     getSolidDataset(document),
-    fetch(document, { headers: { Accept: "text/turtle" } }).then((r) =>
-      r.ok ? r.text() : "",
-    ),
+    fetch(document, { headers: { Accept: "text/turtle" } }).then((r) => (r.ok ? r.text() : "")),
   ]);
   const thing = getThing(dataset, webId);
   if (!thing) {
@@ -60,9 +58,7 @@ export async function fetchProfile(webId: string): Promise<ProfileSummary> {
     document,
     name: getStringNoLocale(thing, `${FOAF}name`),
     nick: getStringNoLocale(thing, `${FOAF}nick`),
-    bio:
-      getStringNoLocale(thing, `${VCARD}note`) ??
-      getStringNoLocale(thing, `${RDFS}comment`),
+    bio: getStringNoLocale(thing, `${VCARD}note`) ?? getStringNoLocale(thing, `${RDFS}comment`),
     homepage: getUrl(thing, `${FOAF}homepage`),
     oidcIssuer: getUrl(thing, `${SOLID}oidcIssuer`),
     img: getUrl(thing, `${FOAF}img`),
@@ -180,9 +176,8 @@ export async function verifyPodRootForWebId(
   // fetch() joins them with `, ` per the Web spec, so parse with a
   // regex that tolerates that.
   const link = headResp.headers.get("link") ?? "";
-  const isStorage = /<\s*http:\/\/www\.w3\.org\/ns\/pim\/space#Storage\s*>\s*;\s*rel\s*=\s*"?type"?/i.test(
-    link,
-  );
+  const isStorage =
+    /<\s*http:\/\/www\.w3\.org\/ns\/pim\/space#Storage\s*>\s*;\s*rel\s*=\s*"?type"?/i.test(link);
   if (!isStorage) {
     return {
       ok: false,

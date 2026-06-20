@@ -36,10 +36,7 @@ export async function mergeBranches(
   target: string,
   message: string,
   author: MergeAuthor,
-): Promise<
-  | { ok: true; mergeSha: string }
-  | { ok: false; conflict: boolean; message: string }
-> {
+): Promise<{ ok: true; mergeSha: string } | { ok: false; conflict: boolean; message: string }> {
   // Empty-target fast-path. When the target branch doesn't exist on
   // the bare yet (fresh repo whose first commit is the agent's own,
   // before anyone has pushed `main`), `checkout target` below fails
@@ -71,16 +68,9 @@ export async function mergeBranches(
       };
     }
     const sourceSha = sourceProbe.stdout.trim();
-    const seedDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "mind-pr-seed-"),
-    );
+    const seedDir = await fs.mkdtemp(path.join(os.tmpdir(), "mind-pr-seed-"));
     try {
-      const clone = await sh("git", [
-        "clone",
-        "--no-checkout",
-        bareRepoPath,
-        seedDir,
-      ]);
+      const clone = await sh("git", ["clone", "--no-checkout", bareRepoPath, seedDir]);
       if (clone.exit !== 0) {
         return {
           ok: false,
@@ -108,9 +98,7 @@ export async function mergeBranches(
     }
   }
 
-  const workDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), "mind-pr-merge-"),
-  );
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "mind-pr-merge-"));
   try {
     const clone = await sh("git", ["clone", bareRepoPath, workDir]);
     if (clone.exit !== 0) {

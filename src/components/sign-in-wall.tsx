@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Button } from "@mind-studio/ui";
+import Link from "next/link";
 
 /**
  * Polite "you need to sign in to do this" card. Used in two places:
@@ -30,9 +30,7 @@ export function SignInWall({
   // /login takes `?returnTo=<local path>` (validated server-side; cross-origin
   // values are dropped). Pass the same value to /signup and /connect — they
   // currently ignore it, but the param is harmless and we can wire it up later.
-  const safe = next && next.startsWith("/") && !next.startsWith("//")
-    ? next
-    : null;
+  const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
   const qs = safe ? `?returnTo=${encodeURIComponent(safe)}` : "";
   const loginHref = `/login${qs}`;
   const signupHref = `/signup${qs}`;
@@ -54,9 +52,8 @@ export function SignInWall({
           You need a session to <strong>{action}</strong>.
         </p>
         <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-          The bridge never sees your pod password — sign-in happens against
-          your own pod, and the bridge only stores the resulting refresh
-          token (encrypted at rest).
+          The bridge never sees your pod password — sign-in happens against your own pod, and the
+          bridge only stores the resulting refresh token (encrypted at rest).
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button asChild size="sm">

@@ -1,13 +1,12 @@
 import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
-import {
-  getRepoById,
-  getPagesConfig,
-  markPagesPublished,
-} from "@/lib/registry/repos";
-import { repoPath, readBranchHead } from "@/lib/git/backend";
+import { readBranchHead, repoPath } from "@/lib/git/backend";
 import { checkoutBranchToTempDir } from "@/lib/git/checkout";
+import { Metrics } from "@/lib/metrics";
+import { withPublishLock } from "@/lib/pages/publish-lock";
+import { publishDirectory } from "@/lib/pages/publisher";
+import { getPagesConfig, getRepoById, markPagesPublished } from "@/lib/registry/repos";
 import {
   createRun,
   finishRun,
@@ -15,11 +14,8 @@ import {
   markRunRunning,
   type WorkflowRun,
 } from "@/lib/registry/runs";
-import { parseWorkflow, WorkflowParseError } from "@/lib/workflows/parse";
-import { publishDirectory } from "@/lib/pages/publisher";
 import { resolveRunnerMode, runShellBatch } from "@/lib/workflows/docker";
-import { withPublishLock } from "@/lib/pages/publish-lock";
-import { Metrics } from "@/lib/metrics";
+import { parseWorkflow, WorkflowParseError } from "@/lib/workflows/parse";
 
 const WORKFLOW_PATH = ".mind/workflow.yml";
 
@@ -56,10 +52,7 @@ export async function runWorkflow(input: {
   if (!repo) throw new Error(`repo id=${input.repoId} not found`);
 
   const bare = repoPath(repo.owner, repo.name);
-  const { tempDir, cleanup } = await checkoutBranchToTempDir(
-    bare,
-    input.branch,
-  );
+  const { tempDir, cleanup } = await checkoutBranchToTempDir(bare, input.branch);
 
   // No-workflow path: silently return; caller falls back to legacy Pages publish.
   const workflowPath = join(tempDir, WORKFLOW_PATH);
@@ -136,11 +129,7 @@ export async function runWorkflow(input: {
             log += `[publish coalesced into an in-flight run]\n`;
           } else {
             log += `[published ${lockResult.uploaded} file(s)]\n`;
-            const headSha = await readBranchHead(
-              repo.owner,
-              repo.name,
-              input.branch,
-            );
+            const headSha = await readBranchHead(repo.owner, repo.name, input.branch);
             markPagesPublished(repo.id, { sha: headSha });
           }
         } catch (e) {
@@ -189,4 +178,3 @@ async function exists(path: string): Promise<boolean> {
     return false;
   }
 }
-

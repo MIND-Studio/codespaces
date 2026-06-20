@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { gateEnvFallback } from "@/lib/ledger/policy";
 
 describe("gateEnvFallback — free-allotment gate for the bridge-default key", () => {

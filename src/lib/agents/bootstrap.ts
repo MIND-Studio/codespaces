@@ -1,14 +1,9 @@
 import "server-only";
-import {
-  registerDriver,
-  registerRole,
-  listRoles,
-  setDefaultDriver,
-} from "@/lib/agents/registry";
-import { echoDriver } from "@/lib/agents/drivers/echo";
-import { openrouterDriver } from "@/lib/agents/drivers/openrouter";
 import { coderDriver } from "@/lib/agents/drivers/coder";
 import { codexDriver } from "@/lib/agents/drivers/codex";
+import { echoDriver } from "@/lib/agents/drivers/echo";
+import { openrouterDriver } from "@/lib/agents/drivers/openrouter";
+import { listRoles, registerDriver, registerRole, setDefaultDriver } from "@/lib/agents/registry";
 
 /**
  * Wire the available drivers + the demo roster. Idempotent — safe to
@@ -49,9 +44,7 @@ export function ensureAgentsBootstrap(): void {
   // to POST /api/agents/dispatch so it runs side-by-side with `coder`
   // without double-firing on the same issue event.
   registerDriver(codexDriver);
-  console.log(
-    `[agents] codex driver active (runtime=${process.env.MIND_CODEX_RUNTIME ?? "host"})`,
-  );
+  console.log(`[agents] codex driver active (runtime=${process.env.MIND_CODEX_RUNTIME ?? "host"})`);
 
   if (process.env.OPENROUTER_API_KEY) {
     registerDriver(openrouterDriver);

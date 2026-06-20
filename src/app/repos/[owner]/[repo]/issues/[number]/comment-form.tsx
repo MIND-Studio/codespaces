@@ -1,9 +1,9 @@
 "use client";
+import { Button, Textarea } from "@mind-studio/ui";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import { SignInWall } from "@/components/sign-in-wall";
-import { Button, Textarea } from "@mind-studio/ui";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 /**
  * Issue comment composer. Designed to feel like a chat composer rather
@@ -45,13 +45,10 @@ export function CommentForm({
     setUnauthed(false);
     setBusy(true);
     try {
-      const res = await authedFetch(
-        `/api/repos/${owner}/${repo}/issues/${number}/comments`,
-        {
-          method: "POST",
-          body: JSON.stringify({ body }),
-        },
-      );
+      const res = await authedFetch(`/api/repos/${owner}/${repo}/issues/${number}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ body }),
+      });
       if (!res.ok) {
         // 401 = session missing/expired. Promote it from a red string of
         // text to the proper SignInWall card so the user has a one-click
@@ -88,8 +85,7 @@ export function CommentForm({
   // Detect Mac vs other for the keyboard hint (best-effort, hydration-safe
   // because we render the same string on the server initially).
   const isMac =
-    typeof navigator !== "undefined" &&
-    /Mac|iPod|iPhone|iPad/i.test(navigator.platform);
+    typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/i.test(navigator.platform);
   const sendShortcut = isMac ? "⌘ Enter" : "Ctrl+Enter";
 
   return (
@@ -149,12 +145,7 @@ export function CommentForm({
         </p>
         <div className="flex items-center gap-2">
           {hasDraft && !busy ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setBody("")}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => setBody("")}>
               Clear
             </Button>
           ) : null}

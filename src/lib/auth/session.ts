@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import type { Repo } from "@/lib/registry/repos";
-import { resolveMemberRole, ROLE_RANK, type MemberRole } from "@/lib/solid/members";
+import { type MemberRole, ROLE_RANK, resolveMemberRole } from "@/lib/solid/members";
 
 /**
  * Session cookie format:
@@ -179,10 +179,7 @@ function failure(
   code: AuthFailure["body"]["code"],
   message: string,
 ): NextResponse {
-  return NextResponse.json(
-    { error: message, code },
-    { status },
-  );
+  return NextResponse.json({ error: message, code }, { status });
 }
 
 export type AuthOk = { webId: string };
@@ -296,11 +293,7 @@ export async function requireMember(
   if (role && ROLE_RANK[role] >= ROLE_RANK[minRole]) return r;
   return {
     ok: false,
-    response: failure(
-      403,
-      "FORBIDDEN",
-      `requires '${minRole}' membership on this repo`,
-    ),
+    response: failure(403, "FORBIDDEN", `requires '${minRole}' membership on this repo`),
   };
 }
 

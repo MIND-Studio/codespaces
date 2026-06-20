@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { readSession } from "@/lib/auth/session";
-import { listActivityForWebId, type ActivityItem } from "@/lib/registry/activity";
-import {
-  listConfiguredProviders,
-  getUserAiPref,
-} from "@/lib/ai-providers/store";
-import { getProvider } from "@/lib/ai-providers/providers";
 import { RelativeTime } from "@/components/relative-time";
+import { getProvider } from "@/lib/ai-providers/providers";
+import { getUserAiPref, listConfiguredProviders } from "@/lib/ai-providers/store";
+import { readSession } from "@/lib/auth/session";
+import { type ActivityItem, listActivityForWebId } from "@/lib/registry/activity";
 import ProfileView from "../people/profile-view";
 import { ProfileSettings } from "./profile-settings";
 
@@ -57,15 +54,12 @@ export default async function ProfilePage() {
       <hr className="hairline my-10" />
 
       <section>
-        <h2
-          className="display text-2xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
           Recent activity
         </h2>
         <p className="mt-2 text-sm text-[color:var(--ink-soft)]">
-          Issues you&apos;ve filed, pulls you&apos;ve opened, agent runs on
-          your repos. Latest first.
+          Issues you&apos;ve filed, pulls you&apos;ve opened, agent runs on your repos. Latest
+          first.
         </p>
         <div className="mt-5">
           {activity.length === 0 ? (
@@ -73,8 +67,7 @@ export default async function ProfilePage() {
               className="rounded border border-dashed border-[color:var(--ink-trace)] px-4 py-6 text-center text-sm italic text-[color:var(--ink-faint)]"
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
-              No activity yet. File an issue or push a repo to see it land
-              here.
+              No activity yet. File an issue or push a repo to see it land here.
             </p>
           ) : (
             <ol className="space-y-1.5">
@@ -100,10 +93,7 @@ export default async function ProfilePage() {
                     />
                   </div>
                   <p className="mt-1 text-sm leading-snug text-[color:var(--ink)]">
-                    <Link
-                      href={a.href}
-                      className="hover:text-[color:var(--accent)]"
-                    >
+                    <Link href={a.href} className="hover:text-[color:var(--accent)]">
                       {a.title}
                     </Link>
                   </p>
@@ -126,10 +116,7 @@ export default async function ProfilePage() {
 
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2
-            className="display text-2xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
             AI providers
           </h2>
           <Link
@@ -141,9 +128,8 @@ export default async function ProfilePage() {
           </Link>
         </div>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          The coder agent uses these on issues you file or comment on in
-          your own repos. Keys are encrypted at rest; only the last 4
-          characters are visible after save.
+          The coder agent uses these on issues you file or comment on in your own repos. Keys are
+          encrypted at rest; only the last 4 characters are visible after save.
         </p>
         <div className="mt-4">
           {aiPrefProvider && aiPref.model ? (
@@ -152,9 +138,7 @@ export default async function ProfilePage() {
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
               <span className="text-[color:var(--ink-faint)]">default · </span>
-              <span className="text-[color:var(--accent)]">
-                {aiPrefProvider.label}
-              </span>
+              <span className="text-[color:var(--accent)]">{aiPrefProvider.label}</span>
               <span className="mx-2 text-[color:var(--ink-faint)]">/</span>
               <span>{aiPref.model}</span>
             </p>
@@ -182,10 +166,7 @@ export default async function ProfilePage() {
       <hr className="hairline my-10" />
 
       <section>
-        <h2
-          className="display text-2xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
           Settings
         </h2>
         <div className="mt-5">

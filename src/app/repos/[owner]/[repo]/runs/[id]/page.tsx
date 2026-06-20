@@ -26,9 +26,7 @@ export default async function RunDetailPage({ params }: PageProps) {
         ? undefined
         : "bad";
   const dur =
-    run.finishedAt != null
-      ? `${((run.finishedAt - run.startedAt) / 1000).toFixed(1)}s`
-      : "—";
+    run.finishedAt != null ? `${((run.finishedAt - run.startedAt) / 1000).toFixed(1)}s` : "—";
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12 sm:px-10">
@@ -37,10 +35,7 @@ export default async function RunDetailPage({ params }: PageProps) {
           ← all runs
         </Link>
       </p>
-      <h1
-        className="display mt-3 text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         Run <em>#{run.id}</em>
       </h1>
       <p
@@ -57,7 +52,9 @@ export default async function RunDetailPage({ params }: PageProps) {
       <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-[color:var(--ink-faint)]">Status</dt>
         <dd>
-          <span className="stamp" data-tone={tone}>{run.status}</span>
+          <span className="stamp" data-tone={tone}>
+            {run.status}
+          </span>
           {run.exitCode !== null ? (
             <span
               className="ml-3 text-[color:var(--ink-faint)] text-[11px] uppercase tracking-[0.16em]"
@@ -81,10 +78,7 @@ export default async function RunDetailPage({ params }: PageProps) {
         ) : null}
       </dl>
 
-      <h2
-        className="display mt-8 text-xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display mt-8 text-xl" style={{ fontFamily: "var(--font-display)" }}>
         Log
       </h2>
       {run.logTail ? (
@@ -92,12 +86,10 @@ export default async function RunDetailPage({ params }: PageProps) {
           className="mt-3 rounded border border-[color:var(--ink-trace)] bg-[color:var(--paper-sunk)] px-4 py-3 text-[0.8125rem] leading-[1.55] overflow-x-auto whitespace-pre max-w-full"
           style={{ fontFamily: "var(--font-mono-src)", WebkitOverflowScrolling: "touch" }}
         >
-{run.logTail}
+          {run.logTail}
         </pre>
       ) : (
-        <p className="mt-3 text-sm text-[color:var(--ink-soft)]">
-          No log captured.
-        </p>
+        <p className="mt-3 text-sm text-[color:var(--ink-soft)]">No log captured.</p>
       )}
     </div>
   );

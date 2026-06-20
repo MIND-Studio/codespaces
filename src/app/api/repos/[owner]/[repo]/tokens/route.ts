@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
+import { requireOwner } from "@/lib/auth/session";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { assertCanMintToken, QuotaExceededError } from "@/lib/registry/quotas";
 import { getRepo } from "@/lib/registry/repos";
 import { createPushToken, listPushTokens } from "@/lib/registry/tokens";
-import { requireOwner } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import {
-  assertCanMintToken,
-  QuotaExceededError,
-} from "@/lib/registry/quotas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,8 +60,7 @@ export async function POST(req: Request, { params }: Params) {
   return NextResponse.json(
     {
       ...created,
-      hint:
-        "Use this token as the HTTP-Basic password (any username) when pushing or, for private repos, when cloning. The plaintext is shown ONCE — store it now.",
+      hint: "Use this token as the HTTP-Basic password (any username) when pushing or, for private repos, when cloning. The plaintext is shown ONCE — store it now.",
     },
     { status: 201 },
   );

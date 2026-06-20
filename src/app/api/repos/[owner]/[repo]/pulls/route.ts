@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo, RegistryError } from "@/lib/registry/repos";
-import { listPullRequests, upsertPullRequest } from "@/lib/registry/pulls";
-import { listBranches } from "@/lib/git/objects";
-import { repoPath } from "@/lib/git/backend";
 import { requireOwner } from "@/lib/auth/session";
+import { repoPath } from "@/lib/git/backend";
+import { listBranches } from "@/lib/git/objects";
+import { listPullRequests, upsertPullRequest } from "@/lib/registry/pulls";
+import { getRepo, RegistryError } from "@/lib/registry/repos";
 import { writePullToPod } from "@/lib/solid/pulls";
 
 export const runtime = "nodejs";
@@ -20,15 +20,9 @@ export async function GET(req: Request, { params }: Params) {
   const url = new URL(req.url);
   const statusParam = url.searchParams.get("status") ?? "open";
   if (!["open", "merged", "closed", "all"].includes(statusParam)) {
-    return NextResponse.json(
-      { error: "status must be open|merged|closed|all" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "status must be open|merged|closed|all" }, { status: 400 });
   }
-  const pulls = listPullRequests(
-    repo.id,
-    statusParam as "open" | "merged" | "closed" | "all",
-  );
+  const pulls = listPullRequests(repo.id, statusParam as "open" | "merged" | "closed" | "all");
   return NextResponse.json({ pulls });
 }
 
@@ -59,15 +53,10 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
   if (typeof sourceBranch !== "string" || !sourceBranch.trim()) {
-    return NextResponse.json(
-      { error: "sourceBranch required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "sourceBranch required" }, { status: 400 });
   }
   const target =
-    typeof targetBranch === "string" && targetBranch.trim()
-      ? targetBranch
-      : repo.defaultBranch;
+    typeof targetBranch === "string" && targetBranch.trim() ? targetBranch : repo.defaultBranch;
   if (sourceBranch === target) {
     return NextResponse.json(
       { error: "sourceBranch and targetBranch must differ" },
@@ -89,10 +78,7 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
   if (!targetSha) {
-    return NextResponse.json(
-      { error: `target branch '${target}' not found` },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: `target branch '${target}' not found` }, { status: 400 });
   }
 
   try {
@@ -104,9 +90,7 @@ export async function POST(req: Request, { params }: Params) {
       targetBranch: target,
       sourceSha,
       authorWebId:
-        typeof authorWebId === "string" && authorWebId === auth.webId
-          ? authorWebId
-          : auth.webId,
+        typeof authorWebId === "string" && authorWebId === auth.webId ? authorWebId : auth.webId,
       issueId: typeof issueId === "number" ? issueId : null,
     });
 
@@ -114,10 +98,7 @@ export async function POST(req: Request, { params }: Params) {
     // (mirrors how issues are written). A pod hiccup must never block the
     // PR open, so we fire-and-forget and only log on failure (#142).
     writePullToPod(repo, pull).catch((err) => {
-      console.warn(
-        `[pulls.POST] writePullToPod for ${owner}/${name}#${pull.number} failed:`,
-        err,
-      );
+      console.warn(`[pulls.POST] writePullToPod for ${owner}/${name}#${pull.number} failed:`, err);
     });
 
     return NextResponse.json({ pull }, { status: 201 });

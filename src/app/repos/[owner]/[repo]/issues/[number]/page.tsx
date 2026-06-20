@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { readGitTracker } from "@/lib/tracker/read";
-import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
-import { RelativeTime } from "@/components/relative-time";
-import { renderMarkdown } from "@/lib/markdown";
-import { RepoTabs } from "../../repo-tabs";
 import { Avatar, deriveLabel } from "@/components/avatar";
+import { RelativeTime } from "@/components/relative-time";
+import { repoPath } from "@/lib/git/backend";
+import { renderMarkdown } from "@/lib/markdown";
+import { getRepo } from "@/lib/registry/repos";
+import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
+import { readGitTracker } from "@/lib/tracker/read";
+import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -28,18 +28,13 @@ export default async function IssueDetailPage({ params }: PageProps) {
   const issue = tracker.issues.find((i) => i.number === number);
   if (!issue) notFound();
 
-  const bodyHtml = issue.description?.trim()
-    ? renderMarkdown(issue.description)
-    : null;
-  const epic = issue.epicSlug
-    ? tracker.epics.find((e) => e.slug === issue.epicSlug)
-    : undefined;
+  const bodyHtml = issue.description?.trim() ? renderMarkdown(issue.description) : null;
+  const epic = issue.epicSlug ? tracker.epics.find((e) => e.slug === issue.epicSlug) : undefined;
   const createdTs = issue.created ? Date.parse(issue.created) : NaN;
   const modifiedTs = issue.modified ? Date.parse(issue.modified) : NaN;
   // The fold emits day-resolution xsd:date values; a relative time off a
   // bare date reads as "21h ago" for an issue minted a minute ago.
-  const dateOnly = (v: string | undefined) =>
-    v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+  const dateOnly = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
   const createdDate = dateOnly(issue.created);
   const modifiedDate = dateOnly(issue.modified);
 
@@ -55,8 +50,7 @@ export default async function IssueDetailPage({ params }: PageProps) {
           className="display break-words text-2xl sm:text-3xl"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          <span className="text-[color:var(--ink-faint)]">#{issue.number}</span>{" "}
-          {issue.title}
+          <span className="text-[color:var(--ink-faint)]">#{issue.number}</span> {issue.title}
         </h1>
         <span className="stamp shrink-0" data-tone={issue.open ? undefined : "ok"}>
           {issue.stateLabel ?? (issue.open ? "open" : "closed")}
@@ -121,14 +115,9 @@ export default async function IssueDetailPage({ params }: PageProps) {
         </div>
         <div className="bg-[color:var(--paper)] px-4 py-4 sm:px-5">
           {bodyHtml ? (
-            <article
-              className="markdown-body"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
+            <article className="markdown-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           ) : (
-            <p className="text-sm italic text-[color:var(--ink-faint)]">
-              (no description)
-            </p>
+            <p className="text-sm italic text-[color:var(--ink-faint)]">(no description)</p>
           )}
         </div>
       </div>
@@ -137,9 +126,8 @@ export default async function IssueDetailPage({ params }: PageProps) {
         className="mt-6 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        Read-only · folded from this repo&apos;s{" "}
-        <code className="kbd">.mind</code> tracker. Edit by authoring events under{" "}
-        <code className="kbd">.mind/issues/</code> and pushing.
+        Read-only · folded from this repo&apos;s <code className="kbd">.mind</code> tracker. Edit by
+        authoring events under <code className="kbd">.mind/issues/</code> and pushing.
       </p>
     </div>
   );

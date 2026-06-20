@@ -1,5 +1,5 @@
 import "server-only";
-import { randomBytes, createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { getDb } from "@/lib/registry/db";
 
 const TOKEN_PREFIX = "scp_";
@@ -65,9 +65,7 @@ export function verifyPushToken(repoId: number, plaintext: string): boolean {
   if (!plaintext.startsWith(TOKEN_PREFIX)) return false;
   const hash = sha256(plaintext);
   const row = getDb()
-    .prepare(
-      "SELECT 1 AS ok FROM push_tokens WHERE repo_id = ? AND token_hash = ?",
-    )
+    .prepare("SELECT 1 AS ok FROM push_tokens WHERE repo_id = ? AND token_hash = ?")
     .get(repoId, hash);
   return row !== undefined;
 }

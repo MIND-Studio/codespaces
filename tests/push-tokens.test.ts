@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Test 2 in §3.2 priority list: push-token lifecycle. Verifies:
 //   • mint returns a `scp_`-prefixed token whose plaintext is never
@@ -22,8 +22,9 @@ beforeAll(() => {
 describe("push tokens", () => {
   it("mints, verifies, and revokes", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
-    const { createPushToken, verifyPushToken, listPushTokens, revokePushToken } =
-      await import("@/lib/registry/tokens");
+    const { createPushToken, verifyPushToken, listPushTokens, revokePushToken } = await import(
+      "@/lib/registry/tokens"
+    );
     const { getDb } = await import("@/lib/registry/db");
 
     const repo = createRepo({

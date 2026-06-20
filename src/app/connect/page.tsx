@@ -33,10 +33,9 @@ export default function ConnectPage() {
         Connect a <em>pod</em>.
       </h1>
       <p className="mt-4 max-w-2xl text-[color:var(--ink-soft)]">
-        Mind Codespaces needs permission to write into your pod (your published
-        site, and a Turtle description of each repo). You authorize that here
-        via your pod&apos;s own OIDC issuer — the bridge never sees your
-        password, only a token your pod issues to it.
+        Mind Codespaces needs permission to write into your pod (your published site, and a Turtle
+        description of each repo). You authorize that here via your pod&apos;s own OIDC issuer — the
+        bridge never sees your password, only a token your pod issues to it.
       </p>
 
       <hr className="hairline my-10" />
@@ -49,15 +48,12 @@ export default function ConnectPage() {
           >
             01 — authorize
           </p>
-          <h2
-            className="display mt-2 text-2xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h2 className="display mt-2 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
             Point us at your issuer.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-            Most pods publish their OIDC issuer at the pod&apos;s root URL.
-            Pick a preset or paste your own.
+            Most pods publish their OIDC issuer at the pod&apos;s root URL. Pick a preset or paste
+            your own.
           </p>
 
           <div className="mt-6">
@@ -72,10 +68,7 @@ export default function ConnectPage() {
           >
             What this means
           </p>
-          <h2
-            className="display mt-2 text-2xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h2 className="display mt-2 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
             A token, not a key.
           </h2>
 
@@ -114,20 +107,14 @@ export default function ConnectPage() {
                   <li className="flex items-baseline gap-2">
                     <span style={{ color: "var(--accent)" }}>·</span>
                     <span>
-                      <span style={{ color: "var(--ink)" }}>
-                        your-pod/codespaces/*
-                      </span>{" "}
-                      <span style={{ color: "var(--ink-faint)" }}>
-                        — repo metadata
-                      </span>
+                      <span style={{ color: "var(--ink)" }}>your-pod/codespaces/*</span>{" "}
+                      <span style={{ color: "var(--ink-faint)" }}>— repo metadata</span>
                     </span>
                   </li>
                   <li className="flex items-baseline gap-2">
                     <span style={{ color: "var(--accent)" }}>·</span>
                     <span>
-                      <span style={{ color: "var(--ink)" }}>
-                        your-pod/public/sites/*
-                      </span>{" "}
+                      <span style={{ color: "var(--ink)" }}>your-pod/public/sites/*</span>{" "}
                       <span style={{ color: "var(--ink-faint)" }}>
                         — when Mind Pages is enabled
                       </span>
@@ -141,8 +128,7 @@ export default function ConnectPage() {
               title="A refresh token lives on disk."
               body={
                 <>
-                  We persist it in{" "}
-                  <code className="kbd">.registry-data/</code> so a restart
+                  We persist it in <code className="kbd">.registry-data/</code> so a restart
                   doesn&apos;t bounce you out. It never leaves this machine.
                 </>
               }
@@ -175,15 +161,10 @@ function TrustItem({
         {kicker}
       </span>
       <div className="min-w-0">
-        <p
-          className="text-sm"
-          style={{ color: "var(--ink)", fontWeight: 500 }}
-        >
+        <p className="text-sm" style={{ color: "var(--ink)", fontWeight: 500 }}>
           {title}
         </p>
-        <div className="mt-1 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          {body}
-        </div>
+        <div className="mt-1 text-sm leading-relaxed text-[color:var(--ink-soft)]">{body}</div>
       </div>
     </li>
   );

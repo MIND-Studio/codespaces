@@ -3,13 +3,10 @@ import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
 import { dispatch } from "@/lib/agents/dispatch";
 import { getDriver } from "@/lib/agents/registry";
 import type { AgentEvent } from "@/lib/agents/types";
-import { getRepo } from "@/lib/registry/repos";
 import { requireOwner } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import {
-  assertCanDispatchRun,
-  QuotaExceededError,
-} from "@/lib/registry/quotas";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { assertCanDispatchRun, QuotaExceededError } from "@/lib/registry/quotas";
+import { getRepo } from "@/lib/registry/repos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,10 +51,7 @@ export async function POST(req: Request) {
     const d = (body as Record<string, unknown>).driver;
     if (d !== undefined && d !== null) {
       if (typeof d !== "string" || !getDriver(d)) {
-        return NextResponse.json(
-          { error: `unknown driver ${JSON.stringify(d)}` },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: `unknown driver ${JSON.stringify(d)}` }, { status: 400 });
       }
       driverOverride = d;
     }
@@ -98,9 +92,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ event: event.value, outcomes });
 }
 
-function parseEvent(
-  raw: unknown,
-): { value: AgentEvent } | { error: string } {
+function parseEvent(raw: unknown): { value: AgentEvent } | { error: string } {
   if (typeof raw !== "object" || raw === null) {
     return { error: "body must be an object" };
   }
@@ -137,10 +129,7 @@ function parseEvent(
     };
   }
   if (type === "issue.commented") {
-    if (
-      typeof o.issueNumber !== "number" ||
-      typeof o.commentId !== "number"
-    ) {
+    if (typeof o.issueNumber !== "number" || typeof o.commentId !== "number") {
       return {
         error: "issueNumber and commentId are required for issue.commented",
       };

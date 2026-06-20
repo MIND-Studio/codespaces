@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server";
-import { getRepo, validateName, RegistryError } from "@/lib/registry/repos";
+import { getEnv } from "@/lib/env";
+import { jsonResponse } from "@/lib/http/json";
+import { authenticatePackagePush } from "@/lib/packages/auth";
 import {
-  upsertPackageVersion,
-  listVersions,
-  validatePackageName,
-  validateVersion,
-  PackageError,
-} from "@/lib/packages/store";
-import {
-  parseNpmPublish,
   buildPackument,
   findVersionByFilename,
-  NpmPublishError,
   type NpmPublishBody,
+  NpmPublishError,
   type NpmVersionMeta,
+  parseNpmPublish,
 } from "@/lib/packages/npm";
-import { authenticatePackagePush } from "@/lib/packages/auth";
 import { getRepoContentStore } from "@/lib/packages/repo-store";
+import {
+  listVersions,
+  PackageError,
+  upsertPackageVersion,
+  validatePackageName,
+  validateVersion,
+} from "@/lib/packages/store";
 import { assertCanStorePackage, QuotaExceededError } from "@/lib/registry/quotas";
-import { jsonResponse } from "@/lib/http/json";
-import { getEnv } from "@/lib/env";
-import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
 import type { Repo } from "@/lib/registry/repos";
+import { getRepo, RegistryError, validateName } from "@/lib/registry/repos";
+import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,10 +79,7 @@ export async function PUT(req: Request, { params }: Params) {
     handle = await getRepoContentStore(repo, "write");
   } catch (e) {
     if (e instanceof OwnerFetchUnavailableError) {
-      return NextResponse.json(
-        { error: e.message, code: "OWNER_UNAVAILABLE" },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: e.message, code: "OWNER_UNAVAILABLE" }, { status: 503 });
     }
     throw e;
   }
@@ -146,11 +143,7 @@ export async function GET(req: Request, { params }: Params) {
   return jsonResponse(buildPackument(pkg, rows, base));
 }
 
-async function serveTarball(
-  repo: Repo,
-  pkg: string,
-  filename: string,
-): Promise<NextResponse> {
+async function serveTarball(repo: Repo, pkg: string, filename: string): Promise<NextResponse> {
   const rows = listVersions(repo.id, "npm", pkg);
   const record = findVersionByFilename(rows, filename);
   if (!record) {
@@ -190,16 +183,13 @@ function decodeSegment(s: string): string {
 }
 
 function unauthorized(owner: string, name: string): NextResponse {
-  return new NextResponse(
-    JSON.stringify({ error: "missing or invalid push token" }),
-    {
-      status: 401,
-      headers: {
-        "Content-Type": "application/json",
-        "WWW-Authenticate": `Basic realm="${owner}/${name}"`,
-      },
+  return new NextResponse(JSON.stringify({ error: "missing or invalid push token" }), {
+    status: 401,
+    headers: {
+      "Content-Type": "application/json",
+      "WWW-Authenticate": `Basic realm="${owner}/${name}"`,
     },
-  );
+  });
 }
 
 function quota(e: QuotaExceededError): NextResponse {

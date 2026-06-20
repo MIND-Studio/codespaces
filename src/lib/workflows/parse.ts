@@ -31,9 +31,7 @@ export function parseWorkflow(source: string): Workflow {
   try {
     raw = parseYaml(source);
   } catch (e) {
-    throw new WorkflowParseError(
-      `invalid YAML: ${(e as Error).message ?? "parse error"}`,
-    );
+    throw new WorkflowParseError(`invalid YAML: ${(e as Error).message ?? "parse error"}`);
   }
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new WorkflowParseError("workflow root must be a mapping");
@@ -56,9 +54,7 @@ export function parseWorkflow(source: string): Workflow {
   const run: string[] = [];
   for (const [i, cmd] of obj.run.entries()) {
     if (typeof cmd !== "string" || !cmd.trim()) {
-      throw new WorkflowParseError(
-        `run[${i}] must be a non-empty string`,
-      );
+      throw new WorkflowParseError(`run[${i}] must be a non-empty string`);
     }
     run.push(cmd);
   }
@@ -88,9 +84,7 @@ export function parseWorkflow(source: string): Workflow {
       obj.timeout < 1 ||
       obj.timeout > MAX_TIMEOUT_S
     ) {
-      throw new WorkflowParseError(
-        `\`timeout\` must be an integer between 1 and ${MAX_TIMEOUT_S}`,
-      );
+      throw new WorkflowParseError(`\`timeout\` must be an integer between 1 and ${MAX_TIMEOUT_S}`);
     }
     timeoutS = obj.timeout;
   }

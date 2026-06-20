@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 import { mergeBranches } from "@/lib/git/merge";
 
 function makeBareRepo(): string {
@@ -55,20 +55,15 @@ describe("mergeBranches — empty target branch", () => {
       expect(refs).toContain("refs/heads/agent/issue-1");
       expect(refs).not.toContain("refs/heads/main\n");
 
-      const result = await mergeBranches(
-        bare,
-        "agent/issue-1",
-        "main",
-        "Merge pull request #1",
-        { name: "alice", email: "https://example.org/alice#me" },
-      );
+      const result = await mergeBranches(bare, "agent/issue-1", "main", "Merge pull request #1", {
+        name: "alice",
+        email: "https://example.org/alice#me",
+      });
       expect(result.ok).toBe(true);
       if (result.ok) expect(result.mergeSha).toBe(sha);
 
       // main now points at the source SHA on the bare.
-      const mainSha = execSync(`git -C "${bare}" rev-parse refs/heads/main`)
-        .toString()
-        .trim();
+      const mainSha = execSync(`git -C "${bare}" rev-parse refs/heads/main`).toString().trim();
       expect(mainSha).toBe(sha);
     } finally {
       rmSync(bare, { recursive: true, force: true });
@@ -78,13 +73,10 @@ describe("mergeBranches — empty target branch", () => {
   it("returns a clean error when neither target nor source exist", async () => {
     const bare = makeBareRepo();
     try {
-      const result = await mergeBranches(
-        bare,
-        "agent/issue-1",
-        "main",
-        "Merge pull request #1",
-        { name: "alice", email: "https://example.org/alice#me" },
-      );
+      const result = await mergeBranches(bare, "agent/issue-1", "main", "Merge pull request #1", {
+        name: "alice",
+        email: "https://example.org/alice#me",
+      });
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.conflict).toBe(false);

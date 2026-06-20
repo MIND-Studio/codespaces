@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireSession } from "@/lib/auth/session";
+import { getEnv } from "@/lib/env";
+import { createBareRepo } from "@/lib/git/backend";
+import { jsonResponse } from "@/lib/http/json";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { assertCanCreateRepo, QuotaExceededError } from "@/lib/registry/quotas";
 import {
   createRepo,
   deleteRepoById,
@@ -6,17 +12,8 @@ import {
   listRepos,
   RegistryError,
 } from "@/lib/registry/repos";
-import { createBareRepo } from "@/lib/git/backend";
-import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
-import { requireSession } from "@/lib/auth/session";
-import { getEnv } from "@/lib/env";
 import { verifyPodRootForWebId } from "@/lib/solid/profile";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { jsonResponse } from "@/lib/http/json";
-import {
-  assertCanCreateRepo,
-  QuotaExceededError,
-} from "@/lib/registry/quotas";
+import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,20 +35,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    owner,
-    name,
-    ownerWebId,
-    ownerPodRoot,
-    defaultBranch,
-    visibility,
-  } = (body ?? {}) as Record<string, unknown>;
+  const { owner, name, ownerWebId, ownerPodRoot, defaultBranch, visibility } = (body ??
+    {}) as Record<string, unknown>;
 
   if (typeof owner !== "string" || typeof name !== "string") {
-    return NextResponse.json(
-      { error: "owner and name are required strings" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "owner and name are required strings" }, { status: 400 });
   }
   if (typeof ownerWebId !== "string" || typeof ownerPodRoot !== "string") {
     return NextResponse.json(
@@ -116,12 +104,8 @@ export async function POST(req: Request) {
       name,
       ownerWebId,
       ownerPodRoot,
-      defaultBranch:
-        typeof defaultBranch === "string" ? defaultBranch : undefined,
-      visibility:
-        visibility === "private" || visibility === "public"
-          ? visibility
-          : undefined,
+      defaultBranch: typeof defaultBranch === "string" ? defaultBranch : undefined,
+      visibility: visibility === "private" || visibility === "public" ? visibility : undefined,
     });
   } catch (e) {
     if (e instanceof RegistryError) {
@@ -139,10 +123,7 @@ export async function POST(req: Request) {
   } catch (e) {
     deleteRepoById(repo.id);
     console.error("[repos.POST] failed to create bare repo:", e);
-    return NextResponse.json(
-      { error: "failed to create bare git repository" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "failed to create bare git repository" }, { status: 500 });
   }
 
   // Best-effort: publish a Turtle description of the repo into the owner's
@@ -150,10 +131,7 @@ export async function POST(req: Request) {
   // the repo as Linked Data. Failure here does not fail repo creation —
   // the pod might be temporarily offline.
   writeRepoMetadata(repo, getPagesConfig(repo.id)).catch((err) => {
-    console.warn(
-      `[repos.POST] writeRepoMetadata for ${repo.owner}/${repo.name} failed:`,
-      err,
-    );
+    console.warn(`[repos.POST] writeRepoMetadata for ${repo.owner}/${repo.name} failed:`, err);
   });
 
   const env = getEnv();

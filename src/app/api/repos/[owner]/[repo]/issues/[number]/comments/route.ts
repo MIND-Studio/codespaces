@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { getRepo, RegistryError } from "@/lib/registry/repos";
+import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
+import { dispatch } from "@/lib/agents/dispatch";
+import { requireOwner } from "@/lib/auth/session";
 import {
   addComment,
   getIssueByNumber,
   listComments,
   setCommentPodUrl,
 } from "@/lib/registry/issues";
+import { getRepo, RegistryError } from "@/lib/registry/repos";
 import { commentUrl, writeCommentToPod } from "@/lib/solid/issues";
-import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
-import { dispatch } from "@/lib/agents/dispatch";
-import { requireOwner } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,15 +63,9 @@ export async function POST(req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { body: commentBody, authorWebId } = (body ?? {}) as Record<
-    string,
-    unknown
-  >;
+  const { body: commentBody, authorWebId } = (body ?? {}) as Record<string, unknown>;
   if (typeof commentBody !== "string" || commentBody.trim().length === 0) {
-    return NextResponse.json(
-      { error: "body is required and must be non-empty" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "body is required and must be non-empty" }, { status: 400 });
   }
   // The session establishes who is authoring this comment. A bodysupplied
   // authorWebId that disagrees with the session would let any
@@ -104,10 +98,7 @@ export async function POST(req: Request, { params }: Params) {
   comment.podUrl = canonical;
 
   writeCommentToPod(repo, issue.number, comment).catch((err) => {
-    console.warn(
-      `[comments.POST] writeCommentToPod for ${owner}/${name}#${number} failed:`,
-      err,
-    );
+    console.warn(`[comments.POST] writeCommentToPod for ${owner}/${name}#${number} failed:`, err);
   });
 
   // Re-fire the coder on the new comment so the conversation keeps

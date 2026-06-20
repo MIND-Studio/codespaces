@@ -1,11 +1,7 @@
 import "server-only";
-import {
-  getPagesConfig,
-  listRepos,
-  type Repo,
-} from "@/lib/registry/repos";
 import { readBranchHead } from "@/lib/git/backend";
 import { publishPages } from "@/lib/pages/publisher";
+import { getPagesConfig, listRepos, type Repo } from "@/lib/registry/repos";
 
 /**
  * P0-R4 — HEAD-vs-last_published_sha reconciler.
@@ -60,9 +56,7 @@ export function reconcilePages(): Promise<ReconcileOutcome[]> {
       for (const repo of repos) {
         outcomes.push(await reconcileOne(repo));
       }
-      const driftCount = outcomes.filter(
-        (o) => o.status === "republished",
-      ).length;
+      const driftCount = outcomes.filter((o) => o.status === "republished").length;
       const failureCount = outcomes.filter((o) => o.status === "failed").length;
       if (driftCount > 0 || failureCount > 0) {
         console.log(
@@ -155,17 +149,11 @@ let timer: NodeJS.Timeout | null = null;
 export function startReconciler(): void {
   if (timerStarted) return;
   timerStarted = true;
-  console.log(
-    `[reconciler] starting — interval=${RECONCILE_INTERVAL_MS}ms`,
-  );
+  console.log(`[reconciler] starting — interval=${RECONCILE_INTERVAL_MS}ms`);
   // Kick off the first pass async so the bootstrap doesn't block on it.
-  void reconcilePages().catch((e) =>
-    console.warn(`[reconciler] initial pass failed:`, e),
-  );
+  void reconcilePages().catch((e) => console.warn(`[reconciler] initial pass failed:`, e));
   timer = setInterval(() => {
-    void reconcilePages().catch((e) =>
-      console.warn(`[reconciler] pass failed:`, e),
-    );
+    void reconcilePages().catch((e) => console.warn(`[reconciler] pass failed:`, e));
   }, RECONCILE_INTERVAL_MS);
   // Allow the process to exit cleanly during dev / scripts.
   if (typeof timer.unref === "function") timer.unref();

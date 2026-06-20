@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { setInboxAcl } from "@/lib/solid/containers";
 
 // The inbox ACL is the security boundary of the whole proposals feature:

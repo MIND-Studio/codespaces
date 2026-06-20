@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * MC-160: the `.mind`-derived `flow:Tracker` is mirrored into the owner's pod
@@ -86,9 +86,7 @@ beforeEach(() => {
 
 describe("tracker → pod mirror (MC-160)", () => {
   it("publishes the trio + a public-read ACL, idempotently", async () => {
-    const { publishTrackerToPod, trackerContainerUrl } = await import(
-      "@/lib/solid/tracker-pod"
-    );
+    const { publishTrackerToPod, trackerContainerUrl } = await import("@/lib/solid/tracker-pod");
     expect(trackerContainerUrl(repo)).toBe(CONTAINER);
 
     const res = await publishTrackerToPod(repo, OUTPUTS);
@@ -107,11 +105,7 @@ describe("tracker → pod mirror (MC-160)", () => {
     await publishTrackerToPod(repo, OUTPUTS);
     const docs = [...pod.store.keys()].filter((k) => k.endsWith(".ttl"));
     expect(docs.sort()).toEqual(
-      [
-        `${CONTAINER}epics.ttl`,
-        `${CONTAINER}state.ttl`,
-        `${CONTAINER}tracker.ttl`,
-      ].sort(),
+      [`${CONTAINER}epics.ttl`, `${CONTAINER}state.ttl`, `${CONTAINER}tracker.ttl`].sort(),
     );
   });
 
@@ -126,9 +120,7 @@ describe("tracker → pod mirror (MC-160)", () => {
   });
 
   it("reads the pod tracker back and parses it grouped by epic", async () => {
-    const { publishTrackerToPod, readPodTracker } = await import(
-      "@/lib/solid/tracker-pod"
-    );
+    const { publishTrackerToPod, readPodTracker } = await import("@/lib/solid/tracker-pod");
     await publishTrackerToPod(repo, OUTPUTS);
 
     const tracker = await readPodTracker(repo, "alice", "site");

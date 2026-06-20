@@ -51,24 +51,16 @@ export function createAgentRun(input: {
         (repo_id, issue_id, event_type, role, driver, status, summary, error_message, log_path, created_at)
        VALUES (?, ?, ?, ?, ?, 'running', '', NULL, NULL, ?)`,
     )
-    .run(
-      input.repoId,
-      input.issueId,
-      input.eventType,
-      input.role,
-      input.driver,
-      Date.now(),
-    );
+    .run(input.repoId, input.issueId, input.eventType, input.role, input.driver, Date.now());
   const id = info.lastInsertRowid as number;
   // Derive the log path from the id so multiple runs in flight at once
   // can never collide on the file.
   const logPath = `${id}.log`;
-  getDb()
-    .prepare("UPDATE agent_runs SET log_path = ? WHERE id = ?")
-    .run(logPath, id);
-  const row = getDb()
-    .prepare("SELECT * FROM agent_runs WHERE id = ?")
-    .get(id) as Record<string, unknown>;
+  getDb().prepare("UPDATE agent_runs SET log_path = ? WHERE id = ?").run(logPath, id);
+  const row = getDb().prepare("SELECT * FROM agent_runs WHERE id = ?").get(id) as Record<
+    string,
+    unknown
+  >;
   return rowToRun(row);
 }
 
@@ -90,22 +82,17 @@ export function finishAgentRun(
        SET status = ?, summary = ?, error_message = ?
        WHERE id = ?`,
     )
-    .run(
-      input.status,
-      input.summary.slice(0, 4000),
-      input.errorMessage ?? null,
-      id,
-    );
-  const row = getDb()
-    .prepare("SELECT * FROM agent_runs WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+    .run(input.status, input.summary.slice(0, 4000), input.errorMessage ?? null, id);
+  const row = getDb().prepare("SELECT * FROM agent_runs WHERE id = ?").get(id) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToRun(row) : null;
 }
 
 export function getAgentRun(id: number): AgentRun | null {
-  const row = getDb()
-    .prepare("SELECT * FROM agent_runs WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM agent_runs WHERE id = ?").get(id) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToRun(row) : null;
 }
 

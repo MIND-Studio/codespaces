@@ -12,8 +12,7 @@ export const echoDriver: Driver = {
     return "Records the role + event without calling any model. Useful for testing the dispatch path.";
   },
   async run(ctx) {
-    const head =
-      ctx.prompt.length > 280 ? `${ctx.prompt.slice(0, 280)}…` : ctx.prompt;
+    const head = ctx.prompt.length > 280 ? `${ctx.prompt.slice(0, 280)}…` : ctx.prompt;
     return {
       status: "ok",
       summary: `echo[${ctx.role.name}] event=${ctx.event.type} :: ${head}`,

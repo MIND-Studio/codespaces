@@ -31,12 +31,12 @@
  */
 
 import http from "node:http";
-import { WebSocketServer, WebSocket } from "ws";
-import * as Y from "yjs";
-import * as syncProtocol from "y-protocols/sync";
-import * as awarenessProtocol from "y-protocols/awareness";
-import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
+import * as encoding from "lib0/encoding";
+import { WebSocket, WebSocketServer } from "ws";
+import * as awarenessProtocol from "y-protocols/awareness";
+import * as syncProtocol from "y-protocols/sync";
+import * as Y from "yjs";
 
 const PORT = Number(process.env.RELAY_PORT ?? 3012);
 const HOST = process.env.RELAY_HOST ?? "0.0.0.0";
@@ -84,15 +84,7 @@ function getRoom(name: string): Room {
   // the reference server, which also lets a peer's own state round-trip.
   awareness.on(
     "update",
-    ({
-      added,
-      updated,
-      removed,
-    }: {
-      added: number[];
-      updated: number[];
-      removed: number[];
-    }) => {
+    ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }) => {
       const changed = added.concat(updated, removed);
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
@@ -235,11 +227,7 @@ function setupConnection(conn: WebSocket, roomName: string) {
   function closeConn() {
     const owned = room.conns.get(conn);
     if (owned && owned.size > 0) {
-      awarenessProtocol.removeAwarenessStates(
-        room.awareness,
-        Array.from(owned),
-        "relay-cleanup",
-      );
+      awarenessProtocol.removeAwarenessStates(room.awareness, Array.from(owned), "relay-cleanup");
     }
     room.conns.delete(conn);
     room.awareness.off("update", trackAwareness);
@@ -270,10 +258,7 @@ function setupConnection(conn: WebSocket, roomName: string) {
       encoding.writeVarUint(awEncoder, MESSAGE_AWARENESS);
       encoding.writeVarUint8Array(
         awEncoder,
-        awarenessProtocol.encodeAwarenessUpdate(
-          room.awareness,
-          Array.from(states.keys()),
-        ),
+        awarenessProtocol.encodeAwarenessUpdate(room.awareness, Array.from(states.keys())),
       );
       send(conn, encoding.toUint8Array(awEncoder));
     }

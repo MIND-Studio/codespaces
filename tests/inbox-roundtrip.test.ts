@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * End-to-end exercise of the LDN inbox module against an in-memory pod —
@@ -50,10 +50,7 @@ const { pod } = vi.hoisted(() => {
       // GET
       if (url.endsWith("/")) {
         const children = [...store.keys()].filter(
-          (k) =>
-            k.startsWith(url) &&
-            !k.slice(url.length).includes("/") &&
-            !k.endsWith(".acl"),
+          (k) => k.startsWith(url) && !k.slice(url.length).includes("/") && !k.endsWith(".acl"),
         );
         const contains = children.length
           ? ` ;\n    ldp:contains ${children.map((c) => `<${c}>`).join(", ")}`
@@ -130,8 +127,7 @@ describe("inbox round-trip", () => {
     const { postProposal, listProposals } = await import("@/lib/solid/inbox");
 
     const hostileTitle = 'Pwn "me" now';
-    const hostileBody =
-      'line one\n""" .\n<#evil> <http://ex/p> <http://ex/o> .\n"""more';
+    const hostileBody = 'line one\n""" .\n<#evil> <http://ex/p> <http://ex/o> .\n"""more';
     await postProposal(repo, {
       title: hostileTitle,
       body: hostileBody,
@@ -188,9 +184,7 @@ describe("inbox round-trip", () => {
   });
 
   it("dismiss deletes the notification", async () => {
-    const { postProposal, listProposals, deleteProposal } = await import(
-      "@/lib/solid/inbox"
-    );
+    const { postProposal, listProposals, deleteProposal } = await import("@/lib/solid/inbox");
 
     const { id } = await postProposal(repo, {
       title: "first",

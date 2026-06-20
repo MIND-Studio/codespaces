@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * MC-173 regression: a stale delegated identity (the issuer's dynamic-client
@@ -53,9 +53,7 @@ describe("loadAuthedFetchForWebId — dead registration normalization", () => {
     getIdentityByWebId.mockReturnValue(IDENTITY);
     // The SDK throws `invalid_client` when the dynamic registration is gone.
     getSessionFromStorage.mockRejectedValue(new Error("invalid_client"));
-    await expect(loadAuthedFetchForWebId(WEBID)).rejects.toBeInstanceOf(
-      OidcRefreshFailedError,
-    );
+    await expect(loadAuthedFetchForWebId(WEBID)).rejects.toBeInstanceOf(OidcRefreshFailedError);
   });
 
   it("throws OidcRefreshFailedError when refresh RETURNS a non-logged-in session", async () => {
@@ -64,9 +62,7 @@ describe("loadAuthedFetchForWebId — dead registration normalization", () => {
     );
     getIdentityByWebId.mockReturnValue(IDENTITY);
     getSessionFromStorage.mockResolvedValue({ info: { isLoggedIn: false } });
-    await expect(loadAuthedFetchForWebId(WEBID)).rejects.toBeInstanceOf(
-      OidcRefreshFailedError,
-    );
+    await expect(loadAuthedFetchForWebId(WEBID)).rejects.toBeInstanceOf(OidcRefreshFailedError);
   });
 
   it("returns the session fetch on a healthy refresh", async () => {

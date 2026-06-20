@@ -30,16 +30,10 @@ function serialiseLabels(labels?: Labels): string {
   if (!labels) return "";
   const keys = Object.keys(labels).sort();
   if (keys.length === 0) return "";
-  return keys
-    .map((k) => `${k}="${String(labels[k]).replace(/[\\"\n]/g, "_")}"`)
-    .join(",");
+  return keys.map((k) => `${k}="${String(labels[k]).replace(/[\\"\n]/g, "_")}"`).join(",");
 }
 
-function ensureEntry(
-  name: string,
-  type: "counter" | "gauge",
-  help: string,
-): MetricEntry {
+function ensureEntry(name: string, type: "counter" | "gauge", help: string): MetricEntry {
   const existing = registry.get(name);
   if (existing) return existing;
   const entry: MetricEntry = { type, help, series: new Map() };
@@ -47,12 +41,7 @@ function ensureEntry(
   return entry;
 }
 
-export function incrementCounter(
-  name: string,
-  help: string,
-  labels?: Labels,
-  value = 1,
-): void {
+export function incrementCounter(name: string, help: string, labels?: Labels, value = 1): void {
   const entry = ensureEntry(name, "counter", help);
   const key = serialiseLabels(labels);
   entry.series.set(key, (entry.series.get(key) ?? 0) + value);
@@ -94,7 +83,11 @@ export function renderExposition(): string {
 
 // Convenience wrappers for the named series the bridge tracks.
 export const Metrics = {
-  gitPush(owner: string, repo: string, result: "success" | "auth-failed" | "rate-limited" | "quota-exceeded" | "error"): void {
+  gitPush(
+    owner: string,
+    repo: string,
+    result: "success" | "auth-failed" | "rate-limited" | "quota-exceeded" | "error",
+  ): void {
     incrementCounter("git_pushes_total", "Total git push attempts.", {
       owner,
       repo,

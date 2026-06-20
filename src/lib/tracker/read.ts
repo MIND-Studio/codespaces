@@ -1,25 +1,21 @@
 import "server-only";
 import { hasAnyCommits, readBlob } from "@/lib/git/objects";
-import { parseTrackerTrio } from "./parse";
 import { groupByEpic, localName, type Tracker } from "./model";
+import { parseTrackerTrio } from "./parse";
 
-export { groupByEpic, localName, parseTrackerTrio };
 export type {
+  IssueCategory,
+  IssueState,
   Tracker,
   TrackerEpic,
-  TrackerIssue,
   TrackerGroup,
-  IssueState,
-  IssueCategory,
+  TrackerIssue,
 } from "./model";
+export { groupByEpic, localName, parseTrackerTrio };
 
 const BUILD_DIR = ".mind/build";
 
-async function readUtf8(
-  bare: string,
-  ref: string,
-  path: string,
-): Promise<string | null> {
+async function readUtf8(bare: string, ref: string, path: string): Promise<string | null> {
   const blob = await readBlob(bare, ref, path);
   return blob ? blob.bytes.toString("utf-8") : null;
 }

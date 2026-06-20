@@ -1,8 +1,8 @@
 import "server-only";
 import { readSession } from "@/lib/auth/session";
-import { displayNameForWebId } from "@/lib/solid/web-id";
-import { getUserByWebId } from "@/lib/registry/users";
 import { listRepos } from "@/lib/registry/repos";
+import { getUserByWebId } from "@/lib/registry/users";
+import { displayNameForWebId } from "@/lib/solid/web-id";
 import { AuthCta } from "./auth-cta";
 
 function initialsForName(source: string): string {

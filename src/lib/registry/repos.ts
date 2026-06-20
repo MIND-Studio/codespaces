@@ -38,11 +38,7 @@ const NAME_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
 export class RegistryError extends Error {
   constructor(
     message: string,
-    public readonly code:
-      | "INVALID_NAME"
-      | "ALREADY_EXISTS"
-      | "NOT_FOUND"
-      | "INVALID_INPUT",
+    public readonly code: "INVALID_NAME" | "ALREADY_EXISTS" | "NOT_FOUND" | "INVALID_INPUT",
   ) {
     super(message);
   }
@@ -50,10 +46,7 @@ export class RegistryError extends Error {
 
 export function validateName(value: string, field: "owner" | "repo"): void {
   if (typeof value !== "string" || !NAME_RE.test(value) || value.includes("..")) {
-    throw new RegistryError(
-      `Invalid ${field} name: ${JSON.stringify(value)}`,
-      "INVALID_NAME",
-    );
+    throw new RegistryError(`Invalid ${field} name: ${JSON.stringify(value)}`, "INVALID_NAME");
   }
 }
 
@@ -122,10 +115,7 @@ export function createRepo(input: {
       "code" in e &&
       (e as { code: string }).code === "SQLITE_CONSTRAINT_UNIQUE"
     ) {
-      throw new RegistryError(
-        `Repo ${input.owner}/${input.name} already exists`,
-        "ALREADY_EXISTS",
-      );
+      throw new RegistryError(`Repo ${input.owner}/${input.name} already exists`, "ALREADY_EXISTS");
     }
     throw e;
   }
@@ -152,9 +142,9 @@ function rowToRepo(row: Record<string, unknown>): Repo {
 }
 
 export function getRepoById(id: number): Repo | null {
-  const row = getDb()
-    .prepare("SELECT * FROM repos WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM repos WHERE id = ?").get(id) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToRepo(row) : null;
 }
 
@@ -169,18 +159,17 @@ export function getRepo(owner: string, name: string): Repo | null {
 
 export function listRepos(): Repo[] {
   return (
-    getDb()
-      .prepare("SELECT * FROM repos ORDER BY created_at DESC")
-      .all() as Record<string, unknown>[]
+    getDb().prepare("SELECT * FROM repos ORDER BY created_at DESC").all() as Record<
+      string,
+      unknown
+    >[]
   ).map(rowToRepo);
 }
 
 export function updateRepo(
   owner: string,
   name: string,
-  patch: Partial<
-    Pick<Repo, "visibility" | "defaultBranch" | "proposalsEnabled" | "collabEnabled">
-  >,
+  patch: Partial<Pick<Repo, "visibility" | "defaultBranch" | "proposalsEnabled" | "collabEnabled">>,
 ): Repo {
   const repo = getRepo(owner, name);
   if (!repo) throw new RegistryError("repo not found", "NOT_FOUND");
@@ -220,7 +209,9 @@ export function updateRepo(
   if (fields.length === 0) return repo;
 
   values.push(repo.id);
-  getDb().prepare(`UPDATE repos SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  getDb()
+    .prepare(`UPDATE repos SET ${fields.join(", ")} WHERE id = ?`)
+    .run(...values);
   return getRepoById(repo.id)!;
 }
 
@@ -234,9 +225,7 @@ function rowToPages(row: Record<string, unknown>): PagesConfig {
     targetContainer: row.target_container as string,
     lastPublishedAt: (row.last_published_at as number | null) ?? null,
     lastPublishStatus:
-      status === "success" || status === "failed" || status === "needs-reauth"
-        ? status
-        : null,
+      status === "success" || status === "failed" || status === "needs-reauth" ? status : null,
     lastPublishError: (row.last_publish_error as string | null) ?? null,
     lastPublishAttempt: (row.last_publish_attempt as number | null) ?? null,
     lastPublishedSha: (row.last_published_sha as string | null) ?? null,
@@ -244,9 +233,9 @@ function rowToPages(row: Record<string, unknown>): PagesConfig {
 }
 
 export function getPagesConfig(repoId: number): PagesConfig | null {
-  const row = getDb()
-    .prepare("SELECT * FROM pages_configs WHERE repo_id = ?")
-    .get(repoId) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM pages_configs WHERE repo_id = ?").get(repoId) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToPages(row) : null;
 }
 
@@ -262,10 +251,7 @@ export function updatePagesConfig(
     patch.targetContainer !== "" &&
     !patch.targetContainer.startsWith("http")
   ) {
-    throw new RegistryError(
-      "targetContainer must be http(s) URL or empty",
-      "INVALID_INPUT",
-    );
+    throw new RegistryError("targetContainer must be http(s) URL or empty", "INVALID_INPUT");
   }
   if (
     patch.sourcePath !== undefined &&
@@ -294,13 +280,7 @@ export function updatePagesConfig(
          SET enabled = ?, source_branch = ?, source_path = ?, target_container = ?
        WHERE repo_id = ?`,
     )
-    .run(
-      next.enabled ? 1 : 0,
-      next.sourceBranch,
-      next.sourcePath,
-      next.targetContainer,
-      repoId,
-    );
+    .run(next.enabled ? 1 : 0, next.sourceBranch, next.sourcePath, next.targetContainer, repoId);
 
   return next;
 }

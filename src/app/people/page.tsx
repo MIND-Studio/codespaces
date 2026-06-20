@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Button, Input } from "@mind-studio/ui";
+import Link from "next/link";
 import { listRepos, type Repo } from "@/lib/registry/repos";
 import ProfileView from "./profile-view";
 
@@ -43,9 +43,8 @@ export default async function PeoplePage({
         Profiles, <em>read from pods.</em>
       </h1>
       <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
-        The bridge doesn't store names, bios, or avatars. Every field on a
-        profile page is fetched live from the WebID URL and rendered as-is. If
-        a field isn't in the pod, the page says so.
+        The bridge doesn't store names, bios, or avatars. Every field on a profile page is fetched
+        live from the WebID URL and rendered as-is. If a field isn't in the pod, the page says so.
       </p>
 
       <hr className="hairline my-10" />
@@ -68,10 +67,7 @@ export default async function PeoplePage({
                 >
                   /people/{p.owner}
                 </div>
-                <div
-                  className="display mt-1 text-xl"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <div className="display mt-1 text-xl" style={{ fontFamily: "var(--font-display)" }}>
                   @{p.owner}
                 </div>
                 <div
@@ -90,9 +86,8 @@ export default async function PeoplePage({
 
       <Section title="Anywhere on the open web">
         <p className="mb-4 text-sm text-[color:var(--ink-soft)]">
-          Paste any public WebID URL. The bridge will dereference it and render
-          whatever it finds — including profiles hosted on other Solid servers
-          that have never heard of this bridge.
+          Paste any public WebID URL. The bridge will dereference it and render whatever it finds —
+          including profiles hosted on other Solid servers that have never heard of this bridge.
         </p>
         <form className="flex flex-wrap gap-2" action="/people" method="get">
           <Input
@@ -108,8 +103,8 @@ export default async function PeoplePage({
           </Button>
         </form>
         <p className="mt-3 text-xs text-[color:var(--ink-faint)]">
-          Tip: this works for any WebID whose document is public-read — the
-          bridge dereferences the URL with no auth.
+          Tip: this works for any WebID whose document is public-read — the bridge dereferences the
+          URL with no auth.
         </p>
       </Section>
     </div>
@@ -127,19 +122,10 @@ function uniqueByWebId(repos: Repo[]): Repo[] {
   return out.sort((a, b) => a.owner.localeCompare(b.owner));
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <section>
-      <h2
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <div className="mt-4">{children}</div>

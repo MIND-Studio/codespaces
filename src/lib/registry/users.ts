@@ -71,15 +71,15 @@ export function createUser(input: {
 }
 
 export function getUserByWebId(webId: string): User | null {
-  const row = getDb()
-    .prepare("SELECT * FROM users WHERE web_id = ?")
-    .get(webId) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM users WHERE web_id = ?").get(webId) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToUser(row) : null;
 }
 
 export function getUserBySlug(slug: string): User | null {
-  const row = getDb()
-    .prepare("SELECT * FROM users WHERE owner_slug = ?")
-    .get(slug) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM users WHERE owner_slug = ?").get(slug) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToUser(row) : null;
 }

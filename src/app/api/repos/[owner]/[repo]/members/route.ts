@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { requireMember } from "@/lib/auth/session";
 import { jsonResponse } from "@/lib/http/json";
-import { addMember, readMembers, isMemberRole } from "@/lib/solid/members";
+import { getRepo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { addMember, isMemberRole, readMembers } from "@/lib/solid/members";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,16 +61,10 @@ export async function POST(req: Request, { params }: Params) {
   }
   const { webId, role } = (body ?? {}) as Record<string, unknown>;
   if (typeof webId !== "string" || !webId.startsWith("http")) {
-    return NextResponse.json(
-      { error: "webId must be an http(s) WebID" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "webId must be an http(s) WebID" }, { status: 400 });
   }
   if (typeof role !== "string" || !isMemberRole(role)) {
-    return NextResponse.json(
-      { error: "role must be reader|writer|admin" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "role must be reader|writer|admin" }, { status: 400 });
   }
   if (webId === repo.ownerWebId) {
     return NextResponse.json(

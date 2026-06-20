@@ -1,21 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { getPullRequest } from "@/lib/registry/pulls";
-import { countComments, getIssueById } from "@/lib/registry/issues";
-import { repoPath } from "@/lib/git/backend";
-import {
-  commitsAhead,
-  diffFiles,
-  diffStat,
-  unifiedDiff,
-} from "@/lib/git/diff";
-import { RelativeTime } from "@/components/relative-time";
-import { renderMarkdown } from "@/lib/markdown";
 import { DiffView } from "@/components/diff-view";
-import { PullActions } from "./pull-actions";
-import { PrPreviewCard } from "./pr-preview-card";
+import { RelativeTime } from "@/components/relative-time";
+import { repoPath } from "@/lib/git/backend";
+import { commitsAhead, diffFiles, diffStat, unifiedDiff } from "@/lib/git/diff";
+import { renderMarkdown } from "@/lib/markdown";
+import { countComments, getIssueById } from "@/lib/registry/issues";
+import { getPullRequest } from "@/lib/registry/pulls";
+import { getRepo } from "@/lib/registry/repos";
 import { RepoTabs } from "../../repo-tabs";
+import { PrPreviewCard } from "./pr-preview-card";
+import { PullActions } from "./pull-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +29,8 @@ export default async function PullDetailPage({ params }: PageProps) {
 
   const bare = repoPath(repo.owner, repo.name);
   const baseRef =
-    pull.status === "merged" && pull.mergeSha
-      ? `${pull.mergeSha}^1`
-      : pull.targetBranch;
-  const headRef =
-    pull.status === "merged" && pull.mergeSha
-      ? pull.mergeSha
-      : pull.sourceBranch;
+    pull.status === "merged" && pull.mergeSha ? `${pull.mergeSha}^1` : pull.targetBranch;
+  const headRef = pull.status === "merged" && pull.mergeSha ? pull.mergeSha : pull.sourceBranch;
 
   // Diff data is best-effort: if the source branch has been deleted
   // post-merge, we silently fall back to empty arrays so the page still
@@ -61,9 +51,7 @@ export default async function PullDetailPage({ params }: PageProps) {
 
   const bodyHtml = pull.body.trim() ? renderMarkdown(pull.body) : null;
   const linkedIssue = pull.issueId ? getIssueById(pull.issueId) : null;
-  const linkedIssueComments = linkedIssue
-    ? countComments(linkedIssue.id)
-    : 0;
+  const linkedIssueComments = linkedIssue ? countComments(linkedIssue.id) : 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-10 sm:py-12">
@@ -78,13 +66,9 @@ export default async function PullDetailPage({ params }: PageProps) {
           className="display min-w-0 break-words text-2xl sm:text-3xl"
           style={{ fontFamily: "var(--font-display)", overflowWrap: "anywhere" }}
         >
-          <span className="text-[color:var(--ink-faint)]">#{pull.number}</span>{" "}
-          {pull.title}
+          <span className="text-[color:var(--ink-faint)]">#{pull.number}</span> {pull.title}
         </h1>
-        <span
-          className="stamp shrink-0"
-          data-tone={pull.status === "merged" ? "ok" : undefined}
-        >
+        <span className="stamp shrink-0" data-tone={pull.status === "merged" ? "ok" : undefined}>
           {pull.status}
         </span>
       </div>
@@ -124,16 +108,10 @@ export default async function PullDetailPage({ params }: PageProps) {
           <>
             {" "}
             · closes{" "}
-            <Link
-              href={`/repos/${owner}/${name}/issues/${linkedIssue.number}`}
-              className="link"
-            >
+            <Link href={`/repos/${owner}/${name}/issues/${linkedIssue.number}`} className="link">
               #{linkedIssue.number}
             </Link>{" "}
-            <span
-              className="stamp"
-              data-tone={linkedIssue.status === "closed" ? "ok" : undefined}
-            >
+            <span className="stamp" data-tone={linkedIssue.status === "closed" ? "ok" : undefined}>
               {linkedIssue.status}
             </span>
           </>
@@ -154,14 +132,9 @@ export default async function PullDetailPage({ params }: PageProps) {
         </div>
         <div className="bg-[color:var(--paper)] px-5 py-4">
           {bodyHtml ? (
-            <article
-              className="markdown-body"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
+            <article className="markdown-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           ) : (
-            <p className="text-sm italic text-[color:var(--ink-faint)]">
-              (no description)
-            </p>
+            <p className="text-sm italic text-[color:var(--ink-faint)]">(no description)</p>
           )}
         </div>
       </div>
@@ -265,9 +238,7 @@ export default async function PullDetailPage({ params }: PageProps) {
               >
                 <span className="text-[color:var(--ink-faint)]">{f.status}</span>
                 <span className="text-[color:var(--ink)] truncate">
-                  {f.oldPath && f.oldPath !== f.newPath
-                    ? `${f.oldPath} → ${f.newPath}`
-                    : f.newPath}
+                  {f.oldPath && f.oldPath !== f.newPath ? `${f.oldPath} → ${f.newPath}` : f.newPath}
                 </span>
                 <span className="whitespace-nowrap text-[10px]">
                   <span className="text-[color:var(--status-ok)]">+{f.insertions}</span>{" "}

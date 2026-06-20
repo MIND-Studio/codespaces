@@ -1,10 +1,10 @@
 import "server-only";
-import type { Repo } from "@/lib/registry/repos";
 import { repoPath } from "@/lib/git/backend";
-import { readGitTracker } from "./read";
+import { log } from "@/lib/log";
+import type { Repo } from "@/lib/registry/repos";
 import { readPodTracker } from "@/lib/solid/tracker-pod";
 import type { Tracker } from "./model";
-import { log } from "@/lib/log";
+import { readGitTracker } from "./read";
 
 /**
  * Read a repo's `flow:Tracker` for rendering — the single seam the dashboard

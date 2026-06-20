@@ -119,8 +119,7 @@ function describeError(json: OpenRouterResponse, status: number): string {
   const err = json.error;
   const parts: string[] = [];
   if (err?.code) parts.push(`code=${err.code}`);
-  if (err?.metadata?.provider_name)
-    parts.push(`provider=${err.metadata.provider_name}`);
+  if (err?.metadata?.provider_name) parts.push(`provider=${err.metadata.provider_name}`);
   if (err?.metadata?.retry_after_seconds)
     parts.push(`retry_after=${err.metadata.retry_after_seconds}s`);
   const head = err?.message ?? `${status} request failed`;
@@ -154,10 +153,9 @@ async function callOpenRouter(
 
     const remaining = MAX_RETRY_BUDGET_S - budgetUsed;
     if (remaining <= 0) break;
-    const hinted =
-      result.json.error?.metadata?.retry_after_seconds ?? null;
+    const hinted = result.json.error?.metadata?.retry_after_seconds ?? null;
     // Exponential backoff: 1, 2, 4 s + 0..1s jitter; cap at remaining budget.
-    const computed = Math.pow(2, attempt) + Math.random();
+    const computed = 2 ** attempt + Math.random();
     const sleepS = Math.min(hinted ? hinted + 1 : computed, remaining);
     console.log(
       `[agents] openrouter retry: status=${result.status} attempt=${attempt + 1}/${MAX_RETRIES} sleep=${sleepS.toFixed(1)}s`,
@@ -166,9 +164,7 @@ async function callOpenRouter(
     budgetUsed += sleepS;
   }
 
-  throw new Error(
-    `OpenRouter: ${describeError(lastErr!.json, lastErr!.status)}`,
-  );
+  throw new Error(`OpenRouter: ${describeError(lastErr!.json, lastErr!.status)}`);
 }
 
 export const openrouterDriver: Driver = {

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
-import { createUser } from "@/lib/registry/users";
+import { clip, log } from "@/lib/log";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { RegistryError, validateName } from "@/lib/registry/repos";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { log, clip } from "@/lib/log";
+import { createUser } from "@/lib/registry/users";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,11 +41,7 @@ export async function POST(req: Request) {
   const origin = hdrs.get("origin") ?? "";
   const secFetchSite = hdrs.get("sec-fetch-site") ?? "";
   const ownOrigin = env.bridgePublicUrl.replace(/\/$/, "");
-  if (
-    origin !== ownOrigin &&
-    secFetchSite !== "same-origin" &&
-    secFetchSite !== "same-site"
-  ) {
+  if (origin !== ownOrigin && secFetchSite !== "same-origin" && secFetchSite !== "same-site") {
     return NextResponse.json(
       { error: "cross-origin signup is not allowed", code: "CSRF" },
       { status: 403 },
@@ -63,27 +59,17 @@ export async function POST(req: Request) {
   }
   const { email, password, podName } = (body ?? {}) as Record<string, unknown>;
 
-  if (
-    typeof email !== "string" ||
-    typeof password !== "string" ||
-    typeof podName !== "string"
-  ) {
+  if (typeof email !== "string" || typeof password !== "string" || typeof podName !== "string") {
     return NextResponse.json(
       { error: "email, password, podName are required strings" },
       { status: 400 },
     );
   }
   if (!email.includes("@")) {
-    return NextResponse.json(
-      { error: "email must look like an email address" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "email must look like an email address" }, { status: 400 });
   }
   if (password.length < 8) {
-    return NextResponse.json(
-      { error: "password must be at least 8 characters" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "password must be at least 8 characters" }, { status: 400 });
   }
   try {
     validateName(podName, "owner");
@@ -94,9 +80,7 @@ export async function POST(req: Request) {
     throw e;
   }
 
-  const podBase = env.podBaseUrl.endsWith("/")
-    ? env.podBaseUrl
-    : env.podBaseUrl + "/";
+  const podBase = env.podBaseUrl.endsWith("/") ? env.podBaseUrl : env.podBaseUrl + "/";
 
   // CSS v7 dropped the single-POST `/idp/register/` endpoint that earlier
   // CSS shipped. The v7 path is a three-step account-API dance:
@@ -232,9 +216,7 @@ export async function POST(req: Request) {
 }
 
 function extractSetCookie(res: Response, name: string): string | null {
-  const getSetCookie = (
-    res.headers as unknown as { getSetCookie?: () => string[] }
-  ).getSetCookie;
+  const getSetCookie = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie;
   if (typeof getSetCookie !== "function") return null;
   const lines = getSetCookie.call(res.headers);
   for (const line of lines) {
@@ -266,10 +248,7 @@ function pickStringPath(obj: unknown, path: string[]): string | null {
   return typeof cur === "string" ? cur : null;
 }
 
-function stringField(
-  obj: Record<string, unknown> | null,
-  key: string,
-): string | null {
+function stringField(obj: Record<string, unknown> | null, key: string): string | null {
   if (!obj) return null;
   const v = obj[key];
   return typeof v === "string" ? v : null;

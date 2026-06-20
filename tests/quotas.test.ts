@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Per-user / per-repo quotas (§4 multi-user). The defaults are env-
 // driven; we lower them here so the test doesn't have to create 50
@@ -19,9 +19,7 @@ beforeAll(() => {
 describe("quotas", () => {
   it("refuses repo creation past MAX_REPOS_PER_OWNER", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
-    const { assertCanCreateRepo, QuotaExceededError } = await import(
-      "@/lib/registry/quotas"
-    );
+    const { assertCanCreateRepo, QuotaExceededError } = await import("@/lib/registry/quotas");
     const owner = "quotatest";
     const baseInput = {
       owner,
@@ -39,9 +37,7 @@ describe("quotas", () => {
   it("refuses token mint past MAX_TOKENS_PER_REPO", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
     const { createPushToken } = await import("@/lib/registry/tokens");
-    const { assertCanMintToken, QuotaExceededError } = await import(
-      "@/lib/registry/quotas"
-    );
+    const { assertCanMintToken, QuotaExceededError } = await import("@/lib/registry/quotas");
     const repo = createRepo({
       owner: "quotatokens",
       name: "tk",

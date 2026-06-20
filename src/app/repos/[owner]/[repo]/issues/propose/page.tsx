@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
 import { readSession } from "@/lib/auth/session";
+import { getRepo } from "@/lib/registry/repos";
 import { ProposeForm } from "./propose-form";
 
 export const dynamic = "force-dynamic";
@@ -22,35 +22,31 @@ export default async function ProposeIssuePage({ params }: PageProps) {
           ← {owner}/{name} · Issues
         </Link>
       </p>
-      <h1
-        className="mt-3 display text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="mt-3 display text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         Propose an issue
       </h1>
       <p className="mt-2 text-sm text-[color:var(--ink-soft)]">
-        Anyone can suggest work for <code className="kbd">{owner}/{name}</code>.
-        Your proposal goes to the owner&apos;s pod inbox for review — it isn&apos;t
-        added to the tracker until the owner accepts it.
+        Anyone can suggest work for{" "}
+        <code className="kbd">
+          {owner}/{name}
+        </code>
+        . Your proposal goes to the owner&apos;s pod inbox for review — it isn&apos;t added to the
+        tracker until the owner accepts it.
       </p>
 
       {repo.proposalsEnabled ? (
-        <ProposeForm
-          owner={owner}
-          repo={name}
-          proposerWebId={session?.webId ?? null}
-        />
+        <ProposeForm owner={owner} repo={name} proposerWebId={session?.webId ?? null} />
       ) : (
         <section className="card mt-6 text-sm text-[color:var(--ink-soft)]">
-          <p
-            className="display text-xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <p className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
             Proposals are closed.
           </p>
           <p className="mt-2">
-            The owner of <code className="kbd">{owner}/{name}</code> isn&apos;t
-            accepting issue proposals right now.
+            The owner of{" "}
+            <code className="kbd">
+              {owner}/{name}
+            </code>{" "}
+            isn&apos;t accepting issue proposals right now.
           </p>
         </section>
       )}

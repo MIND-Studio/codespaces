@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/session";
+import { PROVIDERS } from "@/lib/ai-providers/providers";
 import {
-  listConfiguredProviders,
   getUserAiPref,
+  listConfiguredProviders,
   resolveCoderConfigSummary,
 } from "@/lib/ai-providers/store";
-import { PROVIDERS } from "@/lib/ai-providers/providers";
-import { ledgerEnabled, getBalance } from "@/lib/ledger/client";
+import { requireSession } from "@/lib/auth/session";
+import { getBalance, ledgerEnabled } from "@/lib/ledger/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,9 +31,7 @@ export async function GET() {
   // bridge-default key. null when the ledger is off or the user is on their own
   // key — the builder then renders the existing source-based copy unchanged.
   const freeBalance =
-    summary.source === "env-fallback" && ledgerEnabled()
-      ? await getBalance(auth.webId)
-      : null;
+    summary.source === "env-fallback" && ledgerEnabled() ? await getBalance(auth.webId) : null;
 
   return NextResponse.json({
     providers: listConfiguredProviders(auth.webId),

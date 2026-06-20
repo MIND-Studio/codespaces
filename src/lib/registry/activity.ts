@@ -39,10 +39,7 @@ export type ActivityItem = {
  * without paging. Bumped this up cap means more SQL work; the per-source
  * LIMIT keeps the joined cost bounded.
  */
-export function listActivityForWebId(
-  webId: string,
-  limit = 25,
-): ActivityItem[] {
+export function listActivityForWebId(webId: string, limit = 25): ActivityItem[] {
   const db = getDb();
   const perSourceCap = limit;
   const items: ActivityItem[] = [];
@@ -75,9 +72,8 @@ export function listActivityForWebId(
 
   const ownedRepoIds = ownedRepos.map((r) => r.id);
   // Conditional IN list. Avoid an empty `()` which is a syntax error.
-  const inClause = ownedRepoIds.length > 0
-    ? `(${ownedRepoIds.map(() => "?").join(",")})`
-    : "(NULL)";
+  const inClause =
+    ownedRepoIds.length > 0 ? `(${ownedRepoIds.map(() => "?").join(",")})` : "(NULL)";
 
   // Issues — authored OR on user's repos.
   const issueRows = db
@@ -217,9 +213,7 @@ export function listActivityForWebId(
       repo_name: string;
     }[];
     for (const row of runRows) {
-      const issuePart = row.issue_number
-        ? `#${row.issue_number}`
-        : `repo`;
+      const issuePart = row.issue_number ? `#${row.issue_number}` : `repo`;
       items.push({
         kind: "agent.ran",
         ts: row.created_at,

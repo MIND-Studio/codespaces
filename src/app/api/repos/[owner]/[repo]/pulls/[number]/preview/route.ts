@@ -1,16 +1,15 @@
-import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
-import { getRepo } from "@/lib/registry/repos";
-import { getPullRequest, updatePullPreview } from "@/lib/registry/pulls";
+import { NextResponse } from "next/server";
 import { requireOwner, requireSession } from "@/lib/auth/session";
 import { buildAndPublishPreview } from "@/lib/pages/preview";
+import { getPullRequest, updatePullPreview } from "@/lib/registry/pulls";
+import { getRepo } from "@/lib/registry/repos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const AGENT_LOGS_DIR =
-  process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
+const AGENT_LOGS_DIR = process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
 
 type Params = {
   params: Promise<{ owner: string; repo: string; number: string }>;
@@ -71,10 +70,7 @@ export async function GET(_req: Request, { params }: Params) {
   const { pull } = r;
   let log = "";
   if (pull.previewLogPath) {
-    log = await readFile(
-      path.join(AGENT_LOGS_DIR, pull.previewLogPath),
-      "utf-8",
-    ).catch(() => "");
+    log = await readFile(path.join(AGENT_LOGS_DIR, pull.previewLogPath), "utf-8").catch(() => "");
   }
   return NextResponse.json({
     status: pull.previewStatus,

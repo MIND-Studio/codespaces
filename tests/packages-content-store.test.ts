@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // PodContentStore against an in-memory fake pod. Verifies:
 //   • save returns the sha256 of the bytes (content-addressed)
@@ -31,8 +31,7 @@ function makeFakePod() {
       putCount += 1;
       const body = init?.body;
       // Containers are PUT with no body; blobs carry a Uint8Array body.
-      const bytes =
-        body instanceof Uint8Array ? body : new Uint8Array(0);
+      const bytes = body instanceof Uint8Array ? body : new Uint8Array(0);
       store.set(u, bytes);
       return new Response(null, { status: 201 });
     }
@@ -57,8 +56,7 @@ describe("PodContentStore", () => {
 
     const bytes = new Uint8Array(Buffer.from("hello"));
     // sha256("hello") is a known constant.
-    const HELLO_SHA =
-      "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+    const HELLO_SHA = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
 
     expect(await store.has(`sha256:${HELLO_SHA}`)).toBe(false);
 

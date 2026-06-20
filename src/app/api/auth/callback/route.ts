@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { completeAuthFlow } from "@/lib/solid/oidc-server";
+import { NextResponse } from "next/server";
 import { issueSession } from "@/lib/auth/session";
 import { getEnv } from "@/lib/env";
-import { log, clip, scrubWebId } from "@/lib/log";
+import { clip, log, scrubWebId } from "@/lib/log";
+import { completeAuthFlow } from "@/lib/solid/oidc-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

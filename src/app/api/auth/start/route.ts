@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { startAuthFlow } from "@/lib/solid/oidc-server";
+import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
+import { clip, log } from "@/lib/log";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { startAuthFlow } from "@/lib/solid/oidc-server";
 import { fetchProfile } from "@/lib/solid/profile";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { log, clip } from "@/lib/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,11 +29,7 @@ export async function POST(req: Request) {
   const origin = hdrs.get("origin") ?? "";
   const secFetchSite = hdrs.get("sec-fetch-site") ?? "";
   const ownOrigin = stripTrailingSlash(env.bridgePublicUrl);
-  if (
-    origin !== ownOrigin &&
-    secFetchSite !== "same-origin" &&
-    secFetchSite !== "same-site"
-  ) {
+  if (origin !== ownOrigin && secFetchSite !== "same-origin" && secFetchSite !== "same-site") {
     return NextResponse.json(
       { error: "cross-origin auth start is not allowed", code: "CSRF" },
       { status: 403 },
@@ -63,10 +59,7 @@ export async function POST(req: Request) {
     webIdHint = (body as Record<string, unknown>).webId as string;
   }
   if (typeof oidcIssuer !== "string" || !/^https?:\/\//.test(oidcIssuer)) {
-    return NextResponse.json(
-      { error: "oidcIssuer (URL) is required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "oidcIssuer (URL) is required" }, { status: 400 });
   }
   const normalised = oidcIssuer.endsWith("/") ? oidcIssuer : `${oidcIssuer}/`;
 

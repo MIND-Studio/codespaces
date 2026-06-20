@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { readSession } from "@/lib/auth/session";
-import {
-  listConfiguredProviders,
-  getUserAiPref,
-} from "@/lib/ai-providers/store";
 import { PROVIDERS } from "@/lib/ai-providers/providers";
+import { getUserAiPref, listConfiguredProviders } from "@/lib/ai-providers/store";
+import { readSession } from "@/lib/auth/session";
 import { AiProvidersManager } from "./manage";
 
 export const dynamic = "force-dynamic";
@@ -31,19 +28,14 @@ export default async function AiProvidersPage() {
         AI <em>providers</em>
       </h1>
       <p className="mt-3 max-w-2xl leading-relaxed text-[color:var(--ink-soft)]">
-        Bring your own keys. The coder agent uses your selected provider
-        and model whenever it runs on a repo you own. Keys are encrypted
-        at rest with the same AES-256-GCM key that protects your Solid
-        refresh tokens, and they never leave this bridge.
+        Bring your own keys. The coder agent uses your selected provider and model whenever it runs
+        on a repo you own. Keys are encrypted at rest with the same AES-256-GCM key that protects
+        your Solid refresh tokens, and they never leave this bridge.
       </p>
 
       <hr className="hairline my-10" />
 
-      <AiProvidersManager
-        providers={PROVIDERS}
-        configured={configured}
-        pref={pref}
-      />
+      <AiProvidersManager providers={PROVIDERS} configured={configured} pref={pref} />
     </div>
   );
 }

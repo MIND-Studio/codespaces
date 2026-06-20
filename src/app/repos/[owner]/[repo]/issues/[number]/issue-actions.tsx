@@ -1,9 +1,9 @@
 "use client";
+import { Button } from "@mind-studio/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import { SignInWall } from "@/components/sign-in-wall";
-import { Button } from "@mind-studio/ui";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 /**
  * Issue-page actions:
@@ -85,13 +85,7 @@ export function IssueActions({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={toggle}
-          disabled={busy !== null}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={toggle} disabled={busy !== null}>
           {busy === "toggle" ? "…" : status === "open" ? "Close issue" : "Reopen issue"}
         </Button>
         {status === "open" ? (
@@ -107,11 +101,7 @@ export function IssueActions({
                 : "Re-fire the coder on this issue (auto-fires on create + comment)"
             }
           >
-            {busy === "run"
-              ? "Dispatching…"
-              : hasOpenRun
-                ? "Coder running…"
-                : "Re-run coder"}
+            {busy === "run" ? "Dispatching…" : hasOpenRun ? "Coder running…" : "Re-run coder"}
           </Button>
         ) : null}
       </div>

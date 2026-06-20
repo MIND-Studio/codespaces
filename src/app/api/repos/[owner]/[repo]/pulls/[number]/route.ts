@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { getPullRequest } from "@/lib/registry/pulls";
+import { getRepo } from "@/lib/registry/repos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

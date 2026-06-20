@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
-import { getIssueByNumber } from "@/lib/registry/issues";
 import { listAgentRunsForIssue } from "@/lib/registry/agent-runs";
+import { getIssueByNumber } from "@/lib/registry/issues";
+import { getRepo } from "@/lib/registry/repos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

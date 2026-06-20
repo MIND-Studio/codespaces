@@ -9,13 +9,7 @@
  * inline classes so the dark-theme overrides in globals.css can flip
  * them via `[data-theme='dark']` selectors if/when wanted.
  */
-export function DiffView({
-  patch,
-  truncated,
-}: {
-  patch: string;
-  truncated: boolean;
-}) {
+export function DiffView({ patch, truncated }: { patch: string; truncated: boolean }) {
   const lines = patch.split("\n");
   // Drop the trailing empty line from a final newline so we don't
   // render a phantom row at the bottom.
@@ -29,10 +23,7 @@ export function DiffView({
         {lines.map((line, i) => {
           const kind = classify(line);
           return (
-            <div
-              key={i}
-              className={`px-4 whitespace-pre ${classNameFor(kind)}`}
-            >
+            <div key={i} className={`px-4 whitespace-pre ${classNameFor(kind)}`}>
               {line || " "}
             </div>
           );

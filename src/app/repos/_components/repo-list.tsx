@@ -1,13 +1,9 @@
 "use client";
 
+import { Button, Input } from "@mind-studio/ui";
 import Link from "next/link";
 import { useDeferredValue, useId, useMemo, useState } from "react";
-import { Button, Input } from "@mind-studio/ui";
-import {
-  formatAbsoluteIso,
-  formatDuration,
-  formatRelativeTime,
-} from "@/lib/format";
+import { formatAbsoluteIso, formatDuration, formatRelativeTime } from "@/lib/format";
 
 export type RepoRowData = {
   id: number;
@@ -33,13 +29,7 @@ export type RepoRowData = {
 
 type SortMode = "recent" | "alpha";
 
-export function RepoList({
-  rows,
-  signedIn,
-}: {
-  rows: RepoRowData[];
-  signedIn: boolean;
-}) {
+export function RepoList({ rows, signedIn }: { rows: RepoRowData[]; signedIn: boolean }) {
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortMode>("recent");
   const deferredFilter = useDeferredValue(filter);
@@ -49,17 +39,13 @@ export function RepoList({
 
   const matched = useMemo(() => {
     if (!normalized) return rows;
-    return rows.filter((r) =>
-      `${r.owner}/${r.name}`.toLowerCase().includes(normalized),
-    );
+    return rows.filter((r) => `${r.owner}/${r.name}`.toLowerCase().includes(normalized));
   }, [rows, normalized]);
 
   const sorted = useMemo(() => {
     const copy = [...matched];
     if (sort === "alpha") {
-      copy.sort((a, b) =>
-        `${a.owner}/${a.name}`.localeCompare(`${b.owner}/${b.name}`),
-      );
+      copy.sort((a, b) => `${a.owner}/${a.name}`.localeCompare(`${b.owner}/${b.name}`));
     } else {
       copy.sort((a, b) => b.activityAt - a.activityAt);
     }
@@ -142,13 +128,10 @@ export function RepoList({
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         <span>
-          {sorted.length} of {rows.length}{" "}
-          {rows.length === 1 ? "repo" : "repos"}
+          {sorted.length} of {rows.length} {rows.length === 1 ? "repo" : "repos"}
         </span>
         <span aria-hidden>·</span>
-        <span style={{ color: "var(--accent-deep)" }}>
-          {totalLive} live on pages
-        </span>
+        <span style={{ color: "var(--accent-deep)" }}>{totalLive} live on pages</span>
         {normalized ? (
           <>
             <span aria-hidden>·</span>
@@ -203,10 +186,7 @@ function GroupedList({ rows, sort }: { rows: RepoRowData[]; sort: SortMode }) {
               {liveCount > 0 ? (
                 <>
                   {" "}
-                  ·{" "}
-                  <span style={{ color: "var(--accent-deep)" }}>
-                    {liveCount} live
-                  </span>
+                  · <span style={{ color: "var(--accent-deep)" }}>{liveCount} live</span>
                 </>
               ) : null}
             </span>
@@ -224,16 +204,8 @@ function GroupedList({ rows, sort }: { rows: RepoRowData[]; sort: SortMode }) {
   );
 }
 
-function RepoCard({
-  row,
-  highlight,
-}: {
-  row: RepoRowData;
-  highlight?: string;
-}) {
-  const cardStyle = row.pagesLive
-    ? { borderLeft: "1px solid var(--accent)" }
-    : undefined;
+function RepoCard({ row, highlight }: { row: RepoRowData; highlight?: string }) {
+  const cardStyle = row.pagesLive ? { borderLeft: "1px solid var(--accent)" } : undefined;
   return (
     <Link
       href={`/repos/${row.owner}/${row.name}`}
@@ -242,15 +214,8 @@ function RepoCard({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span
-            className="display text-2xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            <HighlightedName
-              owner={row.owner}
-              name={row.name}
-              highlight={highlight}
-            />
+          <span className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
+            <HighlightedName owner={row.owner} name={row.name} highlight={highlight} />
           </span>
           <VisibilityBadge value={row.visibility} />
         </div>
@@ -358,11 +323,7 @@ function BuildStatus({ run }: { run: RepoRowData["latestRun"] }) {
         ? undefined
         : "bad";
   const symbol =
-    run.status === "success"
-      ? "✓"
-      : run.status === "failed" || run.status === "error"
-        ? "✗"
-        : "·";
+    run.status === "success" ? "✓" : run.status === "failed" || run.status === "error" ? "✗" : "·";
   const right =
     run.status === "success"
       ? formatDuration(run.startedAt, run.finishedAt)
@@ -384,10 +345,7 @@ function BuildStatus({ run }: { run: RepoRowData["latestRun"] }) {
 
 function VisibilityBadge({ value }: { value: string }) {
   return (
-    <span
-      className="stamp"
-      data-tone={value === "private" ? "closed" : undefined}
-    >
+    <span className="stamp" data-tone={value === "private" ? "closed" : undefined}>
       {value}
     </span>
   );
@@ -420,10 +378,7 @@ function SortChip({
 function InitialEmptyState({ signedIn }: { signedIn: boolean }) {
   return (
     <div className="card">
-      <p
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <p className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         No repos yet.
       </p>
       <p className="mt-2 text-[color:var(--ink-soft)]">
@@ -432,8 +387,7 @@ function InitialEmptyState({ signedIn }: { signedIn: boolean }) {
             <Link href="/repos/new" className="link">
               Create your first repo
             </Link>{" "}
-            from the form, or run{" "}
-            <code className="kbd">npm run seed:demo</code> to populate two
+            from the form, or run <code className="kbd">npm run seed:demo</code> to populate two
             example sites. The{" "}
             <Link href="/" className="link">
               quickstart on the landing page
@@ -445,9 +399,8 @@ function InitialEmptyState({ signedIn }: { signedIn: boolean }) {
             <Link href="/login" className="link">
               Sign in
             </Link>{" "}
-            to create one from the dashboard, or run{" "}
-            <code className="kbd">npm run seed:demo</code> to populate two
-            example sites.
+            to create one from the dashboard, or run <code className="kbd">npm run seed:demo</code>{" "}
+            to populate two example sites.
           </>
         )}
       </p>
@@ -466,20 +419,12 @@ function FilterEmptyState({
 }) {
   return (
     <div className="card">
-      <p
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <p className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         No matches for <em>{filter}</em>.
       </p>
       <p className="mt-2 text-[color:var(--ink-soft)]">
         Try a shorter substring, or{" "}
-        <Button
-          type="button"
-          variant="link"
-          onClick={onClear}
-          className="link h-auto p-0"
-        >
+        <Button type="button" variant="link" onClick={onClear} className="link h-auto p-0">
           clear the filter
         </Button>
         .{" "}

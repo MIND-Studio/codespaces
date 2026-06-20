@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { requireOwner } from "@/lib/auth/session";
 import { repoPath } from "@/lib/git/backend";
-import { createMindIssue, IssueAuthorError } from "@/lib/tracker/author";
-import { getProposal, deleteProposal, type Proposal } from "@/lib/solid/inbox";
+import { getRepo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { deleteProposal, getProposal, type Proposal } from "@/lib/solid/inbox";
+import { createMindIssue, IssueAuthorError } from "@/lib/tracker/author";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,9 +22,7 @@ function provenanceFooter(p: Proposal): string {
     : p.contact
       ? `${p.contact} (unverified)`
       : "an anonymous visitor";
-  const when = p.createdAt
-    ? new Date(p.createdAt).toISOString().slice(0, 10)
-    : "an unknown date";
+  const when = p.createdAt ? new Date(p.createdAt).toISOString().slice(0, 10) : "an unknown date";
   return `\n\n---\n_Proposed via the pod inbox by ${who} on ${when}; accepted by the repo owner._`;
 }
 

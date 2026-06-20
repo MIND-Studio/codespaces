@@ -1,9 +1,9 @@
 "use client";
 
+import { Button } from "@mind-studio/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import { Button } from "@mind-studio/ui";
 
 /**
  * Merge/close buttons for an open PR. Both fire server actions through
@@ -26,10 +26,9 @@ export function PullActions({
     setBusy(action);
     setError(null);
     try {
-      const res = await authedFetch(
-        `/api/repos/${owner}/${repo}/pulls/${number}/${action}`,
-        { method: "POST" },
-      );
+      const res = await authedFetch(`/api/repos/${owner}/${repo}/pulls/${number}/${action}`, {
+        method: "POST",
+      });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setError(body.error ?? `${action} failed (HTTP ${res.status})`);
@@ -46,12 +45,7 @@ export function PullActions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => fire("merge")}
-          disabled={busy !== null}
-        >
+        <Button type="button" size="sm" onClick={() => fire("merge")} disabled={busy !== null}>
           {busy === "merge" ? "Merging…" : "Merge pull request"}
         </Button>
         <Button
@@ -64,9 +58,7 @@ export function PullActions({
           {busy === "close" ? "Closing…" : "Close without merging"}
         </Button>
       </div>
-      {error ? (
-        <p className="text-sm text-[color:var(--status-bad)]">{error}</p>
-      ) : null}
+      {error ? <p className="text-sm text-[color:var(--status-bad)]">{error}</p> : null}
     </div>
   );
 }

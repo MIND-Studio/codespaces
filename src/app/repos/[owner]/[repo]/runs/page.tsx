@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { listRunsForRepo, type WorkflowRun } from "@/lib/registry/runs";
 import { RelativeTime } from "@/components/relative-time";
 import { formatDuration } from "@/lib/format";
+import { getRepo } from "@/lib/registry/repos";
+import { listRunsForRepo, type WorkflowRun } from "@/lib/registry/runs";
 import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,7 @@ export default async function RunsPage({ params }: PageProps) {
           ← {owner}/{name}
         </Link>
       </p>
-      <h1
-        className="display mt-3 text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         All <em>runs</em>
       </h1>
       {runs.length > 0 ? (
@@ -36,7 +33,8 @@ export default async function RunsPage({ params }: PageProps) {
           className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          {runs.length >= 50 ? "latest 50" : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} · newest first
+          {runs.length >= 50 ? "latest 50" : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`}{" "}
+          · newest first
         </p>
       ) : null}
 
@@ -72,9 +70,8 @@ function RunsEmptyState() {
       </h2>
       <p className="mt-4 max-w-xl leading-relaxed text-[color:var(--ink-soft)]">
         A push only records a run when the repo contains a{" "}
-        <code className="kbd">.mind/workflow.yml</code> at its root. Without
-        one, the bridge accepts the push, publishes Pages if configured, and
-        stays quiet here.
+        <code className="kbd">.mind/workflow.yml</code> at its root. Without one, the bridge accepts
+        the push, publishes Pages if configured, and stays quiet here.
       </p>
       <p className="mt-3 max-w-xl leading-relaxed text-[color:var(--ink-soft)]">
         See{" "}
@@ -87,15 +84,7 @@ function RunsEmptyState() {
   );
 }
 
-function RunCard({
-  run,
-  owner,
-  name,
-}: {
-  run: WorkflowRun;
-  owner: string;
-  name: string;
-}) {
+function RunCard({ run, owner, name }: { run: WorkflowRun; owner: string; name: string }) {
   const failureSummary = summarizeFailure(run);
   const isBad = run.status === "failed" || run.status === "error";
   return (
@@ -133,8 +122,7 @@ function RunCard({
           className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          <RelativeTime ts={run.startedAt} /> ·{" "}
-          {formatDuration(run.startedAt, run.finishedAt)}
+          <RelativeTime ts={run.startedAt} /> · {formatDuration(run.startedAt, run.finishedAt)}
         </span>
       </div>
       <p

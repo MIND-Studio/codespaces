@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // npm protocol helpers. Verifies:
 //   • parseNpmPublish pulls the single version + base64 tarball out of a
@@ -45,24 +45,20 @@ describe("npm protocol", () => {
     expect(parsed.name).toBe("@alice/lib");
     expect(parsed.version).toBe("1.2.3");
     expect(parsed.tarballFilename).toBe("lib-1.2.3.tgz");
-    expect(Buffer.from(parsed.tarballBytes).toString("utf-8")).toBe(
-      "fake-tgz-bytes",
-    );
+    expect(Buffer.from(parsed.tarballBytes).toString("utf-8")).toBe("fake-tgz-bytes");
     expect(parsed.distTags.latest).toBe("1.2.3");
   });
 
   it("rejects malformed publish bodies", async () => {
     const { parseNpmPublish, NpmPublishError } = await import("@/lib/packages/npm");
     expect(() => parseNpmPublish({ name: "" } as never)).toThrow(NpmPublishError);
-    expect(() =>
-      parseNpmPublish({ name: "x", versions: {}, _attachments: {} } as never),
-    ).toThrow(NpmPublishError);
+    expect(() => parseNpmPublish({ name: "x", versions: {}, _attachments: {} } as never)).toThrow(
+      NpmPublishError,
+    );
   });
 
   it("builds a packument with rewritten tarball URLs and latest tag", async () => {
-    const { buildPackument, findVersionByFilename } = await import(
-      "@/lib/packages/npm"
-    );
+    const { buildPackument, findVersionByFilename } = await import("@/lib/packages/npm");
     const now = 1_000;
     const rows = [
       // newest-first, as listVersions returns

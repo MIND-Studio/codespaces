@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { renderExposition } from "@/lib/metrics";
 
 export const runtime = "nodejs";
@@ -23,10 +23,7 @@ export async function GET() {
   const hdrs = await headers();
   const presented = (hdrs.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!presented || presented !== expected) {
-    return NextResponse.json(
-      { error: "invalid metrics token" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "invalid metrics token" }, { status: 401 });
   }
   return new NextResponse(renderExposition(), {
     status: 200,

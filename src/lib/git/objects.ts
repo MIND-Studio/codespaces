@@ -57,12 +57,7 @@ export async function findReadme(
 
 /** True if the repo has at least one commit reachable from HEAD. */
 export async function hasAnyCommits(bareRepoPath: string): Promise<boolean> {
-  const { code } = await runGit(bareRepoPath, [
-    "rev-parse",
-    "--verify",
-    "--quiet",
-    "HEAD",
-  ]);
+  const { code } = await runGit(bareRepoPath, ["rev-parse", "--verify", "--quiet", "HEAD"]);
   return code === 0;
 }
 
@@ -146,11 +141,7 @@ export async function listTree(
   path: string,
 ): Promise<TreeEntry[]> {
   const target = path ? `${ref}:${path}` : ref;
-  const { stdout, code, stderr } = await runGit(bareRepoPath, [
-    "ls-tree",
-    "--long",
-    target,
-  ]);
+  const { stdout, code, stderr } = await runGit(bareRepoPath, ["ls-tree", "--long", target]);
   if (code !== 0) {
     // `bad revision` on empty repos, or path doesn't exist on this ref.
     if (/Not a valid object name|bad revision|exists on disk/i.test(stderr)) {
@@ -195,19 +186,11 @@ export async function readBlob(
   path: string,
 ): Promise<BlobContent | null> {
   // First, get the blob's full size and verify it exists / is a blob.
-  const sizeProbe = await runGit(bareRepoPath, [
-    "cat-file",
-    "-s",
-    `${ref}:${path}`,
-  ]);
+  const sizeProbe = await runGit(bareRepoPath, ["cat-file", "-s", `${ref}:${path}`]);
   if (sizeProbe.code !== 0) return null;
   const totalSize = Number.parseInt(sizeProbe.stdout.trim(), 10);
 
-  const typeProbe = await runGit(bareRepoPath, [
-    "cat-file",
-    "-t",
-    `${ref}:${path}`,
-  ]);
+  const typeProbe = await runGit(bareRepoPath, ["cat-file", "-t", `${ref}:${path}`]);
   if (typeProbe.code !== 0 || typeProbe.stdout.trim() !== "blob") {
     return null;
   }
@@ -245,19 +228,12 @@ function runGit(bareRepoPath: string, args: string[]): Promise<GitResult> {
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d.toString()));
     child.stderr.on("data", (d) => (stderr += d.toString()));
-    child.on("error", (err) =>
-      resolveFn({ stdout, stderr: stderr + err.message, code: -1 }),
-    );
-    child.on("close", (code) =>
-      resolveFn({ stdout, stderr, code: code ?? -1 }),
-    );
+    child.on("error", (err) => resolveFn({ stdout, stderr: stderr + err.message, code: -1 }));
+    child.on("close", (code) => resolveFn({ stdout, stderr, code: code ?? -1 }));
   });
 }
 
-function runGitBytes(
-  bareRepoPath: string,
-  args: string[],
-): Promise<GitBytesResult> {
+function runGitBytes(bareRepoPath: string, args: string[]): Promise<GitBytesResult> {
   return new Promise((resolveFn) => {
     const child = spawn("git", [`--git-dir=${bareRepoPath}`, ...args]);
     const chunks: Buffer[] = [];

@@ -26,10 +26,7 @@ const MAX_RESPONSE_BYTES = (() => {
   return Number.isFinite(n) && n > 0 ? n : 5 * 1024 * 1024;
 })();
 
-export function jsonResponse(
-  data: unknown,
-  init: ResponseInit = {},
-): NextResponse {
+export function jsonResponse(data: unknown, init: ResponseInit = {}): NextResponse {
   const body = JSON.stringify(data);
   const bytes = Buffer.byteLength(body, "utf-8");
   if (bytes > MAX_RESPONSE_BYTES) {

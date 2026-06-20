@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, Input } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function SignupForm() {
   const router = useRouter();
@@ -53,9 +53,7 @@ export function SignupForm() {
         />
       </label>
       <label className="block text-sm">
-        <span className="block text-[color:var(--ink-soft)] mb-1">
-          Password (≥8 chars)
-        </span>
+        <span className="block text-[color:var(--ink-soft)] mb-1">Password (≥8 chars)</span>
         <Input
           type="password"
           required

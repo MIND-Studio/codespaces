@@ -84,11 +84,9 @@ export function upsertPullRequest(input: {
       `SELECT * FROM pull_requests
        WHERE repo_id = ? AND source_branch = ? AND target_branch = ? AND status = 'open'`,
     )
-    .get(
-      input.repoId,
-      input.sourceBranch,
-      input.targetBranch,
-    ) as Record<string, unknown> | undefined;
+    .get(input.repoId, input.sourceBranch, input.targetBranch) as
+    | Record<string, unknown>
+    | undefined;
   if (existing) {
     db.prepare(
       `UPDATE pull_requests
@@ -115,9 +113,7 @@ export function upsertPullRequest(input: {
 
   const number = (
     db
-      .prepare(
-        "SELECT COALESCE(MAX(number), 0) + 1 AS n FROM pull_requests WHERE repo_id = ?",
-      )
+      .prepare("SELECT COALESCE(MAX(number), 0) + 1 AS n FROM pull_requests WHERE repo_id = ?")
       .get(input.repoId) as { n: number }
   ).n;
 
@@ -149,22 +145,14 @@ export function upsertPullRequest(input: {
   return rowToPull(row);
 }
 
-export function getPullRequest(
-  repoId: number,
-  number: number,
-): PullRequest | null {
+export function getPullRequest(repoId: number, number: number): PullRequest | null {
   const row = getDb()
-    .prepare(
-      "SELECT * FROM pull_requests WHERE repo_id = ? AND number = ?",
-    )
+    .prepare("SELECT * FROM pull_requests WHERE repo_id = ? AND number = ?")
     .get(repoId, number) as Record<string, unknown> | undefined;
   return row ? rowToPull(row) : null;
 }
 
-export function listPullRequests(
-  repoId: number,
-  status?: PullStatus | "all",
-): PullRequest[] {
+export function listPullRequests(repoId: number, status?: PullStatus | "all"): PullRequest[] {
   const filter = status && status !== "all" ? status : null;
   const rows = filter
     ? (getDb()
@@ -186,16 +174,16 @@ export function listPullRequests(
 
 export function countOpenPullRequests(repoId: number): number {
   const row = getDb()
-    .prepare(
-      "SELECT COUNT(*) AS n FROM pull_requests WHERE repo_id = ? AND status = 'open'",
-    )
+    .prepare("SELECT COUNT(*) AS n FROM pull_requests WHERE repo_id = ? AND status = 'open'")
     .get(repoId) as { n: number };
   return row.n;
 }
 
-export function countPullRequestsByStatus(
-  repoId: number,
-): { open: number; merged: number; closed: number } {
+export function countPullRequestsByStatus(repoId: number): {
+  open: number;
+  merged: number;
+  closed: number;
+} {
   const rows = getDb()
     .prepare(
       `SELECT status, COUNT(*) AS n FROM pull_requests
@@ -219,10 +207,7 @@ export function listPullRequestsForIssue(issueId: number): PullRequest[] {
   return rows.map(rowToPull);
 }
 
-export function markPullRequestMerged(
-  id: number,
-  mergeSha: string,
-): PullRequest {
+export function markPullRequestMerged(id: number, mergeSha: string): PullRequest {
   const now = Date.now();
   const db = getDb();
   const info = db
@@ -235,9 +220,10 @@ export function markPullRequestMerged(
   if (info.changes === 0) {
     throw new RegistryError("pull request is not open", "INVALID_INPUT");
   }
-  const row = db
-    .prepare("SELECT * FROM pull_requests WHERE id = ?")
-    .get(id) as Record<string, unknown>;
+  const row = db.prepare("SELECT * FROM pull_requests WHERE id = ?").get(id) as Record<
+    string,
+    unknown
+  >;
   return rowToPull(row);
 }
 
@@ -299,8 +285,9 @@ export function closePullRequest(id: number): PullRequest {
   if (info.changes === 0) {
     throw new RegistryError("pull request is not open", "INVALID_INPUT");
   }
-  const row = db
-    .prepare("SELECT * FROM pull_requests WHERE id = ?")
-    .get(id) as Record<string, unknown>;
+  const row = db.prepare("SELECT * FROM pull_requests WHERE id = ?").get(id) as Record<
+    string,
+    unknown
+  >;
   return rowToPull(row);
 }

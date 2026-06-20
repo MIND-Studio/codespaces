@@ -56,10 +56,7 @@ async function clientKey(scope: string): Promise<string> {
  * Enforce a rate limit. Returns null when allowed; otherwise returns a
  * pre-built 429 NextResponse the caller can return directly.
  */
-export async function rateLimit(
-  scope: string,
-  cfg: RateLimitConfig,
-): Promise<NextResponse | null> {
+export async function rateLimit(scope: string, cfg: RateLimitConfig): Promise<NextResponse | null> {
   const key = await clientKey(scope);
   if (take(key, cfg)) return null;
   return NextResponse.json(
@@ -80,10 +77,7 @@ export async function rateLimit(
  * Use for auth-failure brute-force defense: peek before attempting auth,
  * consume only when auth fails. A successful credential burns no budget.
  */
-export async function isLockedOut(
-  scope: string,
-  cfg: RateLimitConfig,
-): Promise<boolean> {
+export async function isLockedOut(scope: string, cfg: RateLimitConfig): Promise<boolean> {
   const key = await clientKey(scope);
   const now = Date.now();
   const b = buckets.get(key);
@@ -93,10 +87,7 @@ export async function isLockedOut(
   return projected < 1;
 }
 
-export async function recordFailure(
-  scope: string,
-  cfg: RateLimitConfig,
-): Promise<void> {
+export async function recordFailure(scope: string, cfg: RateLimitConfig): Promise<void> {
   const key = await clientKey(scope);
   take(key, cfg);
 }

@@ -1,7 +1,7 @@
 import "server-only";
-import type { Repo, PagesConfig } from "@/lib/registry/repos";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
+import type { PagesConfig, Repo } from "@/lib/registry/repos";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureInbox, inboxContainerUrl } from "@/lib/solid/inbox";
 import { ensureMembers, membersUrl } from "@/lib/solid/members";
 import { NS } from "@/lib/vocab";
@@ -16,16 +16,12 @@ import { NS } from "@/lib/vocab";
  * can discover the repository description without authenticating.
  */
 function metadataUrl(repo: Repo): string {
-  const root = repo.ownerPodRoot.endsWith("/")
-    ? repo.ownerPodRoot
-    : `${repo.ownerPodRoot}/`;
+  const root = repo.ownerPodRoot.endsWith("/") ? repo.ownerPodRoot : `${repo.ownerPodRoot}/`;
   return `${root}codespaces/${repo.name}/index.ttl`;
 }
 
 function metadataContainer(repo: Repo): string {
-  const root = repo.ownerPodRoot.endsWith("/")
-    ? repo.ownerPodRoot
-    : `${repo.ownerPodRoot}/`;
+  const root = repo.ownerPodRoot.endsWith("/") ? repo.ownerPodRoot : `${repo.ownerPodRoot}/`;
   return `${root}codespaces/${repo.name}/`;
 }
 
@@ -54,15 +50,9 @@ function renderTurtle(repo: Repo, pages: PagesConfig | null): string {
   if (pages?.enabled && pages.targetContainer) {
     lines[lines.length - 1] += " ;";
     lines.push(`    solidgit:pagesEnabled true ;`);
-    lines.push(
-      `    solidgit:pagesSourceBranch ${JSON.stringify(pages.sourceBranch)} ;`,
-    );
-    lines.push(
-      `    solidgit:pagesSourcePath ${JSON.stringify(pages.sourcePath)} ;`,
-    );
-    lines.push(
-      `    solidgit:pagesTarget <${pages.targetContainer}>`,
-    );
+    lines.push(`    solidgit:pagesSourceBranch ${JSON.stringify(pages.sourceBranch)} ;`);
+    lines.push(`    solidgit:pagesSourcePath ${JSON.stringify(pages.sourcePath)} ;`);
+    lines.push(`    solidgit:pagesTarget <${pages.targetContainer}>`);
   }
   // Advertise the proposal inbox. `ldp:inbox` makes it discoverable by any
   // LDN-aware agent (the spec hook); `solidgit:proposalsEnabled` records
@@ -116,11 +106,7 @@ async function writeRepoMetadataOnce(
   const authed = await getOwnerFetch(repo.ownerWebId);
 
   try {
-    await ensureCodespacesContainer(
-      authed.fetch,
-      repo.ownerPodRoot,
-      repo.ownerWebId,
-    );
+    await ensureCodespacesContainer(authed.fetch, repo.ownerPodRoot, repo.ownerWebId);
     await ensureContainer(authed.fetch, metadataContainer(repo));
     // Provision the LDN proposal inbox while we already hold the owner's
     // authenticated fetch. Idempotent — only the first call writes the
@@ -139,9 +125,7 @@ async function writeRepoMetadataOnce(
       body,
     });
     if (!res.ok) {
-      throw new Error(
-        `PUT ${url} failed: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`PUT ${url} failed: ${res.status} ${res.statusText}`);
     }
     return { url, mode: authed.mode };
   } finally {

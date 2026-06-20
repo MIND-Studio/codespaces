@@ -1,16 +1,8 @@
 import "server-only";
-import {
-  getSolidDataset,
-  getThingAll,
-  getUrl,
-  getStringNoLocale,
-} from "@inrupt/solid-client";
+import { getSolidDataset, getStringNoLocale, getThingAll, getUrl } from "@inrupt/solid-client";
 import type { Repo } from "@/lib/registry/repos";
+import { ensureContainer, setVisibilityAcl } from "@/lib/solid/containers";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
-import {
-  ensureContainer,
-  setVisibilityAcl,
-} from "@/lib/solid/containers";
 import { NS } from "@/lib/vocab";
 
 /**
@@ -77,8 +69,15 @@ export function isSafeWebId(value: string): boolean {
       const c = value.charCodeAt(i);
       if (c <= 0x20) return false;
       if (
-        c === 0x3c || c === 0x3e || c === 0x22 || c === 0x7b || c === 0x7d ||
-        c === 0x7c || c === 0x5c || c === 0x5e || c === 0x60
+        c === 0x3c ||
+        c === 0x3e ||
+        c === 0x22 ||
+        c === 0x7b ||
+        c === 0x7d ||
+        c === 0x7c ||
+        c === 0x5c ||
+        c === 0x5e ||
+        c === 0x60
       )
         return false;
     }
@@ -112,9 +111,7 @@ export function renderMembersTurtle(repo: Repo, members: Member[]): string {
   ];
   if (safe.length > 0) {
     lines[lines.length - 1] += " ;";
-    lines.push(
-      `    solidgit:hasMember ${safe.map((_, i) => `<#m${i}>`).join(", ")} .`,
-    );
+    lines.push(`    solidgit:hasMember ${safe.map((_, i) => `<#m${i}>`).join(", ")} .`);
   } else {
     lines[lines.length - 1] += " .";
   }
@@ -135,18 +132,12 @@ export function renderMembersTurtle(repo: Repo, members: Member[]): string {
  * thread the current members into a container's ACL without a second login.
  * Empty on absence/transient error.
  */
-export async function readMembersWithFetch(
-  fetcher: typeof fetch,
-  repo: Repo,
-): Promise<Member[]> {
+export async function readMembersWithFetch(fetcher: typeof fetch, repo: Repo): Promise<Member[]> {
   return fetchRoster(fetcher, repo);
 }
 
 /** Parse the roster from an already-fetched pod dataset URL. */
-async function fetchRoster(
-  fetcher: typeof fetch,
-  repo: Repo,
-): Promise<Member[]> {
+async function fetchRoster(fetcher: typeof fetch, repo: Repo): Promise<Member[]> {
   let ds;
   try {
     ds = await getSolidDataset(membersUrl(repo), { fetch: fetcher });
@@ -168,11 +159,7 @@ async function fetchRoster(
 }
 
 /** PUT the roster document with the owner's authed fetch. */
-async function putRoster(
-  fetcher: typeof fetch,
-  repo: Repo,
-  members: Member[],
-): Promise<void> {
+async function putRoster(fetcher: typeof fetch, repo: Repo, members: Member[]): Promise<void> {
   const url = membersUrl(repo);
   const res = await fetcher(url, {
     method: "PUT",
@@ -227,10 +214,7 @@ export async function readMembers(repo: Repo): Promise<Member[]> {
  * `admin` (no pod read needed — the common case). Anyone else is looked up in
  * the roster; returns null if they are not a member.
  */
-export async function resolveMemberRole(
-  repo: Repo,
-  webId: string,
-): Promise<MemberRole | null> {
+export async function resolveMemberRole(repo: Repo, webId: string): Promise<MemberRole | null> {
   if (webId === repo.ownerWebId) return "admin";
   const roster = await readMembers(repo);
   return roster.find((m) => m.webId === webId)?.role ?? null;
@@ -241,10 +225,7 @@ export async function resolveMemberRole(
  * mirrors `ensureInbox`). Only writes when the roster does not already exist so
  * an existing roster is never clobbered.
  */
-export async function ensureMembers(
-  fetcher: typeof fetch,
-  repo: Repo,
-): Promise<void> {
+export async function ensureMembers(fetcher: typeof fetch, repo: Repo): Promise<void> {
   const head = await fetcher(membersUrl(repo), { method: "HEAD" });
   if (head.ok) return; // already provisioned — leave the roster as-is
   await putRoster(fetcher, repo, []);
@@ -256,11 +237,7 @@ export async function ensureMembers(
  * Returns the updated roster. Owner-mediated: the bridge writes as the owner
  * via the delegated fetch; the member never writes the owner's pod directly.
  */
-export async function addMember(
-  repo: Repo,
-  webId: string,
-  role: MemberRole,
-): Promise<Member[]> {
+export async function addMember(repo: Repo, webId: string, role: MemberRole): Promise<Member[]> {
   if (!isSafeWebId(webId)) {
     throw new Error(`refusing to add unsafe WebID: ${JSON.stringify(webId)}`);
   }
@@ -286,10 +263,7 @@ export async function addMember(
  * single roster write + ACL rewrite — atomic, unlike spraying WAC grants).
  * Returns the updated roster.
  */
-export async function removeMember(
-  repo: Repo,
-  webId: string,
-): Promise<Member[]> {
+export async function removeMember(repo: Repo, webId: string): Promise<Member[]> {
   const authed = await getOwnerFetch(repo.ownerWebId);
   try {
     const roster = await fetchRoster(authed.fetch, repo);

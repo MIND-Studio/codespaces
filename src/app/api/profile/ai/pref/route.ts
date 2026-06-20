@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/session";
-import {
-  getUserAiPref,
-  setUserAiPref,
-  getDecryptedApiKey,
-} from "@/lib/ai-providers/store";
 import { isProviderName } from "@/lib/ai-providers/providers";
+import { getDecryptedApiKey, getUserAiPref, setUserAiPref } from "@/lib/ai-providers/store";
+import { requireSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,10 +37,7 @@ export async function PUT(req: Request) {
     );
   }
   if (typeof model !== "string" || model.trim().length === 0) {
-    return NextResponse.json(
-      { error: "model must be a non-empty string" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "model must be a non-empty string" }, { status: 400 });
   }
   // Owner must have an API key configured for the provider they pick;
   // otherwise the resolver would just fall back to env at run time,

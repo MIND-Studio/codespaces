@@ -1,8 +1,8 @@
 import "server-only";
 import { getEnv } from "@/lib/env";
+import { log } from "@/lib/log";
 import { startReconciler } from "@/lib/pages/reconciler";
 import { reapStuckRuns } from "@/lib/registry/runs";
-import { log } from "@/lib/log";
 
 /**
  * Cross-cutting server bootstrap. Idempotent (safe to call from any
