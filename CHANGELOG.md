@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/MIND-Studio/codespaces/compare/v0.2.0...v0.3.0) (2026-06-20)
+
+
+### Features
+
+* adopt ui ^0.4.0 fonts + core ^0.7.0 login accent ([#18](https://github.com/MIND-Studio/codespaces/issues/18)) ([c4caa1d](https://github.com/MIND-Studio/codespaces/commit/c4caa1dea08ff005f3ffebdfec847098ba1ead3c))
+
 ## [0.2.0](https://github.com/MIND-Studio/codespaces/compare/v0.1.25...v0.2.0) (2026-06-20)
 
 
