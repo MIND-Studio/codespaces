@@ -21,6 +21,8 @@ import { validateName } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
 import { resolveCoderConfig } from "@/lib/ai-providers/store";
+import { ledgerEnabled, getBalance, debit, llmPrice } from "@/lib/ledger/client";
+import { gateEnvFallback } from "@/lib/ledger/policy";
 import { AGENT_LOGS_DIR } from "@/lib/agents/dispatch";
 import {
   PROVIDERS,
@@ -181,6 +183,26 @@ export const coderDriver: Driver = {
       };
     }
 
+    // Free-allotment metering — only the bridge-default ("env-fallback") key is
+    // metered. A user on their own key (source "user-pref") runs unmetered; with
+    // the ledger off, env-fallback also runs unmetered (today's behavior). When
+    // metered, gate on the owner's MIND balance and debit after a successful run.
+    let meterRun = false;
+    if (config.source === "env-fallback") {
+      const balance = ledgerEnabled() ? await getBalance(repo.ownerWebId) : null;
+      const gate = gateEnvFallback({ ledgerEnabled: ledgerEnabled(), balance });
+      if (gate.kind === "blocked") {
+        return {
+          status: "error",
+          summary:
+            "You've used your free AI allotment. Connect your own AI key at " +
+            "/profile/ai-providers to keep using the coder.",
+          error: "out of free usage",
+        };
+      }
+      meterRun = gate.meter;
+    }
+
     const image = process.env.MIND_CODER_IMAGE ?? DEFAULT_IMAGE;
     const timeoutS = Number(process.env.MIND_CODER_TIMEOUT ?? DEFAULT_TIMEOUT_S);
     const orModel = config.model;
@@ -199,6 +221,21 @@ export const coderDriver: Driver = {
       if (logStream) logStream.write(`${line}\n`);
     };
     const summaryLines: string[] = [];
+    // Debit the owner's free allotment once, on a successful metered run. A
+    // failed/late debit (e.g. a concurrent run drained the balance) never fails
+    // the user after the fact — the work is already done; we just log it.
+    let charged = false;
+    const chargeRun = async () => {
+      if (!meterRun || charged) return;
+      charged = true;
+      const res = await debit(
+        repo.ownerWebId,
+        llmPrice(),
+        `builder:coder#${issueNumber}`,
+      );
+      if (res.ok) log(`[coder] metered ${llmPrice()} MIND (balance ${res.balance})`);
+      else log(`[coder] meter debit failed (status ${res.status}) — not charging`);
+    };
     try {
       log(
         `[coder] start ${repoOwner}/${repoName}#${issueNumber} ` +
@@ -464,6 +501,7 @@ export const coderDriver: Driver = {
           agentRunId: ctx.runId,
         });
         log(`[coder] posted clarifying comment #${posted.id}`);
+        await chargeRun();
         return {
           status: "ok",
           summary: [
@@ -607,6 +645,7 @@ export const coderDriver: Driver = {
         log(`[coder] posted PR-accompanying comment #${posted.id}`);
       }
 
+      await chargeRun();
       return {
         status: "ok",
         summary: [

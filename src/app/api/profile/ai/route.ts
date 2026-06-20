@@ -6,6 +6,7 @@ import {
   resolveCoderConfigSummary,
 } from "@/lib/ai-providers/store";
 import { PROVIDERS } from "@/lib/ai-providers/providers";
+import { ledgerEnabled, getBalance } from "@/lib/ledger/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +26,20 @@ export async function GET() {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
 
+  const summary = resolveCoderConfigSummary(auth.webId);
+  // Free-allotment remaining: only meaningful while the coder would run on the
+  // bridge-default key. null when the ledger is off or the user is on their own
+  // key — the builder then renders the existing source-based copy unchanged.
+  const freeBalance =
+    summary.source === "env-fallback" && ledgerEnabled()
+      ? await getBalance(auth.webId)
+      : null;
+
   return NextResponse.json({
     providers: listConfiguredProviders(auth.webId),
     pref: getUserAiPref(auth.webId),
-    summary: resolveCoderConfigSummary(auth.webId),
+    summary,
+    freeBalance,
     catalog: PROVIDERS.map((p) => ({
       name: p.name,
       label: p.label,
