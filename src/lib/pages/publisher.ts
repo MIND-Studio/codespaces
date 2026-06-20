@@ -231,14 +231,24 @@ async function pruneStale(
   relPrefix: string,
   kept: Set<string>,
 ): Promise<number> {
-  // CSS emits the `ldp:contains` objects as relative URIs (e.g. `<index.html>`),
-  // not absolute URLs. Resolve them against the container URL before doing
-  // anything URL-based.
-  const childSlugs = await listContainerChildren(fetcher, containerUrl);
+  const childRefs = await listContainerChildren(fetcher, containerUrl);
+  const containerBase = containerUrl.endsWith("/") ? containerUrl : containerUrl + "/";
   let pruned = 0;
-  for (const slug of childSlugs) {
-    if (!slug || slug === "./" || slug === ".") continue;
-    const childAbsUrl = new URL(slug, containerUrl).toString();
+  for (const ref of childRefs) {
+    if (!ref || ref === "./" || ref === ".") continue;
+    // `ldp:contains` objects come back as relative slugs (`<index.html>`) on
+    // some Solid servers and as absolute URLs (`<https://pod/…/index.html>`)
+    // on others. Resolve to absolute, then re-derive the immediate child
+    // segment RELATIVE to this container so `childRel` lines up with the
+    // relative keys in `kept`. (This previously used the raw object as the
+    // slug; against an absolute-URL server `childRel` became a full URL that
+    // never matched `kept`, so the prune deleted every file it had just
+    // uploaded and the published site came back empty.)
+    const childAbsUrl = new URL(ref, containerBase).toString();
+    if (childAbsUrl === containerBase) continue; // self-reference
+    if (!childAbsUrl.startsWith(containerBase)) continue; // outside the tree
+    const slug = childAbsUrl.slice(containerBase.length);
+    if (!slug) continue;
     const childRel = relPrefix + slug;
 
     if (slug.endsWith("/")) {

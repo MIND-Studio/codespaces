@@ -48,6 +48,17 @@ type CachedSession = {
 };
 const sessionCache = new Map<string, CachedSession>();
 
+// In-flight refresh coalescing, keyed by WebID. CSS issues *single-use*
+// refresh tokens: if two callers (post_receive + reconciler + tracker +
+// publisher all fire near-simultaneously) hit a cold cache at once, each
+// spends the SAME stored refresh token against the IdP. The first rotates it;
+// the rest present an already-consumed token and get `invalid_grant
+// (unknown refresh_token)` — and the clobbered rotation can leave the stored
+// token permanently dead, forcing a /connect re-auth. Collapsing concurrent
+// refreshes for a WebID onto one promise means the token is spent exactly
+// once and every caller shares the resulting live session.
+const inFlightRefresh = new Map<string, Promise<typeof fetch | null>>();
+
 // Re-derive the access token this long before it actually expires, so an
 // in-flight request never rides a token that lapses mid-publish.
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
@@ -194,89 +205,103 @@ export async function loadAuthedFetchForWebId(webId: string): Promise<typeof fet
   // Stale or session changed (re-/connect) — drop it and re-derive below.
   if (cached) sessionCache.delete(webId);
 
-  const storage = makeIdentityStorage(identity.sessionId);
+  // If a refresh for this WebID is already running, await it rather than
+  // spending the single-use refresh token a second time (see inFlightRefresh).
+  const pending = inFlightRefresh.get(webId);
+  if (pending) return pending;
 
-  // `rotations` records every `newRefreshToken` event the SDK emits.
-  // The SDK's persistence path is to immediately call setForUser on
-  // our storage adapter — but we capture the event independently so
-  // a structured log line exists even if the storage write was
-  // somehow skipped or clobbered. On refresh failure the count is
-  // logged so we can tell "refresh ran and rotated tokens N times
-  // before giving up" from "refresh refused immediately".
-  const rotations: string[] = [];
-  // A dead dynamic-client registration (e.g. the issuer's `.css-data` was
-  // wiped in dev) makes the SDK *throw* during refresh — `invalid_client`,
-  // a network error, etc. — rather than return a non-logged-in session. We
-  // must funnel that throw into the same `OidcRefreshFailedError` as the
-  // returns-not-logged-in case; otherwise the raw error escapes past
-  // `getOwnerFetch`'s `OidcRefreshFailedError` catch and every caller turns a
-  // stale identity into an opaque 500 instead of a clear "re-connect via
-  // /connect" 503. (MC-173.)
-  let session: Awaited<ReturnType<typeof getSessionFromStorage>> | undefined;
+  const refreshPromise = (async (): Promise<typeof fetch | null> => {
+    const storage = makeIdentityStorage(identity.sessionId);
+
+    // `rotations` records every `newRefreshToken` event the SDK emits.
+    // The SDK's persistence path is to immediately call setForUser on
+    // our storage adapter — but we capture the event independently so
+    // a structured log line exists even if the storage write was
+    // somehow skipped or clobbered. On refresh failure the count is
+    // logged so we can tell "refresh ran and rotated tokens N times
+    // before giving up" from "refresh refused immediately".
+    const rotations: string[] = [];
+    // A dead dynamic-client registration (e.g. the issuer's `.css-data` was
+    // wiped in dev) makes the SDK *throw* during refresh — `invalid_client`,
+    // a network error, etc. — rather than return a non-logged-in session. We
+    // must funnel that throw into the same `OidcRefreshFailedError` as the
+    // returns-not-logged-in case; otherwise the raw error escapes past
+    // `getOwnerFetch`'s `OidcRefreshFailedError` catch and every caller turns a
+    // stale identity into an opaque 500 instead of a clear "re-connect via
+    // /connect" 503. (MC-173.)
+    let session: Awaited<ReturnType<typeof getSessionFromStorage>> | undefined;
+    try {
+      session = await getSessionFromStorage(identity.sessionId, {
+        storage,
+        refreshSession: true,
+        onNewRefreshToken: (newToken: string) => {
+          // First+last 4 chars only — proves a new value was observed
+          // without exposing the secret in logs.
+          const fp = `${newToken.slice(0, 4)}…${newToken.slice(-4)}`;
+          rotations.push(fp);
+          log.info("oidc.refresh.rotated", {
+            webId: scrubWebId(webId),
+            sessionId: identity.sessionId.slice(0, 8),
+            tokenLen: newToken.length,
+            tokenFingerprint: fp,
+          });
+        },
+      });
+    } catch (e) {
+      log.warn("oidc.refresh.failed", {
+        webId: scrubWebId(webId),
+        sessionId: identity.sessionId.slice(0, 8),
+        threw: true,
+        error: (e as Error).message ?? String(e),
+        rotationsDuringCall: rotations.length,
+      });
+      throw new OidcRefreshFailedError(webId);
+    }
+
+    if (!session || !session.info.isLoggedIn) {
+      log.warn("oidc.refresh.failed", {
+        webId: scrubWebId(webId),
+        sessionId: identity.sessionId.slice(0, 8),
+        hasSession: !!session,
+        isLoggedIn: session?.info.isLoggedIn ?? false,
+        rotationsDuringCall: rotations.length,
+      });
+      throw new OidcRefreshFailedError(webId);
+    }
+    const authedFetch = session.fetch.bind(session) as typeof fetch;
+
+    // Cache the live session's fetch until just before the access token expires.
+    // `expirationDate` is ms-epoch when present; if the SDK didn't surface it (or
+    // it's not a sane future timestamp) we cache for one skew window only — still
+    // enough to collapse a burst of publishes into a single refresh without
+    // riding an unknown-lifetime token for long.
+    const exp = (session.info as { expirationDate?: number }).expirationDate;
+    const expiresAt =
+      typeof exp === "number" && exp > Date.now()
+        ? exp
+        : // No expiry surfaced — cache for one skew window so a burst of publishes
+          // still collapses to a single refresh, without riding an unknown-lifetime
+          // token for long. (CSS access tokens live for minutes, so 60s is safe.)
+          Date.now() + 2 * TOKEN_EXPIRY_SKEW_MS;
+    sessionCache.set(webId, {
+      sessionId: identity.sessionId,
+      fetch: authedFetch,
+      expiresAt,
+    });
+
+    log.info("oidc.refresh.ok", {
+      webId: scrubWebId(webId),
+      sessionId: identity.sessionId.slice(0, 8),
+      rotationsDuringCall: rotations.length,
+      cachedUntil: expiresAt,
+    });
+    return authedFetch;
+  })();
+
+  inFlightRefresh.set(webId, refreshPromise);
   try {
-    session = await getSessionFromStorage(identity.sessionId, {
-      storage,
-      refreshSession: true,
-      onNewRefreshToken: (newToken: string) => {
-        // First+last 4 chars only — proves a new value was observed
-        // without exposing the secret in logs.
-        const fp = `${newToken.slice(0, 4)}…${newToken.slice(-4)}`;
-        rotations.push(fp);
-        log.info("oidc.refresh.rotated", {
-          webId: scrubWebId(webId),
-          sessionId: identity.sessionId.slice(0, 8),
-          tokenLen: newToken.length,
-          tokenFingerprint: fp,
-        });
-      },
-    });
-  } catch (e) {
-    log.warn("oidc.refresh.failed", {
-      webId: scrubWebId(webId),
-      sessionId: identity.sessionId.slice(0, 8),
-      threw: true,
-      error: (e as Error).message ?? String(e),
-      rotationsDuringCall: rotations.length,
-    });
-    throw new OidcRefreshFailedError(webId);
+    return await refreshPromise;
+  } finally {
+    inFlightRefresh.delete(webId);
   }
-
-  if (!session || !session.info.isLoggedIn) {
-    log.warn("oidc.refresh.failed", {
-      webId: scrubWebId(webId),
-      sessionId: identity.sessionId.slice(0, 8),
-      hasSession: !!session,
-      isLoggedIn: session?.info.isLoggedIn ?? false,
-      rotationsDuringCall: rotations.length,
-    });
-    throw new OidcRefreshFailedError(webId);
-  }
-  const authedFetch = session.fetch.bind(session) as typeof fetch;
-
-  // Cache the live session's fetch until just before the access token expires.
-  // `expirationDate` is ms-epoch when present; if the SDK didn't surface it (or
-  // it's not a sane future timestamp) we cache for one skew window only — still
-  // enough to collapse a burst of publishes into a single refresh without
-  // riding an unknown-lifetime token for long.
-  const exp = (session.info as { expirationDate?: number }).expirationDate;
-  const expiresAt =
-    typeof exp === "number" && exp > Date.now()
-      ? exp
-      : // No expiry surfaced — cache for one skew window so a burst of publishes
-        // still collapses to a single refresh, without riding an unknown-lifetime
-        // token for long. (CSS access tokens live for minutes, so 60s is safe.)
-        Date.now() + 2 * TOKEN_EXPIRY_SKEW_MS;
-  sessionCache.set(webId, {
-    sessionId: identity.sessionId,
-    fetch: authedFetch,
-    expiresAt,
-  });
-
-  log.info("oidc.refresh.ok", {
-    webId: scrubWebId(webId),
-    sessionId: identity.sessionId.slice(0, 8),
-    rotationsDuringCall: rotations.length,
-    cachedUntil: expiresAt,
-  });
-  return authedFetch;
 }
