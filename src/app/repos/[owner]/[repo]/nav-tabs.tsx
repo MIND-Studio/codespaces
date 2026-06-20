@@ -12,7 +12,7 @@ type Tab = {
 export function NavTabs({ tabs }: { tabs: Tab[] }) {
   return (
     <nav
-      className="-mx-6 mt-6 flex items-end gap-x-6 gap-y-1 overflow-x-auto border-b border-[color:var(--ink-trace)] px-6 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      className="-mx-4 mt-6 flex items-end gap-x-6 gap-y-1 overflow-x-auto border-b border-[color:var(--ink-trace)] px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       style={{ fontFamily: "var(--font-mono-src)" }}
     >
       {tabs.map((tab) => {

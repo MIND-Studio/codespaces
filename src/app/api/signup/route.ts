@@ -28,8 +28,10 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const env = getEnv();
   if (process.env.BRIDGE_ENABLE_SIGNUP !== "1") {
+    // User-facing copy stays human; the operator hint (set BRIDGE_ENABLE_SIGNUP=1)
+    // lives in the route doc-comment above, not in a response shown to visitors.
     return NextResponse.json(
-      { error: "signup disabled (set BRIDGE_ENABLE_SIGNUP=1)" },
+      { error: "Account creation isn't available on this bridge." },
       { status: 403 },
     );
   }

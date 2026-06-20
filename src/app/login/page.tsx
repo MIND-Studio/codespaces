@@ -32,9 +32,13 @@ export default async function Login({
   }
 
   const { tab, returnTo } = await searchParams;
-  const initialTab = tab === "register" ? "register" : "login";
-  const safeReturnTo = sanitizeReturnTo(returnTo);
   const signupEnabled = process.env.BRIDGE_ENABLE_SIGNUP === "1";
+  // Only honour ?tab=register when signup is actually enabled — otherwise the
+  // /signup redirect and the "create a pod" links would land the visitor on a
+  // register form that can't submit (the tab bar is hidden, so there's no way
+  // back to sign-in). Fall back to the working sign-in panel instead.
+  const initialTab = tab === "register" && signupEnabled ? "register" : "login";
+  const safeReturnTo = sanitizeReturnTo(returnTo);
   const defaultIssuer = process.env.POD_BASE_URL ?? DEFAULT_ISSUER;
   const ISSUER_PRESETS = buildIssuerPresets(defaultIssuer);
 
