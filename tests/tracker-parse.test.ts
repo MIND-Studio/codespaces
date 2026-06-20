@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseTrackerTrio } from "@/lib/tracker/parse";
+import { describe, expect, it } from "vitest";
 import { groupByEpic } from "@/lib/tracker/model";
+import { parseTrackerTrio } from "@/lib/tracker/parse";
 
 // Fixtures: this prototype's own committed `.mind/build` trio. The seed script
 // pushes the same trio into a demo repo, so parsing it here guards the exact
@@ -100,9 +100,7 @@ describe("parseTrackerTrio", () => {
     expect(issue.stateId).toBe("Doing");
     expect(issue.open).toBe(true);
     expect(issue.categoryId).toBe("Bug");
-    expect(issue.assignee).toBe(
-      "http://localhost:3011/claude/profile/card#me",
-    );
+    expect(issue.assignee).toBe("http://localhost:3011/claude/profile/card#me");
   });
 
   it("groups issues by epic with a trailing General bucket", () => {

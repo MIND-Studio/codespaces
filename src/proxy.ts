@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 /**
  * CORS allowlist for the JSON API (P0-S8 second half).
@@ -70,10 +70,9 @@ export function proxy(req: NextRequest): NextResponse {
       headers: {
         "Access-Control-Allow-Origin": origin ?? "*",
         "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers":
-          "Content-Type,Authorization,X-CSRF-Token,X-Mind-Dev-WebId",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization,X-CSRF-Token,X-Mind-Dev-WebId",
         "Access-Control-Max-Age": "600",
-        "Vary": "Origin",
+        Vary: "Origin",
       },
     });
   }

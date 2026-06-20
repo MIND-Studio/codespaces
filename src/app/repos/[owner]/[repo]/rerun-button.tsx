@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Button,
   buttonVariants,
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction,
 } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 /**
  * Manual workflow re-run trigger. Fires-and-forgets via the runs API,
@@ -65,9 +65,7 @@ export function RerunButton({ owner, repo }: { owner: string; repo: string }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="confirm-cancel">
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel data-testid="confirm-cancel">Cancel</AlertDialogCancel>
             <AlertDialogAction
               data-testid="confirm-accept"
               className={buttonVariants({ variant: "destructive" })}
@@ -78,9 +76,7 @@ export function RerunButton({ owner, repo }: { owner: string; repo: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {error ? (
-        <span className="text-sm text-[color:var(--status-bad)]">{error}</span>
-      ) : null}
+      {error ? <span className="text-sm text-[color:var(--status-bad)]">{error}</span> : null}
     </div>
   );
 }

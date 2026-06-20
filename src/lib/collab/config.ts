@@ -14,19 +14,14 @@
  *    content-agnostic and the `mc:issue-draft:*` room namespace keeps the two
  *    apps' docs from colliding, so no codespaces-specific relay image is needed.
  */
-export const collabRelayUrl =
-  process.env.NEXT_PUBLIC_COLLAB_RELAY_URL ?? "ws://localhost:3012";
+export const collabRelayUrl = process.env.NEXT_PUBLIC_COLLAB_RELAY_URL ?? "ws://localhost:3012";
 
 /**
  * The relay room id for one draft. Namespaced by app + repo so it never
  * collides with whiteboard rooms (or another repo's drafts) on a shared relay.
  * `WebsocketProvider` appends this to the relay base as the WS path.
  */
-export function draftRoomName(
-  owner: string,
-  repo: string,
-  draftId: string,
-): string {
+export function draftRoomName(owner: string, repo: string, draftId: string): string {
   return `mc:issue-draft:${owner}/${repo}/${draftId}`;
 }
 
@@ -60,9 +55,7 @@ export function nameFromWebId(webId: string | null | undefined): string {
   try {
     const noFragment = webId.split("#")[0];
     const segments = noFragment.split("/").filter(Boolean);
-    const meaningful = segments.filter(
-      (s) => s !== "profile" && s !== "card" && !s.includes(":"),
-    );
+    const meaningful = segments.filter((s) => s !== "profile" && s !== "card" && !s.includes(":"));
     return meaningful[0] ?? "Guest";
   } catch {
     return "Guest";

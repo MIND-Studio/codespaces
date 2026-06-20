@@ -29,31 +29,19 @@ export async function getCssAuthedFetch(input: {
   const { controls } = await discoverAccountControls(cssBaseUrl);
   const loginUrl = controls.password?.login;
   if (!loginUrl) {
-    throw new Error(
-      `CSS at ${cssBaseUrl} did not advertise a password-login endpoint.`,
-    );
+    throw new Error(`CSS at ${cssBaseUrl} did not advertise a password-login endpoint.`);
   }
 
   const { authorization } = await loginAccount(loginUrl, email, password);
 
-  const { controls: postLoginControls } = await discoverAccountControls(
-    cssBaseUrl,
-    authorization,
-  );
+  const { controls: postLoginControls } = await discoverAccountControls(cssBaseUrl, authorization);
   const credsUrl = postLoginControls.account?.clientCredentials;
   if (!credsUrl) {
-    throw new Error(
-      `CSS at ${cssBaseUrl} did not advertise clientCredentials after login.`,
-    );
+    throw new Error(`CSS at ${cssBaseUrl} did not advertise clientCredentials after login.`);
   }
 
   const credName = `mind-codespaces-publisher-${Date.now()}`;
-  const { id, secret } = await createClientCredentials(
-    credsUrl,
-    authorization,
-    credName,
-    webId,
-  );
+  const { id, secret } = await createClientCredentials(credsUrl, authorization, credName, webId);
 
   const session = new Session();
   await session.login({
@@ -71,10 +59,7 @@ export async function getCssAuthedFetch(input: {
   };
 }
 
-async function discoverAccountControls(
-  cssBaseUrl: string,
-  authorization?: string,
-) {
+async function discoverAccountControls(cssBaseUrl: string, authorization?: string) {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (authorization) {
     headers.Authorization = `CSS-Account-Token ${authorization}`;

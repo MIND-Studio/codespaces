@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import {
-  getRepo,
-  getPagesConfig,
-  RegistryError,
-  updatePagesConfig,
-} from "@/lib/registry/repos";
-import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
 import { requireOwner } from "@/lib/auth/session";
+import { getPagesConfig, getRepo, RegistryError, updatePagesConfig } from "@/lib/registry/repos";
+import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,23 +32,20 @@ export async function PUT(req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { enabled, sourceBranch, sourcePath, targetContainer } =
-    (body ?? {}) as Record<string, unknown>;
+  const { enabled, sourceBranch, sourcePath, targetContainer } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
 
   try {
     const updated = updatePagesConfig(repo.id, {
       enabled: typeof enabled === "boolean" ? enabled : undefined,
-      sourceBranch:
-        typeof sourceBranch === "string" ? sourceBranch : undefined,
+      sourceBranch: typeof sourceBranch === "string" ? sourceBranch : undefined,
       sourcePath: typeof sourcePath === "string" ? sourcePath : undefined,
-      targetContainer:
-        typeof targetContainer === "string" ? targetContainer : undefined,
+      targetContainer: typeof targetContainer === "string" ? targetContainer : undefined,
     });
     writeRepoMetadata(repo, updated).catch((err) => {
-      console.warn(
-        `[pages.PUT] writeRepoMetadata for ${owner}/${name} failed:`,
-        err,
-      );
+      console.warn(`[pages.PUT] writeRepoMetadata for ${owner}/${name} failed:`, err);
     });
     return NextResponse.json({ pages: updated });
   } catch (e) {

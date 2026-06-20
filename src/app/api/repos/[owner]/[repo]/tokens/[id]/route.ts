@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { requireOwner } from "@/lib/auth/session";
 import { getRepo } from "@/lib/registry/repos";
 import { revokePushToken } from "@/lib/registry/tokens";
-import { requireOwner } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

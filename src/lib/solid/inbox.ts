@@ -1,16 +1,16 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import {
-  getSolidDataset,
   getContainedResourceUrlAll,
-  getThing,
-  getStringNoLocale,
-  getUrl,
   getDatetime,
+  getSolidDataset,
+  getStringNoLocale,
+  getThing,
+  getUrl,
 } from "@inrupt/solid-client";
 import type { Repo } from "@/lib/registry/repos";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { ensureContainer, setInboxAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { NS } from "@/lib/vocab";
 
 /**
@@ -61,8 +61,7 @@ export type Proposal = {
   createdAt: number | null;
 };
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Triple-quoted Turtle long string — keeps newlines literal. Every `"` is
@@ -129,10 +128,7 @@ export function renderProposalTurtle(input: ProposalInput): string {
 }
 
 /** Ensure the inbox container + its append-only ACL exist. Idempotent. */
-export async function ensureInbox(
-  fetcher: typeof fetch,
-  repo: Repo,
-): Promise<void> {
+export async function ensureInbox(fetcher: typeof fetch, repo: Repo): Promise<void> {
   const url = inboxContainerUrl(repo);
   const created = await ensureContainer(fetcher, url);
   if (created) {
@@ -213,10 +209,7 @@ export async function listProposals(repo: Repo): Promise<Proposal[]> {
           contact: getStringNoLocale(thing, `${NS.solidgit}contact`),
           createdAt: getDatetime(thing, `${NS.dcterms}created`)?.getTime() ?? null,
         });
-      } catch {
-        // A malformed member shouldn't sink the whole listing.
-        continue;
-      }
+      } catch {}
     }
     out.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return out;
@@ -230,10 +223,7 @@ export async function listProposals(repo: Repo): Promise<Proposal[]> {
 }
 
 /** Read a single proposal by id (owner fetch), or null if absent. */
-export async function getProposal(
-  repo: Repo,
-  id: string,
-): Promise<Proposal | null> {
+export async function getProposal(repo: Repo, id: string): Promise<Proposal | null> {
   if (!UUID_RE.test(id)) return null;
   const all = await listProposals(repo);
   return all.find((p) => p.id === id) ?? null;

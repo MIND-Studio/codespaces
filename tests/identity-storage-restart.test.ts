@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 /**
  * MC-150 regression: "Bridge restart drops pod auth → re-connect loop."
@@ -83,9 +83,7 @@ describe("identity storage survives a bridge restart (MC-150)", () => {
     const { getDb } = await import("@/lib/registry/db");
     const raw = (
       getDb()
-        .prepare(
-          "SELECT value FROM identity_storage WHERE session_id = ? AND key = ?",
-        )
+        .prepare("SELECT value FROM identity_storage WHERE session_id = ? AND key = ?")
         .get(SESSION_ID, STORAGE_KEY) as { value: string }
     ).value;
     expect(raw.startsWith("v1:")).toBe(true);
@@ -128,16 +126,11 @@ describe("identity storage survives a bridge restart (MC-150)", () => {
     );
     // …a later disjoint write (e.g. a rotated refresh token) must MERGE, not
     // clobber the keypair (the identities IStorage merges this special key).
-    await store.set(
-      key,
-      JSON.stringify({ refreshToken: "rt_rotated", isLoggedIn: "true" }),
-    );
+    await store.set(key, JSON.stringify({ refreshToken: "rt_rotated", isLoggedIn: "true" }));
 
     closeDb();
 
-    const record = JSON.parse(
-      (await makeIdentityStorage(sid).get(key)) as string,
-    );
+    const record = JSON.parse((await makeIdentityStorage(sid).get(key)) as string);
     expect(record.privateKey).toBe(SESSION_RECORD.privateKey);
     expect(record.refreshToken).toBe("rt_rotated");
     expect(record.dpop).toBe("true");

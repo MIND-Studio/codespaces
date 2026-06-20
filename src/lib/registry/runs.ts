@@ -1,12 +1,7 @@
 import "server-only";
 import { getDb } from "@/lib/registry/db";
 
-export type RunStatus =
-  | "queued"
-  | "running"
-  | "success"
-  | "failed"
-  | "error";
+export type RunStatus = "queued" | "running" | "success" | "failed" | "error";
 
 export type WorkflowRun = {
   id: number;
@@ -48,9 +43,9 @@ export function createRun(repoId: number, ref: string): WorkflowRun {
 }
 
 export function getRunById(id: number): WorkflowRun | null {
-  const row = getDb()
-    .prepare("SELECT * FROM workflow_runs WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM workflow_runs WHERE id = ?").get(id) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToRun(row) : null;
 }
 
@@ -66,18 +61,14 @@ export function getLatestRunForRepo(repoId: number): WorkflowRun | null {
 
 /** Total workflow runs across all repos. Used by the landing-page tile. */
 export function countAllRuns(): number {
-  const row = getDb()
-    .prepare("SELECT COUNT(*) AS c FROM workflow_runs")
-    .get() as { c: number };
+  const row = getDb().prepare("SELECT COUNT(*) AS c FROM workflow_runs").get() as { c: number };
   return row.c;
 }
 
 /** Most recent run across every repo, or null if nothing has run yet. */
 export function getLatestRunOverall(): WorkflowRun | null {
   const row = getDb()
-    .prepare(
-      `SELECT * FROM workflow_runs ORDER BY started_at DESC LIMIT 1`,
-    )
+    .prepare(`SELECT * FROM workflow_runs ORDER BY started_at DESC LIMIT 1`)
     .get() as Record<string, unknown> | undefined;
   return row ? rowToRun(row) : null;
 }
@@ -94,9 +85,7 @@ export function listRunsForRepo(repoId: number, limit = 20): WorkflowRun[] {
 }
 
 export function markRunRunning(id: number): void {
-  getDb()
-    .prepare("UPDATE workflow_runs SET status='running' WHERE id = ?")
-    .run(id);
+  getDb().prepare("UPDATE workflow_runs SET status='running' WHERE id = ?").run(id);
 }
 
 export function finishRun(
@@ -115,22 +104,12 @@ export function finishRun(
          SET status=?, exit_code=?, finished_at=?, log_tail=?, error_message=?
        WHERE id = ?`,
     )
-    .run(
-      input.status,
-      input.exitCode,
-      Date.now(),
-      tail,
-      input.errorMessage ?? null,
-      id,
-    );
+    .run(input.status, input.exitCode, Date.now(), tail, input.errorMessage ?? null, id);
 }
 
 function truncateTail(log: string): string {
   if (log.length <= LOG_TAIL_CAP) return log;
-  return (
-    "… (truncated, showing last 64 KB) …\n" +
-    log.slice(log.length - LOG_TAIL_CAP)
-  );
+  return "… (truncated, showing last 64 KB) …\n" + log.slice(log.length - LOG_TAIL_CAP);
 }
 
 /**

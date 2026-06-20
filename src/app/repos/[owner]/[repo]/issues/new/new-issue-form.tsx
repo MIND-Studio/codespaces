@@ -1,18 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import {
   Button,
   Input,
-  Textarea,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
 } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 export type CategoryOption = { id: string; label: string };
 export type EpicOption = { slug: string; title: string };
@@ -67,8 +67,7 @@ export function NewIssueForm({ owner, repo, categories, epics }: Props) {
     }
   }
 
-  const labelClass =
-    "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
+  const labelClass = "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
   const mono = { fontFamily: "var(--font-mono-src)" };
 
   return (

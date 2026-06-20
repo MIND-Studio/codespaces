@@ -1,25 +1,20 @@
-import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { getRepo, validateName, type Repo } from "@/lib/registry/repos";
+import { NextResponse } from "next/server";
+import { authenticatePackagePush } from "@/lib/packages/auth";
+import { type OciName, parseOciRequest } from "@/lib/packages/oci";
+import { abortUpload, appendChunk, finishUpload, startUpload } from "@/lib/packages/oci-uploads";
+import { getRepoContentStore } from "@/lib/packages/repo-store";
 import {
-  upsertPackageVersion,
   getPackageVersion,
+  isDigestRef,
   listVersions,
+  PackageError,
+  upsertPackageVersion,
   validatePackageName,
   validateVersion,
-  isDigestRef,
-  PackageError,
 } from "@/lib/packages/store";
-import { authenticatePackagePush } from "@/lib/packages/auth";
-import { getRepoContentStore } from "@/lib/packages/repo-store";
-import { assertCanStorePackage, QuotaExceededError, QUOTAS } from "@/lib/registry/quotas";
-import { parseOciRequest, type OciName } from "@/lib/packages/oci";
-import {
-  startUpload,
-  appendChunk,
-  finishUpload,
-  abortUpload,
-} from "@/lib/packages/oci-uploads";
+import { assertCanStorePackage, QUOTAS, QuotaExceededError } from "@/lib/registry/quotas";
+import { getRepo, type Repo, validateName } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
 
 export const runtime = "nodejs";
@@ -122,9 +117,7 @@ export async function PATCH(req: Request, { params }: Params) {
   }
   if (size > QUOTAS.maxPackageBlobBytes) {
     abortUpload(target.uuid);
-    return quota(
-      new QuotaExceededError("maxPackageBlobBytes", QUOTAS.maxPackageBlobBytes, size),
-    );
+    return quota(new QuotaExceededError("maxPackageBlobBytes", QUOTAS.maxPackageBlobBytes, size));
   }
   return new NextResponse(null, {
     status: 202,

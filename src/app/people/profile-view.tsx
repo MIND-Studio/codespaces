@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { fetchProfile, listContainer } from "@/lib/solid/profile";
 import { listRepos, type Repo } from "@/lib/registry/repos";
+import { fetchProfile, listContainer } from "@/lib/solid/profile";
 
 function initials(name: string | null, fallback: string): string {
   const source = (name && name.trim().length > 0 ? name : fallback).trim();
@@ -62,12 +62,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
   try {
     profile = await fetchProfile(webId);
   } catch (err) {
-    return (
-      <ErrorPanel
-        webId={webId}
-        message={err instanceof Error ? err.message : String(err)}
-      />
-    );
+    return <ErrorPanel webId={webId} message={err instanceof Error ? err.message : String(err)} />;
   }
 
   const repos = listRepos();
@@ -92,12 +87,9 @@ export default async function ProfileView({ webId }: { webId: string }) {
 
   const ownerSlug = ownerSlugForWebId(webId, repos);
   const fallbackHandle = ownerSlug ?? lastSegment(stripFragment(webId));
-  const displayName =
-    profile.name ?? (profile.nick ? `@${profile.nick}` : `@${fallbackHandle}`);
+  const displayName = profile.name ?? (profile.nick ? `@${profile.nick}` : `@${fallbackHandle}`);
   const initialsBadge = initials(profile.name, profile.nick ?? fallbackHandle);
-  const issuerHost = profile.oidcIssuer
-    ? hostOnly(profile.oidcIssuer)
-    : hostOnly(profile.document);
+  const issuerHost = profile.oidcIssuer ? hostOnly(profile.oidcIssuer) : hostOnly(profile.document);
 
   return (
     <article>
@@ -121,9 +113,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
           </div>
         )}
         <div className="min-w-0">
-          <p className="section-mark">
-            Profile{ownerSlug ? ` · ${ownerSlug}` : ""}
-          </p>
+          <p className="section-mark">Profile{ownerSlug ? ` · ${ownerSlug}` : ""}</p>
           <h1
             className="display mt-2 text-4xl sm:text-5xl"
             style={{ fontFamily: "var(--font-display)" }}
@@ -158,23 +148,13 @@ export default async function ProfileView({ webId }: { webId: string }) {
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         <DataRow label="WebID">
-          <a
-            href={profile.webId}
-            target="_blank"
-            rel="noreferrer"
-            className="link break-all"
-          >
+          <a href={profile.webId} target="_blank" rel="noreferrer" className="link break-all">
             {originHostPath(profile.webId)}
           </a>
         </DataRow>
         <DataRow label="oidc issuer">
           {profile.oidcIssuer ? (
-            <a
-              href={profile.oidcIssuer}
-              target="_blank"
-              rel="noreferrer"
-              className="link"
-            >
+            <a href={profile.oidcIssuer} target="_blank" rel="noreferrer" className="link">
               {originHostPath(profile.oidcIssuer)}
             </a>
           ) : (
@@ -183,12 +163,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
         </DataRow>
         <DataRow label="homepage">
           {profile.homepage ? (
-            <a
-              href={profile.homepage}
-              target="_blank"
-              rel="noreferrer"
-              className="link"
-            >
+            <a href={profile.homepage} target="_blank" rel="noreferrer" className="link">
               {originHostPath(profile.homepage)}
             </a>
           ) : (
@@ -243,9 +218,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
                     className="inline-flex items-baseline gap-2 rounded-[var(--radius-chip)] border border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-3 py-1.5 text-xs transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
                     style={{ fontFamily: "var(--font-mono-src)" }}
                   >
-                    <span className="text-[color:var(--ink-faint)]">
-                      {r.owner}/
-                    </span>
+                    <span className="text-[color:var(--ink-faint)]">{r.owner}/</span>
                     <span className="text-[color:var(--ink)]">{r.name}</span>
                     {r.visibility === "private" ? (
                       <span className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
@@ -272,10 +245,7 @@ export default async function ProfileView({ webId }: { webId: string }) {
               const href = linkForKnown(w, repos);
               const slug = ownerSlugForWebId(w, repos);
               return (
-                <li
-                  key={w}
-                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
-                >
+                <li key={w} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <Link href={href} className="link">
                     {slug ? `@${slug}` : "look up →"}
                   </Link>
@@ -296,9 +266,8 @@ export default async function ProfileView({ webId }: { webId: string }) {
 
       <Section title="Repos">
         <p className="mb-4 text-sm text-[color:var(--ink-soft)]">
-          Cross-referenced: which repos the bridge thinks this person owns vs.
-          which ones their pod itself advertises in{" "}
-          <code className="kbd">codespaces/</code>. The pod is authoritative.
+          Cross-referenced: which repos the bridge thinks this person owns vs. which ones their pod
+          itself advertises in <code className="kbd">codespaces/</code>. The pod is authoritative.
         </p>
         <RepoCrossRef
           bridgeRepos={ownedReposFromBridge.map((r) => r.name)}
@@ -312,18 +281,12 @@ export default async function ProfileView({ webId }: { webId: string }) {
       <Section title="Published sites">
         {sitesContainer === null ? (
           <p className="text-sm italic text-[color:var(--ink-faint)]">
-            (no <code className="kbd">public/sites/</code> container, or not
-            readable)
+            (no <code className="kbd">public/sites/</code> container, or not readable)
           </p>
         ) : sitesFromPod.length === 0 ? (
-          <p className="text-sm italic text-[color:var(--ink-faint)]">
-            (container is empty)
-          </p>
+          <p className="text-sm italic text-[color:var(--ink-faint)]">(container is empty)</p>
         ) : (
-          <ul
-            className="space-y-1 text-sm"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
+          <ul className="space-y-1 text-sm" style={{ fontFamily: "var(--font-mono-src)" }}>
             {sitesFromPod.map((name) => (
               <li key={name}>
                 <span className="text-[color:var(--accent)]">·</span>{" "}
@@ -345,10 +308,9 @@ export default async function ProfileView({ webId }: { webId: string }) {
 
       <Section title="Raw profile">
         <p className="mb-2 text-sm text-[color:var(--ink-soft)]">
-          Verbatim Turtle returned by{" "}
-          <code className="kbd">GET {profile.document}</code> with{" "}
-          <code className="kbd">Accept: text/turtle</code>. Nothing on this page
-          is sourced from anywhere else.
+          Verbatim Turtle returned by <code className="kbd">GET {profile.document}</code> with{" "}
+          <code className="kbd">Accept: text/turtle</code>. Nothing on this page is sourced from
+          anywhere else.
         </p>
         <pre className="codeblock">{profile.rawTurtle.trim() || "(empty)"}</pre>
       </Section>
@@ -359,20 +321,14 @@ export default async function ProfileView({ webId }: { webId: string }) {
         className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        // this profile was fetched server-side, refreshed on every page load.
-        nothing is cached, nothing is stored on the bridge.
+        // this profile was fetched server-side, refreshed on every page load. nothing is cached,
+        nothing is stored on the bridge.
       </p>
     </article>
   );
 }
 
-function DataRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function DataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <>
       <dt className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
@@ -384,26 +340,13 @@ function DataRow({
 }
 
 function Missing({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="italic text-[color:var(--ink-faint)]">
-      no {children} in profile
-    </span>
-  );
+  return <span className="italic text-[color:var(--ink-faint)]">no {children} in profile</span>;
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <section>
-      <h2
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <div className="mt-4">{children}</div>
@@ -455,10 +398,7 @@ function RepoCrossRef({
           const inBridge = bridgeRepos.includes(name);
           const inPod = podRepos.includes(name);
           return (
-            <tr
-              key={name}
-              className="border-t border-[color:var(--ink-trace)]"
-            >
+            <tr key={name} className="border-t border-[color:var(--ink-trace)]">
               <td className="py-2">{name}</td>
               <td className="py-2 text-center">{inBridge ? "✓" : "—"}</td>
               <td className="py-2 text-center">{inPod ? "✓" : "—"}</td>
@@ -470,13 +410,7 @@ function RepoCrossRef({
   );
 }
 
-function ErrorPanel({
-  webId,
-  message,
-}: {
-  webId: string;
-  message: string;
-}) {
+function ErrorPanel({ webId, message }: { webId: string; message: string }) {
   return (
     <article>
       <header>
@@ -499,8 +433,7 @@ function ErrorPanel({
 
       <div className="card">
         <p className="text-sm text-[color:var(--ink-soft)]">
-          The bridge dereferenced{" "}
-          <code className="kbd break-all">{webId}</code> server-side and the
+          The bridge dereferenced <code className="kbd break-all">{webId}</code> server-side and the
           request failed. Profiles must be publicly readable to render here.
         </p>
         <pre className="codeblock mt-4">{message}</pre>
@@ -510,8 +443,7 @@ function ErrorPanel({
         className="mt-8 text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        // the seeded alice and mind ACLs allow public read.
-        external WebIDs need the same.
+        // the seeded alice and mind ACLs allow public read. external WebIDs need the same.
       </p>
     </article>
   );

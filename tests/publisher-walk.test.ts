@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Test 5 in §3.2 priority list: the publisher walk must not yield:
 //   • dot-prefixed config (`.env*`)

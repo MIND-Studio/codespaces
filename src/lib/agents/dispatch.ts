@@ -1,27 +1,19 @@
 import "server-only";
 import * as path from "node:path";
+import { getDefaultDriverName, getDriver, rolesForEvent } from "@/lib/agents/registry";
 import type { AgentEvent, DriverResult, Role } from "@/lib/agents/types";
-import {
-  getDefaultDriverName,
-  getDriver,
-  rolesForEvent,
-} from "@/lib/agents/registry";
-import {
-  createAgentRun,
-  finishAgentRun,
-} from "@/lib/registry/agent-runs";
-import { getRepo } from "@/lib/registry/repos";
-import { getIssueByNumber } from "@/lib/registry/issues";
-import { buildPreviewForPull } from "@/lib/pages/preview";
 import { Metrics } from "@/lib/metrics";
+import { buildPreviewForPull } from "@/lib/pages/preview";
+import { createAgentRun, finishAgentRun } from "@/lib/registry/agent-runs";
+import { getIssueByNumber } from "@/lib/registry/issues";
+import { getRepo } from "@/lib/registry/repos";
 
 /**
  * Where streamed per-run log files live. The registry stores just the
  * filename (`{runId}.log`); the directory can be relocated via
  * AGENT_LOGS_DIR without rewriting any rows.
  */
-export const AGENT_LOGS_DIR =
-  process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
+export const AGENT_LOGS_DIR = process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
 
 /**
  * Render a prompt for a role given the event. v0 is intentionally
@@ -80,10 +72,7 @@ export async function dispatch(
 
   const repo = getRepo(event.repoOwner, event.repoName);
   const issueNumber = "issueNumber" in event ? event.issueNumber : null;
-  const issue =
-    repo && issueNumber !== null
-      ? getIssueByNumber(repo.id, issueNumber)
-      : null;
+  const issue = repo && issueNumber !== null ? getIssueByNumber(repo.id, issueNumber) : null;
 
   for (const role of roles) {
     const driverName = opts.driver ?? role.driver ?? getDefaultDriverName();
@@ -124,8 +113,7 @@ export async function dispatch(
           driver: driverName,
         })
       : null;
-    const logPath =
-      run?.logPath ? path.join(AGENT_LOGS_DIR, run.logPath) : null;
+    const logPath = run?.logPath ? path.join(AGENT_LOGS_DIR, run.logPath) : null;
 
     let result: DriverResult;
     try {
@@ -158,9 +146,7 @@ export async function dispatch(
     // so the result is viewable before merge. Single chokepoint → covers every
     // driver. SHA-guarded inside buildPreviewForPull, so re-runs are cheap.
     if (repo && result.status === "ok") {
-      const data = result.data as
-        | { mode?: string; pullNumber?: number }
-        | undefined;
+      const data = result.data as { mode?: string; pullNumber?: number } | undefined;
       if (data?.mode === "pr" && typeof data.pullNumber === "number") {
         const pn = data.pullNumber;
         void buildPreviewForPull(repo.id, pn).catch((e) =>

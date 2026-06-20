@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { readSession } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { postProposal } from "@/lib/solid/inbox";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { getRepo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { postProposal } from "@/lib/solid/inbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,10 +57,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
   if (title.length > MAX_TITLE) {
-    return NextResponse.json(
-      { error: `title must be ≤ ${MAX_TITLE} characters` },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: `title must be ≤ ${MAX_TITLE} characters` }, { status: 400 });
   }
   if (typeof proposalBody === "string" && proposalBody.length > MAX_BODY) {
     return NextResponse.json(

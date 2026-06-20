@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { createMindEpic, IssueAuthorError } from "@/lib/tracker/author";
 import { requireOwner } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { repoPath } from "@/lib/git/backend";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { getRepo } from "@/lib/registry/repos";
+import { createMindEpic, IssueAuthorError } from "@/lib/tracker/author";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

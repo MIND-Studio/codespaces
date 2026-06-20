@@ -19,12 +19,7 @@ export function RelativeTime({
 }) {
   const iso = new Date(ts).toISOString();
   return (
-    <time
-      dateTime={iso}
-      title={formatAbsoluteIso(ts)}
-      className={className}
-      style={style}
-    >
+    <time dateTime={iso} title={formatAbsoluteIso(ts)} className={className} style={style}>
       {formatRelativeTime(ts)}
     </time>
   );

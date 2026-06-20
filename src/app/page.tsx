@@ -1,14 +1,14 @@
-import Link from "next/link";
 import { Button } from "@mind-studio/ui";
-import { listRepos, getRepoById, getPagesConfig } from "@/lib/registry/repos";
+import Link from "next/link";
+import { RelativeTime } from "@/components/relative-time";
+import { readSession } from "@/lib/auth/session";
+import { getPagesConfig, getRepoById, listRepos } from "@/lib/registry/repos";
 import {
   countAllRuns,
   getLatestRunOverall,
   listRunsForRepo,
   type WorkflowRun,
 } from "@/lib/registry/runs";
-import { RelativeTime } from "@/components/relative-time";
-import { readSession } from "@/lib/auth/session";
 import { getUserByWebId } from "@/lib/registry/users";
 
 export const dynamic = "force-dynamic";
@@ -39,8 +39,7 @@ const DEMOS: DemoConfig[] = [
   {
     owner: "alice",
     name: "tailwind-site",
-    blurb:
-      "Real Tailwind v4 CLI pipeline — four shell steps inside one container.",
+    blurb: "Real Tailwind v4 CLI pipeline — four shell steps inside one container.",
   },
   {
     owner: "alice",
@@ -51,8 +50,7 @@ const DEMOS: DemoConfig[] = [
   {
     owner: "alice",
     name: "broken-build",
-    blurb:
-      "A workflow that deliberately fails at step 3 of 4 so the failure UI is visible.",
+    blurb: "A workflow that deliberately fails at step 3 of 4 so the failure UI is visible.",
     detailPath: "runs",
     detailLabel: "failure log",
   },
@@ -78,9 +76,7 @@ export default async function LandingPage() {
     .slice(-24);
 
   const livingDemos = DEMOS.flatMap((demo) => {
-    const repo = repos.find(
-      (r) => r.owner === demo.owner && r.name === demo.name,
-    );
+    const repo = repos.find((r) => r.owner === demo.owner && r.name === demo.name);
     if (!repo) return [];
     const pages = getPagesConfig(repo.id);
     // Only link a demo as "live" once it actually published — otherwise the
@@ -95,9 +91,9 @@ export default async function LandingPage() {
   // Returning-user shortcut: surface the most recently-touched repo this
   // WebID owns so the hero can offer "pick up where you left off".
   const myLatestRepo = signedIn
-    ? repos
+    ? (repos
         .filter((r) => r.ownerWebId === session!.webId)
-        .sort((a, b) => b.createdAt - a.createdAt)[0] ?? null
+        .sort((a, b) => b.createdAt - a.createdAt)[0] ?? null)
     : null;
 
   return (
@@ -108,22 +104,18 @@ export default async function LandingPage() {
           className="display mt-4 text-4xl sm:text-6xl md:text-7xl"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Your <em style={{ color: "var(--accent)" }}>pod</em> is your
-          platform.
+          Your <em style={{ color: "var(--accent)" }}>pod</em> is your platform.
         </h1>
         <p
           className="mt-5 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          Your code ·{" "}
-          <span style={{ color: "var(--accent)" }}>your context</span> · your
-          pod.
+          Your code · <span style={{ color: "var(--accent)" }}>your context</span> · your pod.
         </p>
         <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
-          Mind Codespaces is an AI-native Git platform built around your own
-          Solid Pod. Push code, file issues, let an agent draft pull requests —
-          and the artifacts, history, and AI memory stay under <em>your</em>{" "}
-          WebID. The bridge translates protocols; it doesn&apos;t own your
+          Mind Codespaces is an AI-native Git platform built around your own Solid Pod. Push code,
+          file issues, let an agent draft pull requests — and the artifacts, history, and AI memory
+          stay under <em>your</em> WebID. The bridge translates protocols; it doesn&apos;t own your
           project.
         </p>
 
@@ -131,9 +123,7 @@ export default async function LandingPage() {
           signedIn={signedIn}
           ownerSlug={ownerSlug}
           myLatestRepo={
-            myLatestRepo
-              ? { owner: myLatestRepo.owner, name: myLatestRepo.name }
-              : null
+            myLatestRepo ? { owner: myLatestRepo.owner, name: myLatestRepo.name } : null
           }
         />
       </div>
@@ -151,9 +141,7 @@ export default async function LandingPage() {
               <Stat label="runs" value={runCount.toString()} />
               <Stat
                 label="last activity"
-                value={
-                  latestRun ? <RelativeTime ts={latestRun.startedAt} /> : "—"
-                }
+                value={latestRun ? <RelativeTime ts={latestRun.startedAt} /> : "—"}
               />
             </div>
             {recentRuns.length > 0 ? <RunSparkline runs={recentRuns} /> : null}
@@ -178,9 +166,8 @@ export default async function LandingPage() {
           <hr className="hairline my-12" />
           <Section title="See it working">
             <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
-              Seeded demos pushed to alice&apos;s pod. Click into the repo to
-              browse code + runs; the live link opens the page that was
-              actually published.
+              Seeded demos pushed to alice&apos;s pod. Click into the repo to browse code + runs;
+              the live link opens the page that was actually published.
             </p>
             <ul className="space-y-3">
               {livingDemos.map(({ demo, live }, i) => (
@@ -205,8 +192,8 @@ export default async function LandingPage() {
         <Link href="/how-it-works" className="link">
           How it works
         </Link>{" "}
-        walks through what lives in your pod, what happens on push, and what
-        survives if the bridge disappears.
+        walks through what lives in your pod, what happens on push, and what survives if the bridge
+        disappears.
       </p>
     </div>
   );
@@ -276,10 +263,9 @@ function Pillars() {
       title: "Pod-native repos",
       body: (
         <>
-          A real bare Git repository on the bridge, plus a Turtle description
-          of the project written to <em>your</em> pod under{" "}
-          <code className="kbd">/codespaces/</code>. Move bridges, your repo
-          metadata moves with you.
+          A real bare Git repository on the bridge, plus a Turtle description of the project written
+          to <em>your</em> pod under <code className="kbd">/codespaces/</code>. Move bridges, your
+          repo metadata moves with you.
         </>
       ),
     },
@@ -288,10 +274,9 @@ function Pillars() {
       title: "Conversational dev",
       body: (
         <>
-          File an issue and a single conversational <em>coder</em> agent
-          responds against the same WebID, either editing files or asking a
-          follow-up in the thread. Their working memory lands back in your
-          pod, not in a vendor database.
+          File an issue and a single conversational <em>coder</em> agent responds against the same
+          WebID, either editing files or asking a follow-up in the thread. Their working memory
+          lands back in your pod, not in a vendor database.
         </>
       ),
     },
@@ -300,9 +285,9 @@ function Pillars() {
       title: "Mind Pages",
       body: (
         <>
-          A <code className="kbd">git push</code> publishes a static site to a
-          container of your choice on your pod. Visitors hit your pod
-          directly; the bridge is out of the loop after publish.
+          A <code className="kbd">git push</code> publishes a static site to a container of your
+          choice on your pod. Visitors hit your pod directly; the bridge is out of the loop after
+          publish.
         </>
       ),
     },
@@ -310,8 +295,8 @@ function Pillars() {
   return (
     <Section title="What this is">
       <p className="mb-6 text-sm text-[color:var(--ink-soft)]">
-        Three primitives, all pod-owned. Each can be replaced or rebuilt
-        without losing what matters — because what matters lives in the pod.
+        Three primitives, all pod-owned. Each can be replaced or rebuilt without losing what matters
+        — because what matters lives in the pod.
       </p>
       <ul className="grid gap-4 sm:grid-cols-3">
         {items.map((item) => (
@@ -326,15 +311,10 @@ function Pillars() {
             >
               {item.kicker}
             </span>
-            <h3
-              className="display text-xl"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h3 className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
               {item.title}
             </h3>
-            <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
-              {item.body}
-            </p>
+            <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">{item.body}</p>
           </li>
         ))}
       </ul>
@@ -385,8 +365,8 @@ function StartHere({
     return (
       <Section title="Start here" id="start-here">
         <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
-          Four moves from nothing to a live site published from your pod.
-          Everything happens in the app — no curl required.
+          Four moves from nothing to a live site published from your pod. Everything happens in the
+          app — no curl required.
           {seeded ? (
             <>
               {" "}
@@ -433,8 +413,7 @@ function StartHere({
   return (
     <Section title="Three moves from here">
       <p className="mb-5 text-sm text-[color:var(--ink-soft)]">
-        You&apos;ve got a pod and a session. From here it&apos;s repo →
-        pages → push.
+        You&apos;ve got a pod and a session. From here it&apos;s repo → pages → push.
       </p>
       <ol className="grid gap-3 sm:grid-cols-3">
         {steps.map((s) => (
@@ -464,15 +443,10 @@ function StepCard({
       >
         {n}
       </span>
-      <h3
-        className="display text-lg"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h3 className="display text-lg" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h3>
-      <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
-        {body}
-      </p>
+      <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">{body}</p>
       <Button asChild variant="link" className="mt-1 h-auto self-start p-0">
         <Link href={cta.href}>{cta.label}</Link>
       </Button>
@@ -495,10 +469,7 @@ function Section({
 }) {
   return (
     <section id={id} className={id ? "scroll-mt-20" : undefined}>
-      <h2
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <div className="mt-4">{children}</div>
@@ -506,13 +477,7 @@ function Section({
   );
 }
 
-function Stat({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
       <p
@@ -533,11 +498,7 @@ function Stat({
 
 function RunStatusInline({ status }: { status: string }) {
   const tone =
-    status === "success"
-      ? "ok"
-      : status === "running" || status === "queued"
-        ? undefined
-        : "bad";
+    status === "success" ? "ok" : status === "running" || status === "queued" ? undefined : "bad";
   return (
     <span className="stamp ml-1" data-tone={tone}>
       {status}
@@ -609,8 +570,7 @@ function DemoCard({
         featured
           ? {
               borderColor: "var(--accent)",
-              background:
-                "color-mix(in srgb, var(--accent) 12%, var(--paper-soft))",
+              background: "color-mix(in srgb, var(--accent) 12%, var(--paper-soft))",
             }
           : undefined
       }
@@ -659,11 +619,7 @@ function DemoCard({
           </Link>
         </div>
       </div>
-      <p
-        className={`mt-1 text-[color:var(--ink-soft)] ${
-          featured ? "text-[15px]" : "text-sm"
-        }`}
-      >
+      <p className={`mt-1 text-[color:var(--ink-soft)] ${featured ? "text-[15px]" : "text-sm"}`}>
         {demo.blurb}
       </p>
     </li>

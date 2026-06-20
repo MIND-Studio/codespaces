@@ -1,13 +1,9 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { Session, getSessionFromStorage } from "@inrupt/solid-client-authn-node";
-import {
-  getIdentityByWebId,
-  makeIdentityStorage,
-  saveIdentity,
-} from "@/lib/registry/identities";
+import { getSessionFromStorage, Session } from "@inrupt/solid-client-authn-node";
 import { getEnv } from "@/lib/env";
 import { log, scrubWebId } from "@/lib/log";
+import { getIdentityByWebId, makeIdentityStorage, saveIdentity } from "@/lib/registry/identities";
 
 const CLIENT_NAME = "Mind Codespaces";
 
@@ -114,14 +110,9 @@ export async function completeAuthFlow(input: {
   }
   // Find the issuer the SDK chose so we can record it. Prefer the
   // session info, fall back to walking storage.
-  const userRecord = await storage.get(
-    `solidClientAuthenticationUser:${input.sessionId}`,
-  );
+  const userRecord = await storage.get(`solidClientAuthenticationUser:${input.sessionId}`);
   const oidcIssuer =
-    (await storage.get("issuer")) ??
-    (await storage.get("oidc:issuer")) ??
-    userRecord ??
-    "";
+    (await storage.get("issuer")) ?? (await storage.get("oidc:issuer")) ?? userRecord ?? "";
   // Connect-time persistence check (MC-176). The publish path fails for newly
   // connected WebIDs with "refresh token failed". This pins down *which* half
   // of the split it is — "no refresh token was ever stored" vs "the IdP later
@@ -134,8 +125,7 @@ export async function completeAuthFlow(input: {
   if (userRecord) {
     try {
       hasRefreshToken =
-        typeof (JSON.parse(userRecord) as { refreshToken?: unknown })
-          .refreshToken === "string";
+        typeof (JSON.parse(userRecord) as { refreshToken?: unknown }).refreshToken === "string";
     } catch {
       /* non-JSON record — leave hasRefreshToken false */
     }
@@ -181,9 +171,7 @@ function parseIssuerFromStorageValue(v: string): string {
  * up that records what actually went wrong so the
  * `OidcRefreshFailedError` is no longer opaque.
  */
-export async function loadAuthedFetchForWebId(
-  webId: string,
-): Promise<typeof fetch | null> {
+export async function loadAuthedFetchForWebId(webId: string): Promise<typeof fetch | null> {
   const identity = getIdentityByWebId(webId);
   if (!identity) return null;
 

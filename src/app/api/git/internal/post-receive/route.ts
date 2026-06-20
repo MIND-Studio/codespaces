@@ -1,21 +1,14 @@
-import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { headers } from "next/headers";
-import { getRepo, getPagesConfig, validateName } from "@/lib/registry/repos";
-import { publishPages } from "@/lib/pages/publisher";
-import { runWorkflow } from "@/lib/workflows/runner";
-import { repoPath } from "@/lib/git/backend";
-import {
-  mirrorTrackerFromGit,
-  readPodTracker,
-} from "@/lib/solid/tracker-pod";
-import { projectTrackerToRegistry } from "@/lib/registry/issue-projection";
+import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
-import {
-  log,
-  newCorrelationId,
-  withCorrelationId,
-} from "@/lib/log";
+import { repoPath } from "@/lib/git/backend";
+import { log, newCorrelationId, withCorrelationId } from "@/lib/log";
+import { publishPages } from "@/lib/pages/publisher";
+import { projectTrackerToRegistry } from "@/lib/registry/issue-projection";
+import { getPagesConfig, getRepo, validateName } from "@/lib/registry/repos";
+import { mirrorTrackerFromGit, readPodTracker } from "@/lib/solid/tracker-pod";
+import { runWorkflow } from "@/lib/workflows/runner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,10 +39,7 @@ export async function POST(req: Request) {
   const headerSig = hdrs.get("x-bridge-hmac") ?? "";
 
   if (!verifyHmac(raw, headerSig, env.hookSecret)) {
-    return NextResponse.json(
-      { error: "invalid or missing X-Bridge-Hmac" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "invalid or missing X-Bridge-Hmac" }, { status: 401 });
   }
 
   let body: unknown;
@@ -59,19 +49,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { owner, repo: name, ref, newRev } = (body ?? {}) as Record<
-    string,
-    unknown
-  >;
-  if (
-    typeof owner !== "string" ||
-    typeof name !== "string" ||
-    typeof ref !== "string"
-  ) {
-    return NextResponse.json(
-      { error: "owner, repo, ref required" },
-      { status: 400 },
-    );
+  const { owner, repo: name, ref, newRev } = (body ?? {}) as Record<string, unknown>;
+  if (typeof owner !== "string" || typeof name !== "string" || typeof ref !== "string") {
+    return NextResponse.json({ error: "owner, repo, ref required" }, { status: 400 });
   }
 
   try {
@@ -89,8 +69,7 @@ export async function POST(req: Request) {
 
   // refs/heads/main → main
   const branch = ref.replace(/^refs\/heads\//, "");
-  const branchMatches =
-    pages?.enabled === true && pages.sourceBranch === branch;
+  const branchMatches = pages?.enabled === true && pages.sourceBranch === branch;
 
   let scheduled: "workflow" | "legacy-pages" | "skipped" = "skipped";
 

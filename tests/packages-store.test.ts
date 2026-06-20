@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // The packages index. Verifies:
 //   • upsert inserts, and re-upserting the same (repo,type,name,version)
@@ -97,8 +97,9 @@ describe("packages index", () => {
   it("sums per-repo package bytes for the quota", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
     const { upsertPackageVersion } = await import("@/lib/packages/store");
-    const { sumPackageBytesForRepo, assertCanStorePackage, QuotaExceededError } =
-      await import("@/lib/registry/quotas");
+    const { sumPackageBytesForRepo, assertCanStorePackage, QuotaExceededError } = await import(
+      "@/lib/registry/quotas"
+    );
 
     const repo = createRepo({
       owner: "alice",
@@ -127,8 +128,6 @@ describe("packages index", () => {
 
     // A blob larger than the single-blob cap (default 100 MiB) is refused.
     expect(() => assertCanStorePackage(repo.id, 1)).not.toThrow();
-    expect(() => assertCanStorePackage(repo.id, 500 * 1024 * 1024)).toThrow(
-      QuotaExceededError,
-    );
+    expect(() => assertCanStorePackage(repo.id, 500 * 1024 * 1024)).toThrow(QuotaExceededError);
   });
 });

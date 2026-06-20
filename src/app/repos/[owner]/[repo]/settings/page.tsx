@@ -1,19 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { listPushTokens } from "@/lib/registry/tokens";
-import { getEnv } from "@/lib/env";
 import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
-import { listRoles, getDefaultDriverName } from "@/lib/agents/registry";
-import { readSession } from "@/lib/auth/session";
+import { getDefaultDriverName, listRoles } from "@/lib/agents/registry";
 import { resolveCoderConfigSummary } from "@/lib/ai-providers/store";
-import { TokenManager } from "../token-manager";
+import { readSession } from "@/lib/auth/session";
+import { getEnv } from "@/lib/env";
+import { getPagesConfig, getRepo } from "@/lib/registry/repos";
+import { listPushTokens } from "@/lib/registry/tokens";
 import { RepoTabs } from "../repo-tabs";
-import {
-  GeneralForm,
-  PagesForm,
-  DangerZone,
-} from "./settings-forms";
+import { TokenManager } from "../token-manager";
+import { DangerZone, GeneralForm, PagesForm } from "./settings-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -106,9 +102,8 @@ export default async function RepoSettingsPage({ params }: PageProps) {
 
           <Section id="tokens" title="Push tokens" mark="// tokens">
             <p className="mb-4 max-w-2xl text-sm text-[color:var(--ink-soft)]">
-              Every <code className="kbd">git push</code> needs a token.
-              Tokens are scoped to this repo and shown in plaintext exactly
-              once at creation. Lose it and you mint a new one.
+              Every <code className="kbd">git push</code> needs a token. Tokens are scoped to this
+              repo and shown in plaintext exactly once at creation. Lose it and you mint a new one.
             </p>
             <TokenManager owner={owner} repo={name} initial={tokens} />
           </Section>
@@ -161,9 +156,7 @@ export default async function RepoSettingsPage({ params }: PageProps) {
                 <code className="kbd">{env.coderImage}</code>
               </dd>
               <dt className="text-[color:var(--ink-faint)]">Coder timeout</dt>
-              <dd>
-                {Math.round(env.coderTimeoutMs / 1000)}s per run
-              </dd>
+              <dd>{Math.round(env.coderTimeoutMs / 1000)}s per run</dd>
             </div>
             <p className="mt-4 max-w-2xl text-[11px] leading-relaxed text-[color:var(--ink-faint)]">
               Provider + model are owned by{" "}
@@ -180,9 +173,7 @@ export default async function RepoSettingsPage({ params }: PageProps) {
               Roster
             </h3>
             {roles.length === 0 ? (
-              <p className="mt-2 text-sm text-[color:var(--ink-soft)]">
-                No roles registered.
-              </p>
+              <p className="mt-2 text-sm text-[color:var(--ink-soft)]">No roles registered.</p>
             ) : (
               <ul className="mt-2 divide-y divide-[color:var(--ink-trace)]">
                 {roles.map((role) => (
@@ -201,20 +192,14 @@ export default async function RepoSettingsPage({ params }: PageProps) {
                         driver · {role.driver ?? defaultDriver ?? "—"}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-[color:var(--ink-soft)]">
-                      {role.summary}
-                    </p>
+                    <p className="mt-1 text-sm text-[color:var(--ink-soft)]">{role.summary}</p>
                     <p
                       className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
                       style={{ fontFamily: "var(--font-mono-src)" }}
                     >
                       fires on{" "}
                       {role.triggers
-                        .map((t) =>
-                          t.on === "issue.labeled"
-                            ? `issue.labeled(${t.label})`
-                            : t.on,
-                        )
+                        .map((t) => (t.on === "issue.labeled" ? `issue.labeled(${t.label})` : t.on))
                         .join(" · ")}
                     </p>
                   </li>
@@ -222,9 +207,8 @@ export default async function RepoSettingsPage({ params }: PageProps) {
               </ul>
             )}
             <p className="mt-4 text-[11px] text-[color:var(--ink-faint)]">
-              Roster is defined in code (
-              <code className="kbd">src/lib/agents/bootstrap.ts</code>) and
-              applies to every repo. Per-repo overrides are not implemented.
+              Roster is defined in code (<code className="kbd">src/lib/agents/bootstrap.ts</code>)
+              and applies to every repo. Per-repo overrides are not implemented.
             </p>
           </Section>
 
@@ -232,9 +216,7 @@ export default async function RepoSettingsPage({ params }: PageProps) {
             <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
               <dt className="text-[color:var(--ink-faint)]">Mode</dt>
               <dd>
-                <code className="kbd">
-                  MIND_RUNNER={runnerMode}
-                </code>
+                <code className="kbd">MIND_RUNNER={runnerMode}</code>
                 <span className="ml-2 text-[11px] text-[color:var(--ink-faint)]">
                   {runnerMode === "auto"
                     ? "docker if reachable, native otherwise"
@@ -249,9 +231,9 @@ export default async function RepoSettingsPage({ params }: PageProps) {
               </dd>
             </div>
             <p className="mt-4 max-w-2xl text-[11px] leading-relaxed text-[color:var(--ink-faint)]">
-              Workflow steps from <code className="kbd">.mind/workflow.yml</code>{" "}
-              run on push. The mode is process-global and set via the{" "}
-              <code className="kbd">MIND_RUNNER</code> environment variable.
+              Workflow steps from <code className="kbd">.mind/workflow.yml</code> run on push. The
+              mode is process-global and set via the <code className="kbd">MIND_RUNNER</code>{" "}
+              environment variable.
             </p>
           </Section>
 
@@ -307,10 +289,7 @@ function Section({
   return (
     <section id={id} className="scroll-mt-6">
       <p className="section-mark">{mark}</p>
-      <h2
-        className="display mt-1 text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display mt-1 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <hr className="hairline mt-3" />
@@ -339,7 +318,10 @@ function SignInWall({ owner, name }: { owner: string; name: string }) {
       </h1>
       <p className="mt-5 max-w-2xl leading-relaxed text-[color:var(--ink-soft)]">
         Repo settings are owner-only. Connect the WebID that owns{" "}
-        <code className="kbd">{owner}/{name}</code> to see and change them.
+        <code className="kbd">
+          {owner}/{name}
+        </code>{" "}
+        to see and change them.
       </p>
       <div className="mt-6">
         <Link
@@ -379,25 +361,18 @@ function ForbiddenWall({
         Only the owner can <em>configure</em> this.
       </h1>
       <p className="mt-5 max-w-2xl leading-relaxed text-[color:var(--ink-soft)]">
-        Settings, tokens, Pages config, and deletion are restricted to the
-        WebID that owns the repo.
+        Settings, tokens, Pages config, and deletion are restricted to the WebID that owns the repo.
       </p>
       <dl className="mt-6 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
         <dt className="text-[color:var(--ink-faint)]">You are signed in as</dt>
         <dd>
-          <code
-            className="break-all text-[12px]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
+          <code className="break-all text-[12px]" style={{ fontFamily: "var(--font-mono-src)" }}>
             {viewerWebId}
           </code>
         </dd>
         <dt className="text-[color:var(--ink-faint)]">Owner WebID</dt>
         <dd>
-          <code
-            className="break-all text-[12px]"
-            style={{ fontFamily: "var(--font-mono-src)" }}
-          >
+          <code className="break-all text-[12px]" style={{ fontFamily: "var(--font-mono-src)" }}>
             {ownerWebId}
           </code>
         </dd>

@@ -14,16 +14,11 @@ import "server-only";
  * Ensure a container exists at `url`. Returns `true` if we created it,
  * `false` if it already existed. Throws on any other error.
  */
-export async function ensureContainer(
-  fetcher: typeof fetch,
-  url: string,
-): Promise<boolean> {
+export async function ensureContainer(fetcher: typeof fetch, url: string): Promise<boolean> {
   const head = await fetcher(url, { method: "HEAD" });
   if (head.ok) return false;
   if (head.status !== 404) {
-    throw new Error(
-      `unexpected response checking container ${url}: ${head.status}`,
-    );
+    throw new Error(`unexpected response checking container ${url}: ${head.status}`);
   }
   const put = await fetcher(url, {
     method: "PUT",
@@ -33,9 +28,7 @@ export async function ensureContainer(
     },
   });
   if (!put.ok && put.status !== 409 /* already exists */) {
-    throw new Error(
-      `failed to create container ${url}: ${put.status} ${put.statusText}`,
-    );
+    throw new Error(`failed to create container ${url}: ${put.status} ${put.statusText}`);
   }
   return true;
 }
@@ -75,9 +68,7 @@ export async function setPublicReadAcl(
     body,
   });
   if (!res.ok) {
-    throw new Error(
-      `failed to set public-read ACL on ${aclUrl}: ${res.status} ${res.statusText}`,
-    );
+    throw new Error(`failed to set public-read ACL on ${aclUrl}: ${res.status} ${res.statusText}`);
   }
 }
 
@@ -112,9 +103,7 @@ export async function setOwnerOnlyAcl(
     body,
   });
   if (!res.ok) {
-    throw new Error(
-      `failed to set owner-only ACL on ${aclUrl}: ${res.status} ${res.statusText}`,
-    );
+    throw new Error(`failed to set owner-only ACL on ${aclUrl}: ${res.status} ${res.statusText}`);
   }
 }
 
@@ -166,9 +155,7 @@ ${memberRules}`;
     body,
   });
   if (!res.ok) {
-    throw new Error(
-      `failed to set member-read ACL on ${aclUrl}: ${res.status} ${res.statusText}`,
-    );
+    throw new Error(`failed to set member-read ACL on ${aclUrl}: ${res.status} ${res.statusText}`);
   }
 }
 
@@ -187,8 +174,15 @@ function isSafeAclIri(value: string): boolean {
       // the ACL `<...>`: < > " { } | backslash ^ ` (backtick).
       if (c <= 0x20) return false;
       if (
-        c === 0x3c || c === 0x3e || c === 0x22 || c === 0x7b || c === 0x7d ||
-        c === 0x7c || c === 0x5c || c === 0x5e || c === 0x60
+        c === 0x3c ||
+        c === 0x3e ||
+        c === 0x22 ||
+        c === 0x7b ||
+        c === 0x7d ||
+        c === 0x7c ||
+        c === 0x5c ||
+        c === 0x5e ||
+        c === 0x60
       )
         return false;
     }
@@ -272,8 +266,6 @@ ${publicRule}`;
     body,
   });
   if (!res.ok) {
-    throw new Error(
-      `failed to set inbox ACL on ${aclUrl}: ${res.status} ${res.statusText}`,
-    );
+    throw new Error(`failed to set inbox ACL on ${aclUrl}: ${res.status} ${res.statusText}`);
   }
 }

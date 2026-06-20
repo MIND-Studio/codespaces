@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import {
-  getRepo,
-  getPagesConfig,
-  RegistryError,
-  updateRepo,
-  deleteRepoById,
-} from "@/lib/registry/repos";
-import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
 import { requireOwner } from "@/lib/auth/session";
 import { deleteBareRepo } from "@/lib/git/backend";
+import {
+  deleteRepoById,
+  getPagesConfig,
+  getRepo,
+  RegistryError,
+  updateRepo,
+} from "@/lib/registry/repos";
+import { writeRepoMetadata } from "@/lib/solid/repo-metadata";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,33 +48,25 @@ export async function PATCH(req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { visibility, defaultBranch, proposalsEnabled, collabEnabled } =
-    (body ?? {}) as Record<string, unknown>;
+  const { visibility, defaultBranch, proposalsEnabled, collabEnabled } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
 
   try {
     const updated = updateRepo(owner, name, {
-      visibility:
-        visibility === "public" || visibility === "private"
-          ? visibility
-          : undefined,
-      defaultBranch:
-        typeof defaultBranch === "string" ? defaultBranch : undefined,
-      proposalsEnabled:
-        typeof proposalsEnabled === "boolean" ? proposalsEnabled : undefined,
-      collabEnabled:
-        typeof collabEnabled === "boolean" ? collabEnabled : undefined,
+      visibility: visibility === "public" || visibility === "private" ? visibility : undefined,
+      defaultBranch: typeof defaultBranch === "string" ? defaultBranch : undefined,
+      proposalsEnabled: typeof proposalsEnabled === "boolean" ? proposalsEnabled : undefined,
+      collabEnabled: typeof collabEnabled === "boolean" ? collabEnabled : undefined,
     });
     writeRepoMetadata(updated, getPagesConfig(updated.id)).catch((err) => {
-      console.warn(
-        `[repos.PATCH] writeRepoMetadata for ${owner}/${name} failed:`,
-        err,
-      );
+      console.warn(`[repos.PATCH] writeRepoMetadata for ${owner}/${name} failed:`, err);
     });
     return NextResponse.json({ repo: updated });
   } catch (e) {
     if (e instanceof RegistryError) {
-      const status =
-        e.code === "NOT_FOUND" ? 404 : e.code === "INVALID_NAME" ? 400 : 400;
+      const status = e.code === "NOT_FOUND" ? 404 : e.code === "INVALID_NAME" ? 400 : 400;
       return NextResponse.json({ error: e.message }, { status });
     }
     throw e;
@@ -128,10 +120,7 @@ export async function DELETE(req: Request, { params }: Params) {
   try {
     await deleteBareRepo(owner, name);
   } catch (err) {
-    console.warn(
-      `[repos.DELETE] failed to remove bare repo for ${owner}/${name}:`,
-      err,
-    );
+    console.warn(`[repos.DELETE] failed to remove bare repo for ${owner}/${name}:`, err);
   }
 
   return NextResponse.json({ ok: true });

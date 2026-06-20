@@ -1,31 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Button,
+  buttonVariants,
   Input,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction,
-  buttonVariants,
+  SelectTrigger,
+  SelectValue,
 } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import type { ProviderName, ProviderSpec } from "@/lib/ai-providers/providers";
 import { authedFetch } from "@/lib/auth/csrf-client";
-import type {
-  ProviderSpec,
-  ProviderName,
-} from "@/lib/ai-providers/providers";
 
 type Configured = {
   provider: ProviderName;
@@ -53,15 +50,12 @@ export function AiProvidersManager({
     <div className="space-y-12">
       <DefaultSelector providers={providers} configured={configured} pref={pref} />
       <section>
-        <h2
-          className="display text-2xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
           Keys
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          One key per provider. Adding a key replaces any existing key for
-          that provider; only the last 4 characters are shown after save.
+          One key per provider. Adding a key replaces any existing key for that provider; only the
+          last 4 characters are shown after save.
         </p>
         <div className="mt-6 space-y-4">
           {providers.map((p) => (
@@ -91,9 +85,7 @@ function DefaultSelector({
   pref: Pref;
 }) {
   const router = useRouter();
-  const [provider, setProvider] = useState<ProviderName | "">(
-    pref.provider ?? "",
-  );
+  const [provider, setProvider] = useState<ProviderName | "">(pref.provider ?? "");
   const [model, setModel] = useState(pref.model ?? "");
   const [custom, setCustom] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -114,9 +106,7 @@ function DefaultSelector({
     setSaved(false);
     try {
       const body =
-        provider === ""
-          ? { provider: null, model: null }
-          : { provider, model: model.trim() };
+        provider === "" ? { provider: null, model: null } : { provider, model: model.trim() };
       const res = await authedFetch("/api/profile/ai/pref", {
         method: "PUT",
         body: JSON.stringify(body),
@@ -136,16 +126,13 @@ function DefaultSelector({
 
   return (
     <section>
-      <h2
-        className="display text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         Default model
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[color:var(--ink-soft)]">
-        Applies to every repo you own. The coder uses this provider + model
-        for every issue it picks up. Leave blank to fall back to the
-        bridge-default <code className="kbd">MIND_AGENT_MODEL</code>.
+        Applies to every repo you own. The coder uses this provider + model for every issue it picks
+        up. Leave blank to fall back to the bridge-default{" "}
+        <code className="kbd">MIND_AGENT_MODEL</code>.
       </p>
 
       <form onSubmit={submit} className="mt-5 flex max-w-2xl flex-col gap-5 text-sm">
@@ -192,14 +179,13 @@ function DefaultSelector({
 
         {selectedSpec ? (
           <>
-            <Field label="Model" hint={`opencode will be invoked with: -m ${selectedSpec.opencodeModelPrefix}/${model || "<model>"}`}>
+            <Field
+              label="Model"
+              hint={`opencode will be invoked with: -m ${selectedSpec.opencodeModelPrefix}/${model || "<model>"}`}
+            >
               <div className="flex flex-col gap-2">
                 {!custom ? (
-                  <Select
-                    value={model}
-                    onValueChange={(v) => setModel(v)}
-                    disabled={busy}
-                  >
+                  <Select value={model} onValueChange={(v) => setModel(v)} disabled={busy}>
                     <SelectTrigger
                       className="w-full"
                       style={{ fontFamily: "var(--font-mono-src)" }}
@@ -242,8 +228,8 @@ function DefaultSelector({
             </Field>
             {!hasKey ? (
               <p className="text-[11px] text-[color:var(--status-bad)]">
-                No key configured for {selectedSpec.label}. Add one below
-                before saving — saving will be rejected otherwise.
+                No key configured for {selectedSpec.label}. Add one below before saving — saving
+                will be rejected otherwise.
               </p>
             ) : null}
           </>
@@ -268,9 +254,7 @@ function DefaultSelector({
               {saved ? "✓ saved" : "no changes"}
             </span>
           ) : null}
-          {error ? (
-            <span className="text-sm text-[color:var(--status-bad)]">{error}</span>
-          ) : null}
+          {error ? <span className="text-sm text-[color:var(--status-bad)]">{error}</span> : null}
         </div>
       </form>
     </section>
@@ -281,13 +265,7 @@ function DefaultSelector({
 // Per-provider key card
 // -----------------------------------------------------------------------
 
-function ProviderCard({
-  spec,
-  configured,
-}: {
-  spec: ProviderSpec;
-  configured: Configured | null;
-}) {
+function ProviderCard({ spec, configured }: { spec: ProviderSpec; configured: Configured | null }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -356,11 +334,7 @@ function ProviderCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           {configured ? (
-            <span
-              className="stamp"
-              data-tone="ok"
-              style={{ padding: "0.18rem 0.5rem 0.14rem" }}
-            >
+            <span className="stamp" data-tone="ok" style={{ padding: "0.18rem 0.5rem 0.14rem" }}>
               configured · {configured.hint}
             </span>
           ) : (
@@ -463,14 +437,12 @@ function ProviderCard({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Remove your {spec.label} key?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Remove your {spec.label} key? The coder will fall back to the
-                    bridge default until you add a new one.
+                    Remove your {spec.label} key? The coder will fall back to the bridge default
+                    until you add a new one.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel data-testid="confirm-cancel">
-                    Cancel
-                  </AlertDialogCancel>
+                  <AlertDialogCancel data-testid="confirm-cancel">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     data-testid="confirm-accept"
                     className={buttonVariants({ variant: "destructive" })}
@@ -484,9 +456,7 @@ function ProviderCard({
           ) : null}
         </div>
       )}
-      {error ? (
-        <p className="mt-3 text-sm text-[color:var(--status-bad)]">{error}</p>
-      ) : null}
+      {error ? <p className="mt-3 text-sm text-[color:var(--status-bad)]">{error}</p> : null}
     </div>
   );
 }

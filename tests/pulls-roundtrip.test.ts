@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Parser, type Quad } from "n3";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * MC-142: opening a PR writes pod-native Turtle, parallel to how issues are
@@ -108,7 +108,9 @@ function makePull(over: Partial<Record<string, unknown>> = {}) {
 }
 
 function parse(ttl: string): Quad[] {
-  return new Parser({ baseIRI: "http://localhost:3011/alice/codespaces/site/pulls/3/pull.ttl" }).parse(ttl);
+  return new Parser({
+    baseIRI: "http://localhost:3011/alice/codespaces/site/pulls/3/pull.ttl",
+  }).parse(ttl);
 }
 function objectsOf(quads: Quad[], pred: string): string[] {
   return quads.filter((q) => q.predicate.value === pred).map((q) => q.object.value);
@@ -162,9 +164,7 @@ describe("renderPullTurtle (MC-142)", () => {
 
   it("agent-authored PR (no author) omits the creator triple but stays valid", async () => {
     const { renderPullTurtle } = await import("@/lib/solid/pulls");
-    const quads = parse(
-      renderPullTurtle(repo as never, makePull({ authorWebId: null }) as never),
-    );
+    const quads = parse(renderPullTurtle(repo as never, makePull({ authorWebId: null }) as never));
     expect(objectsOf(quads, `${SIOC}has_creator`)).toHaveLength(0);
     // still a well-formed PullRequest with a number
     expect(objectsOf(quads, `${SOLIDGIT}number`)).toContain("3");
@@ -192,9 +192,7 @@ describe("writePullToPod (MC-142)", () => {
     expect(res.url).toBe(url);
     expect(pod.store.has(url)).toBe(true);
 
-    const acl = pod.store.get(
-      "http://localhost:3011/alice/codespaces/site/pulls/.acl",
-    );
+    const acl = pod.store.get("http://localhost:3011/alice/codespaces/site/pulls/.acl");
     expect(acl).toBeDefined();
     expect(acl).toContain("foaf:Agent"); // public-read rule present
     expect(acl).toContain("acl:Read");
@@ -202,13 +200,8 @@ describe("writePullToPod (MC-142)", () => {
 
   it("writes an owner-only ACL on a private repo (no public rule)", async () => {
     const { writePullToPod } = await import("@/lib/solid/pulls");
-    await writePullToPod(
-      { ...repo, visibility: "private" } as never,
-      makePull() as never,
-    );
-    const acl = pod.store.get(
-      "http://localhost:3011/alice/codespaces/site/pulls/.acl",
-    );
+    await writePullToPod({ ...repo, visibility: "private" } as never, makePull() as never);
+    const acl = pod.store.get("http://localhost:3011/alice/codespaces/site/pulls/.acl");
     expect(acl).toBeDefined();
     expect(acl).not.toContain("foaf:Agent"); // no public access on a private repo
     expect(acl).toContain(repo.ownerWebId); // owner still has access

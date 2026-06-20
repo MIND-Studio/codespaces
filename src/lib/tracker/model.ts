@@ -105,10 +105,7 @@ export function localName(iri: string): string {
  * on the board, while an epic whose issues are merely filtered out (e.g. all
  * closed while viewing "open") stays hidden rather than cluttering the view.
  */
-export function groupByEpic(
-  tracker: Tracker,
-  issues: TrackerIssue[],
-): TrackerGroup[] {
+export function groupByEpic(tracker: Tracker, issues: TrackerIssue[]): TrackerGroup[] {
   const groups: TrackerGroup[] = [];
   const general = issues.filter(
     (i) => !i.epicSlug || !tracker.epics.some((e) => e.slug === i.epicSlug),
@@ -116,9 +113,7 @@ export function groupByEpic(
   if (general.length > 0) groups.push({ kind: "general", issues: general });
   for (const epic of tracker.epics) {
     const inEpic = issues.filter((i) => i.epicSlug === epic.slug);
-    const totalInEpic = tracker.issues.filter(
-      (i) => i.epicSlug === epic.slug,
-    ).length;
+    const totalInEpic = tracker.issues.filter((i) => i.epicSlug === epic.slug).length;
     if (inEpic.length > 0 || totalInEpic === 0) {
       groups.push({ kind: "epic", epic, issues: inEpic });
     }

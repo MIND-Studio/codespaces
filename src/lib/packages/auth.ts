@@ -35,10 +35,7 @@ export function readPackageToken(req: Request): string | null {
 }
 
 /** True iff the request carries a valid push token for this repo. */
-export function authenticatePackagePush(
-  repoId: number,
-  req: Request,
-): boolean {
+export function authenticatePackagePush(repoId: number, req: Request): boolean {
   const token = readPackageToken(req);
   return !!token && verifyPushToken(repoId, token);
 }

@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@mind-studio/ui";
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "@mind-studio/ui";
-import type { Identity } from "@/lib/registry/identities";
-import { formatAbsoluteIso, formatRelativeTime } from "@/lib/format";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import { formatAbsoluteIso, formatRelativeTime } from "@/lib/format";
+import type { Identity } from "@/lib/registry/identities";
 
 export type OwnedRepo = {
   id: number;
@@ -32,10 +32,9 @@ export function IdentityRow({
     setBusy(true);
     setError(null);
     try {
-      const res = await authedFetch(
-        `/api/identities/${encodeURIComponent(identity.webId)}`,
-        { method: "DELETE" },
-      );
+      const res = await authedFetch(`/api/identities/${encodeURIComponent(identity.webId)}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `request failed (${res.status})`);
@@ -166,9 +165,7 @@ export function IdentityRow({
         </div>
       </div>
 
-      {error ? (
-        <p className="mt-3 text-sm text-[color:var(--status-bad)]">{error}</p>
-      ) : null}
+      {error ? <p className="mt-3 text-sm text-[color:var(--status-bad)]">{error}</p> : null}
     </li>
   );
 }
@@ -188,13 +185,7 @@ function DisconnectControl({
 }) {
   if (!confirming) {
     return (
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={onArm}
-        disabled={busy}
-      >
+      <Button type="button" variant="outline" size="sm" onClick={onArm} disabled={busy}>
         Disconnect
       </Button>
     );

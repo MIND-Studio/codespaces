@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
-import { getDb } from "@/lib/registry/db";
+import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
+import { getDb } from "@/lib/registry/db";
 import { version } from "../../../../package.json";
 
 export const runtime = "nodejs";

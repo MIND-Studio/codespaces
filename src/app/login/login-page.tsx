@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, Input } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 
 type Tab = "login" | "register";
 
@@ -63,11 +63,7 @@ export function LoginPage({
           }}
           role="tablist"
         >
-          <TabButton
-            active={tab === "login"}
-            onClick={() => setTab("login")}
-            label="Sign in"
-          />
+          <TabButton active={tab === "login"} onClick={() => setTab("login")} label="Sign in" />
           <TabButton
             active={tab === "register"}
             onClick={() => setTab("register")}
@@ -84,10 +80,7 @@ export function LoginPage({
             issuerPresets={issuerPresets}
           />
         ) : (
-          <RegisterPanel
-            returnTo={returnTo}
-            onSwitchToLogin={() => setTab("login")}
-          />
+          <RegisterPanel returnTo={returnTo} onSwitchToLogin={() => setTab("login")} />
         )}
       </div>
 
@@ -219,10 +212,7 @@ function LoginPanel({
         </Button>
         {advancedOpen ? (
           <div className="mt-3">
-            <ExternalPodPanel
-              defaultIssuer={defaultIssuer}
-              issuerPresets={issuerPresets}
-            />
+            <ExternalPodPanel defaultIssuer={defaultIssuer} issuerPresets={issuerPresets} />
           </div>
         ) : null}
       </div>
@@ -276,10 +266,7 @@ function RegisterPanel({
         error?: string;
       };
       if (!loginRes.ok) {
-        setError(
-          loginData.error ??
-            "account created, but auto sign-in failed — try signing in",
-        );
+        setError(loginData.error ?? "account created, but auto sign-in failed — try signing in");
         setBusy(false);
         return;
       }
@@ -440,9 +427,7 @@ function ExternalPodPanel({
                 className="rounded-full border px-2.5 py-0.5 text-[11px] disabled:opacity-50"
                 style={{
                   fontFamily: "var(--font-mono-src)",
-                  borderColor: active
-                    ? "var(--accent)"
-                    : "var(--ink-trace)",
+                  borderColor: active ? "var(--accent)" : "var(--ink-trace)",
                   background: active ? "var(--accent-soft)" : "transparent",
                   color: active ? "var(--accent-deep)" : "var(--ink-soft)",
                 }}
@@ -469,8 +454,7 @@ function ExternalPodPanel({
       </Button>
       <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
         <span style={{ color: "var(--accent)" }}>// </span>
-        external pods log you in at their own URL — the bridge never sees
-        that password.
+        external pods log you in at their own URL — the bridge never sees that password.
       </p>
     </form>
   );
@@ -480,13 +464,7 @@ function ExternalPodPanel({
 /* Bits                                                                 */
 /* -------------------------------------------------------------------- */
 
-function FieldLabel({
-  name,
-  children,
-}: {
-  name: string;
-  children: React.ReactNode;
-}) {
+function FieldLabel({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span

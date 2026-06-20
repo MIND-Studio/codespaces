@@ -1,13 +1,13 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { getDb } from "@/lib/registry/db";
-import { getEnv } from "@/lib/env";
 import {
-  PROVIDERS,
   getProvider,
   isProviderName,
+  PROVIDERS,
   type ProviderName,
 } from "@/lib/ai-providers/providers";
+import { getEnv } from "@/lib/env";
+import { getDb } from "@/lib/registry/db";
 
 /**
  * Encrypted vault for per-user provider API keys + a single-row prefs
@@ -25,10 +25,7 @@ function encrypt(plaintext: string): string {
   const key = getEnv().identityEncryptionKey;
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const enc = Buffer.concat([
-    cipher.update(plaintext, "utf-8"),
-    cipher.final(),
-  ]);
+  const enc = Buffer.concat([cipher.update(plaintext, "utf-8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return `${CIPHER_VERSION}:${iv.toString("base64")}:${tag.toString("base64")}:${enc.toString("base64")}`;
 }
@@ -41,15 +38,9 @@ function decrypt(stored: string): string | null {
     const iv = Buffer.from(parts[1], "base64");
     const tag = Buffer.from(parts[2], "base64");
     const data = Buffer.from(parts[3], "base64");
-    const decipher = createDecipheriv(
-      "aes-256-gcm",
-      getEnv().identityEncryptionKey,
-      iv,
-    );
+    const decipher = createDecipheriv("aes-256-gcm", getEnv().identityEncryptionKey, iv);
     decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(data), decipher.final()]).toString(
-      "utf-8",
-    );
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf-8");
   } catch (e) {
     console.warn("[ai-providers] decrypt failed:", e);
     return null;
@@ -95,14 +86,12 @@ export function setUserApiKey(
   return { provider, hint, createdAt: now, updatedAt: now };
 }
 
-export function deleteUserApiKey(
-  webId: string,
-  provider: ProviderName,
-): void {
+export function deleteUserApiKey(webId: string, provider: ProviderName): void {
   const db = getDb();
-  db.prepare(
-    "DELETE FROM user_ai_providers WHERE web_id = ? AND provider = ?",
-  ).run(webId, provider);
+  db.prepare("DELETE FROM user_ai_providers WHERE web_id = ? AND provider = ?").run(
+    webId,
+    provider,
+  );
   // If the deleted provider was the user's selected default, blank the
   // pref so the coder falls back to env. We could keep it and let the
   // resolver detect "selected provider missing key", but blanking is
@@ -141,14 +130,9 @@ export function listConfiguredProviders(webId: string): ConfiguredProvider[] {
 
 /** Decrypts and returns the plaintext key. Server-only; never sent over
  *  the wire. The coder driver calls this just before spawning docker. */
-export function getDecryptedApiKey(
-  webId: string,
-  provider: ProviderName,
-): string | null {
+export function getDecryptedApiKey(webId: string, provider: ProviderName): string | null {
   const row = getDb()
-    .prepare(
-      "SELECT api_key_enc FROM user_ai_providers WHERE web_id = ? AND provider = ?",
-    )
+    .prepare("SELECT api_key_enc FROM user_ai_providers WHERE web_id = ? AND provider = ?")
     .get(webId, provider) as { api_key_enc: string } | undefined;
   if (!row) return null;
   return decrypt(row.api_key_enc);
@@ -166,9 +150,7 @@ export type UserAiPref = {
 
 export function getUserAiPref(webId: string): UserAiPref {
   const row = getDb()
-    .prepare(
-      "SELECT provider, model, updated_at FROM user_ai_prefs WHERE web_id = ?",
-    )
+    .prepare("SELECT provider, model, updated_at FROM user_ai_prefs WHERE web_id = ?")
     .get(webId) as
     | { provider: string | null; model: string | null; updated_at: number }
     | undefined;

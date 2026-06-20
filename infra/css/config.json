@@ -10,7 +10,7 @@
     "  - PodResourcesGenerator.templateFolder -> seed NEW pods from the Mind pod template (Welcome README)",
     "All filePaths point at locations populated by the docker-compose bind mount (./infra/css -> /css-host)."
   ],
-  "import": [ "css:config/file.json" ],
+  "import": ["css:config/file.json"],
   "@graph": [
     {
       "@type": "Override",

@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
+import { DEFAULT_APPS } from "@mind-studio/core/apps";
+import { MindAppLauncher } from "@mind-studio/core/launcher";
+import { AuthCtaServer } from "@/components/auth-cta-server";
+import { FeedbackLauncher } from "@/components/feedback-launcher";
+import { MainNav } from "@/components/main-nav";
+import { PageTransition } from "@/components/page-transition";
 import { ThemeShell } from "@/components/theme-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { PageTransition } from "@/components/page-transition";
-import { AuthCtaServer } from "@/components/auth-cta-server";
-import { MainNav } from "@/components/main-nav";
-import { FeedbackLauncher } from "@/components/feedback-launcher";
 import { readSession } from "@/lib/auth/session";
-import { MindAppLauncher } from "@mind-studio/core/launcher";
-import { DEFAULT_APPS } from "@mind-studio/core/apps";
 
 /**
  * Mirror both theme axes onto <html> BEFORE first paint to dodge the
@@ -89,10 +89,7 @@ async function Masthead() {
         </Link>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <MainNav signedIn={!!session} />
-          <span
-            aria-hidden
-            className="hidden h-5 w-px bg-border sm:inline-block"
-          />
+          <span aria-hidden className="hidden h-5 w-px bg-border sm:inline-block" />
           {session ? (
             <MindAppLauncher
               apps={DEFAULT_APPS}
@@ -116,41 +113,30 @@ function Colophon() {
             Mind <em>Codespaces</em>
           </p>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            A prototype bridge between Git and Solid Pods. Git stays Git; the pod
-            owns identity, metadata, and the published site.
+            A prototype bridge between Git and Solid Pods. Git stays Git; the pod owns identity,
+            metadata, and the published site.
           </p>
         </div>
         <nav
           aria-label="Footer"
           className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.18em]"
         >
-          <span className="text-[10px] tracking-[0.22em] text-muted-foreground">
-            // learn
-          </span>
-          <Link
-            href="/how-it-works"
-            className="text-muted-foreground hover:text-primary"
-          >
+          <span className="text-[10px] tracking-[0.22em] text-muted-foreground">// learn</span>
+          <Link href="/how-it-works" className="text-muted-foreground hover:text-primary">
             How it works
           </Link>
-          <Link
-            href="/#start-here"
-            className="text-muted-foreground hover:text-primary"
-          >
+          <Link href="/#start-here" className="text-muted-foreground hover:text-primary">
             Quickstart
           </Link>
-          <Link
-            href="/api/health"
-            className="text-muted-foreground hover:text-primary"
-          >
+          <Link href="/api/health" className="text-muted-foreground hover:text-primary">
             Health
           </Link>
         </nav>
       </div>
       <div className="mx-auto max-w-5xl px-4 pb-8 sm:px-10 sm:pb-10">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-          Sibling of <span className="italic">Mind Market</span> · No third-party
-          analytics · No cookies set beyond strictly necessary
+          Sibling of <span className="italic">Mind Market</span> · No third-party analytics · No
+          cookies set beyond strictly necessary
         </p>
       </div>
     </footer>

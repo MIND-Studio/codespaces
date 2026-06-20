@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Button, Input, Textarea } from "@mind-studio/ui";
+import { useState } from "react";
 
 type Props = {
   owner: string;
@@ -48,23 +48,18 @@ export function ProposeForm({ owner, repo, proposerWebId }: Props) {
     }
   }
 
-  const labelClass =
-    "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
+  const labelClass = "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
   const mono = { fontFamily: "var(--font-mono-src)" };
 
   if (done) {
     return (
       <section className="card mt-6 text-sm text-[color:var(--ink-soft)]">
-        <p
-          className="display text-xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <p className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
           Proposal submitted.
         </p>
         <p className="mt-2">
-          It landed in <code className="kbd">{owner}</code>&apos;s pod inbox.
-          The owner will review it and, if accepted, it becomes a tracked issue.
-          Thanks for the suggestion.
+          It landed in <code className="kbd">{owner}</code>&apos;s pod inbox. The owner will review
+          it and, if accepted, it becomes a tracked issue. Thanks for the suggestion.
         </p>
       </section>
     );

@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/session";
-import {
-  setUserApiKey,
-  deleteUserApiKey,
-} from "@/lib/ai-providers/store";
 import { isProviderName } from "@/lib/ai-providers/providers";
+import { deleteUserApiKey, setUserApiKey } from "@/lib/ai-providers/store";
+import { requireSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,10 +38,7 @@ export async function POST(req: Request, { params }: Params) {
   // wrong-shape keys will just fail at the model call and the user will
   // see the upstream error.
   if (apiKey.length > 1000) {
-    return NextResponse.json(
-      { error: "apiKey too long" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "apiKey too long" }, { status: 400 });
   }
 
   const saved = setUserApiKey(auth.webId, provider, apiKey);

@@ -1,10 +1,7 @@
 import "server-only";
-import { getCssAuthedFetch } from "@/lib/solid/auth";
-import {
-  loadAuthedFetchForWebId,
-  OidcRefreshFailedError,
-} from "@/lib/solid/oidc-server";
 import { getEnv } from "@/lib/env";
+import { getCssAuthedFetch } from "@/lib/solid/auth";
+import { loadAuthedFetchForWebId, OidcRefreshFailedError } from "@/lib/solid/oidc-server";
 
 export type OwnerFetch = {
   fetch: typeof fetch;
@@ -19,9 +16,7 @@ export type OwnerFetch = {
  */
 export class OwnerFetchUnavailableError extends Error {
   constructor(
-    public readonly reason:
-      | "needs-reauthorization"
-      | "no-identity-and-seeded-disabled",
+    public readonly reason: "needs-reauthorization" | "no-identity-and-seeded-disabled",
     public readonly webId: string,
   ) {
     super(
@@ -70,10 +65,7 @@ export async function getOwnerFetch(webId: string): Promise<OwnerFetch> {
 
   const env = getEnv();
   if (env.isProd || !env.allowSeededFallback) {
-    throw new OwnerFetchUnavailableError(
-      "no-identity-and-seeded-disabled",
-      webId,
-    );
+    throw new OwnerFetchUnavailableError("no-identity-and-seeded-disabled", webId);
   }
 
   const seeded = await getCssAuthedFetch({

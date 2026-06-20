@@ -1,19 +1,12 @@
 import "server-only";
-import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { readRepoTracker } from "@/lib/tracker/source";
-import { countOpenPullRequests } from "@/lib/registry/pulls";
-import { listPackages } from "@/lib/packages/store";
 import { readSession } from "@/lib/auth/session";
+import { listPackages } from "@/lib/packages/store";
+import { countOpenPullRequests } from "@/lib/registry/pulls";
+import { getPagesConfig, getRepo } from "@/lib/registry/repos";
+import { readRepoTracker } from "@/lib/tracker/source";
 import { NavTabs } from "./nav-tabs";
 
-type ActiveKey =
-  | "code"
-  | "issues"
-  | "pulls"
-  | "runs"
-  | "packages"
-  | "proposals"
-  | "settings";
+type ActiveKey = "code" | "issues" | "pulls" | "runs" | "packages" | "proposals" | "settings";
 
 export async function RepoTabs({
   owner,
@@ -33,16 +26,12 @@ export async function RepoTabs({
   // Open-issue badge reflects the repo's .mind tracker (the same source the
   // /issues board renders, pod-first), so the tab count matches the board.
   const tracker = await readRepoTracker(repo, owner, name);
-  const openIssueCount = tracker
-    ? tracker.issues.filter((i) => i.open).length
-    : 0;
+  const openIssueCount = tracker ? tracker.issues.filter((i) => i.open).length : 0;
   const openPullCount = countOpenPullRequests(repo.id);
 
   // Distinct published artifacts, counting each (type, name) once — an OCI
   // image indexed by both tag and digest is one package, not two.
-  const packageCount = new Set(
-    listPackages(repo.id).map((p) => `${p.type}:${p.name}`),
-  ).size;
+  const packageCount = new Set(listPackages(repo.id).map((p) => `${p.type}:${p.name}`)).size;
 
   const pages = getPagesConfig(repo.id);
   // "Live site" only once a publish actually landed — enabled-but-unpublished

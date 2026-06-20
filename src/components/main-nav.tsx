@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@mind-studio/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@mind-studio/ui";
 
 type Item = {
   href: string;

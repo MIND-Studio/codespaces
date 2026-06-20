@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { getRepo, validateName, RegistryError } from "@/lib/registry/repos";
-import { runGitHttpBackend } from "@/lib/git/http-cgi";
 import { getRepoDiskBytes } from "@/lib/git/backend";
-import { verifyPushToken } from "@/lib/registry/tokens";
-import {
-  isLockedOut,
-  recordFailure,
-  RATE_LIMITS,
-} from "@/lib/rate-limit";
-import { QUOTAS } from "@/lib/registry/quotas";
+import { runGitHttpBackend } from "@/lib/git/http-cgi";
 import { Metrics } from "@/lib/metrics";
+import { isLockedOut, RATE_LIMITS, recordFailure } from "@/lib/rate-limit";
+import { QUOTAS } from "@/lib/registry/quotas";
+import { getRepo, RegistryError, validateName } from "@/lib/registry/repos";
+import { verifyPushToken } from "@/lib/registry/tokens";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +23,7 @@ async function handle(req: Request, { params }: Params): Promise<Response> {
   // Git clients append `.git` to the repo name in the remote URL. Strip it
   // for the registry lookup; pass the suffixed form to git http-backend
   // (which expects a `*.git` directory under GIT_PROJECT_ROOT).
-  const repoName = repoSegment.endsWith(".git")
-    ? repoSegment.slice(0, -4)
-    : repoSegment;
+  const repoName = repoSegment.endsWith(".git") ? repoSegment.slice(0, -4) : repoSegment;
 
   try {
     validateName(owner, "owner");
@@ -56,8 +50,7 @@ async function handle(req: Request, { params }: Params): Promise<Response> {
     lastSegment === "git-receive-pack" ||
     (lastSegment === "refs" && service === "git-receive-pack");
   const isPull =
-    lastSegment === "git-upload-pack" ||
-    (lastSegment === "refs" && service === "git-upload-pack");
+    lastSegment === "git-upload-pack" || (lastSegment === "refs" && service === "git-upload-pack");
 
   const requiresAuth = isPush || (isPull && repo.visibility === "private");
   if (requiresAuth) {

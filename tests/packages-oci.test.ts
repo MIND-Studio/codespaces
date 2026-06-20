@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // OCI Distribution Spec routing + upload sessions. Verifies:
 //   • parseOciRequest classifies each /v2 endpoint and splits owner/repo/image
@@ -43,9 +43,7 @@ describe("OCI routing", () => {
     expect(b.kind).toBe("blob");
     if (b.kind === "blob") expect(b.digest).toBe("sha256:deadbeef");
 
-    expect(parseOciRequest(["alice", "repo", "blobs", "uploads"]).kind).toBe(
-      "upload-start",
-    );
+    expect(parseOciRequest(["alice", "repo", "blobs", "uploads"]).kind).toBe("upload-start");
 
     const u = parseOciRequest(["alice", "repo", "blobs", "uploads", "uuid-123"]);
     expect(u.kind).toBe("upload-session");
@@ -58,8 +56,9 @@ describe("OCI routing", () => {
   });
 
   it("validates references and image names", async () => {
-    const { validateVersion, validatePackageName, isDigestRef, PackageError } =
-      await import("@/lib/packages/store");
+    const { validateVersion, validatePackageName, isDigestRef, PackageError } = await import(
+      "@/lib/packages/store"
+    );
 
     expect(isDigestRef("sha256:" + "a".repeat(64))).toBe(true);
     expect(isDigestRef("v1.2.3")).toBe(false);

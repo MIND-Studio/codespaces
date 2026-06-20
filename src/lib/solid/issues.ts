@@ -1,8 +1,8 @@
 import "server-only";
-import type { Repo } from "@/lib/registry/repos";
 import type { Issue, IssueComment } from "@/lib/registry/issues";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
+import type { Repo } from "@/lib/registry/repos";
 import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { NS } from "@/lib/vocab";
 
 /**
@@ -55,9 +55,7 @@ function isoDt(ms: number): string {
 
 function renderIssueTurtle(repo: Repo, issue: Issue): string {
   const repoUrl = `${trailingSlash(repo.ownerPodRoot)}codespaces/${repo.name}/index.ttl#repo`;
-  const labels = issue.labels
-    .map((l) => `"${l.replace(/"/g, '\\"')}"`)
-    .join(", ");
+  const labels = issue.labels.map((l) => `"${l.replace(/"/g, '\\"')}"`).join(", ");
 
   const lines = [
     `@prefix solidgit: <${NS.solidgit}>.`,
@@ -87,11 +85,7 @@ function renderIssueTurtle(repo: Repo, issue: Issue): string {
   return lines.join("\n");
 }
 
-function renderCommentTurtle(
-  repo: Repo,
-  issueNumber: number,
-  comment: IssueComment,
-): string {
+function renderCommentTurtle(repo: Repo, issueNumber: number, comment: IssueComment): string {
   const parent = `${issueContainerUrl(repo, issueNumber)}issue.ttl#issue`;
   return `@prefix solidgit: <${NS.solidgit}>.
 @prefix dcterms: <${NS.dcterms}>.

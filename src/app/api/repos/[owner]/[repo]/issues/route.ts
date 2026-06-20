@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { getRepo, RegistryError } from "@/lib/registry/repos";
-import {
-  createIssue,
-  listIssues,
-  setIssuePodUrl,
-  type IssuePriority,
-  type IssueStatus,
-} from "@/lib/registry/issues";
-import { issueUrl, writeIssueToPod } from "@/lib/solid/issues";
 import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
 import { dispatch } from "@/lib/agents/dispatch";
 import { requireOwner } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { jsonResponse } from "@/lib/http/json";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import {
+  createIssue,
+  type IssuePriority,
+  type IssueStatus,
+  listIssues,
+  setIssuePodUrl,
+} from "@/lib/registry/issues";
+import { getRepo, RegistryError } from "@/lib/registry/repos";
+import { issueUrl, writeIssueToPod } from "@/lib/solid/issues";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,10 +28,7 @@ export async function GET(req: Request, { params }: Params) {
   const url = new URL(req.url);
   const statusParam = url.searchParams.get("status") ?? "open";
   if (!["open", "closed", "all"].includes(statusParam)) {
-    return NextResponse.json(
-      { error: "status must be open|closed|all" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "status must be open|closed|all" }, { status: 400 });
   }
   const issues = listIssues(repo.id, {
     status: statusParam as IssueStatus | "all",
@@ -66,10 +63,7 @@ export async function POST(req: Request, { params }: Params) {
   } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof title !== "string") {
-    return NextResponse.json(
-      { error: "title is required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
   // The session establishes who is authoring this issue. Any
   // bodysupplied authorWebId that disagrees with the session is rejected

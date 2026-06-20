@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Button } from "@mind-studio/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@mind-studio/ui";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
 type SignedInProps = {
@@ -125,10 +125,7 @@ function UserMenu({ session }: { session: SignedInProps }) {
         }}
       >
         <div className="px-3 pb-2">
-          <p
-            className="truncate text-[color:var(--ink)]"
-            style={{ fontWeight: 500 }}
-          >
+          <p className="truncate text-[color:var(--ink)]" style={{ fontWeight: 500 }}>
             {session.displayName}
           </p>
           <p

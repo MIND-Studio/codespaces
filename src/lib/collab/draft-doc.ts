@@ -1,9 +1,9 @@
 "use client";
 
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import { IndexeddbPersistence } from "y-indexeddb";
 import type { Awareness } from "y-protocols/awareness";
+import { WebsocketProvider } from "y-websocket";
+import * as Y from "yjs";
 import { collabRelayUrl } from "./config";
 
 /**
@@ -71,10 +71,7 @@ export type DraftDoc = {
  * document, persisted only to this browser's IndexedDB until it's committed to
  * `.mind`.
  */
-export function createDraftDoc(
-  roomName: string,
-  opts: { collab?: boolean } = {},
-): DraftDoc {
+export function createDraftDoc(roomName: string, opts: { collab?: boolean } = {}): DraftDoc {
   const collab = opts.collab ?? true;
   const doc = new Y.Doc();
 
@@ -115,7 +112,7 @@ export function createDraftDoc(
 export function readDraftMeta(meta: Y.Map<unknown>): DraftMeta {
   const get = <K extends keyof DraftMeta>(k: K): DraftMeta[K] => {
     const v = meta.get(k);
-    return (typeof v === "string" ? (v as DraftMeta[K]) : DEFAULT_META[k]);
+    return typeof v === "string" ? (v as DraftMeta[K]) : DEFAULT_META[k];
   };
   return {
     title: get("title"),

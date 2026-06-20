@@ -78,10 +78,7 @@ function normaliseLabels(input: unknown): string[] {
     const norm = raw.trim().toLowerCase().replace(/\s+/g, "-");
     if (!norm) continue;
     if (!/^[a-z0-9][a-z0-9._-]{0,31}$/.test(norm)) {
-      throw new RegistryError(
-        `invalid label ${JSON.stringify(raw)}`,
-        "INVALID_INPUT",
-      );
+      throw new RegistryError(`invalid label ${JSON.stringify(raw)}`, "INVALID_INPUT");
     }
     if (!seen.has(norm)) {
       seen.add(norm);
@@ -122,9 +119,7 @@ export function createIssue(input: {
 
   const tx = db.transaction(() => {
     const next = db
-      .prepare(
-        "SELECT COALESCE(MAX(number), 0) + 1 AS n FROM issues WHERE repo_id = ?",
-      )
+      .prepare("SELECT COALESCE(MAX(number), 0) + 1 AS n FROM issues WHERE repo_id = ?")
       .get(input.repoId) as { n: number };
 
     const info = db
@@ -154,9 +149,9 @@ export function createIssue(input: {
 }
 
 export function getIssueById(id: number): Issue | null {
-  const row = getDb()
-    .prepare("SELECT * FROM issues WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+  const row = getDb().prepare("SELECT * FROM issues WHERE id = ?").get(id) as
+    | Record<string, unknown>
+    | undefined;
   return row ? rowToIssue(row) : null;
 }
 
@@ -195,9 +190,7 @@ export function countIssuesByStatus(repoId: number): {
   closed: number;
 } {
   const rows = getDb()
-    .prepare(
-      "SELECT status, COUNT(*) AS n FROM issues WHERE repo_id = ? GROUP BY status",
-    )
+    .prepare("SELECT status, COUNT(*) AS n FROM issues WHERE repo_id = ? GROUP BY status")
     .all(repoId) as { status: string; n: number }[];
   const out = { open: 0, closed: 0 };
   for (const r of rows) {
@@ -303,18 +296,16 @@ export function addComment(input: {
         now,
       );
 
-    db.prepare("UPDATE issues SET updated_at = ? WHERE id = ?").run(
-      now,
-      input.issueId,
-    );
+    db.prepare("UPDATE issues SET updated_at = ? WHERE id = ?").run(now, input.issueId);
 
     return info.lastInsertRowid as number;
   });
 
   const id = tx();
-  const row = db
-    .prepare("SELECT * FROM issue_comments WHERE id = ?")
-    .get(id) as Record<string, unknown>;
+  const row = db.prepare("SELECT * FROM issue_comments WHERE id = ?").get(id) as Record<
+    string,
+    unknown
+  >;
   return rowToComment(row);
 }
 
@@ -324,15 +315,11 @@ export function addComment(input: {
  * number (from the row insert) before it can compute the pod URL.
  */
 export function setIssuePodUrl(id: number, podUrl: string): void {
-  getDb()
-    .prepare("UPDATE issues SET pod_url = ? WHERE id = ?")
-    .run(podUrl, id);
+  getDb().prepare("UPDATE issues SET pod_url = ? WHERE id = ?").run(podUrl, id);
 }
 
 export function setCommentPodUrl(id: number, podUrl: string): void {
-  getDb()
-    .prepare("UPDATE issue_comments SET pod_url = ? WHERE id = ?")
-    .run(podUrl, id);
+  getDb().prepare("UPDATE issue_comments SET pod_url = ? WHERE id = ?").run(podUrl, id);
 }
 
 export function countComments(issueId: number): number {
@@ -344,9 +331,7 @@ export function countComments(issueId: number): number {
 
 export function listComments(issueId: number): IssueComment[] {
   const rows = getDb()
-    .prepare(
-      "SELECT * FROM issue_comments WHERE issue_id = ? ORDER BY created_at ASC",
-    )
+    .prepare("SELECT * FROM issue_comments WHERE issue_id = ? ORDER BY created_at ASC")
     .all(issueId) as Record<string, unknown>[];
   return rows.map(rowToComment);
 }

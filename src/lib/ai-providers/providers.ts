@@ -61,8 +61,16 @@ export const PROVIDERS: ProviderSpec[] = [
       // Free tier first — these are what runs out of the box with no
       // OpenRouter credit balance. Curated against the live `:free` list
       // and filtered to models that declare tool-use support.
-      { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder", note: "Qwen · free · coder-tuned (default)" },
-      { id: "deepseek/deepseek-v4-flash:free", label: "DeepSeek V4 Flash", note: "DeepSeek · free" },
+      {
+        id: "qwen/qwen3-coder:free",
+        label: "Qwen3 Coder",
+        note: "Qwen · free · coder-tuned (default)",
+      },
+      {
+        id: "deepseek/deepseek-v4-flash:free",
+        label: "DeepSeek V4 Flash",
+        note: "DeepSeek · free",
+      },
       { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B", note: "Meta · free" },
       { id: "z-ai/glm-4.5-air:free", label: "GLM 4.5 Air", note: "Z.AI · free" },
       // Paid — pick these when your OpenRouter key has a budget set.
@@ -87,14 +95,17 @@ export const PROVIDERS: ProviderSpec[] = [
       { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", note: "paid · top quality" },
       { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", note: "fast · cheap" },
       { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", note: "free tier" },
-      { id: "gemini-2.0-flash-thinking-exp", label: "Gemini 2.0 Flash Thinking", note: "experimental" },
+      {
+        id: "gemini-2.0-flash-thinking-exp",
+        label: "Gemini 2.0 Flash Thinking",
+        note: "experimental",
+      },
     ],
   },
   {
     name: "anthropic",
     label: "Anthropic",
-    blurb:
-      "Direct Anthropic key for Claude. Skip the OpenRouter margin if you already have one.",
+    blurb: "Direct Anthropic key for Claude. Skip the OpenRouter margin if you already have one.",
     keysUrl: "https://console.anthropic.com/settings/keys",
     opencodeAuthKey: "anthropic",
     opencodeModelPrefix: "anthropic",
@@ -131,19 +142,13 @@ export function getProvider(name: string): ProviderSpec | null {
 }
 
 export function isProviderName(value: unknown): value is ProviderName {
-  return (
-    typeof value === "string" &&
-    PROVIDERS.some((p) => p.name === value)
-  );
+  return typeof value === "string" && PROVIDERS.some((p) => p.name === value);
 }
 
 /**
  * The full `-m` argument for opencode. e.g. "openrouter/google/gemini-2.5-pro"
  * or "google/gemini-2.5-pro".
  */
-export function formatOpencodeModel(
-  provider: ProviderSpec,
-  modelId: string,
-): string {
+export function formatOpencodeModel(provider: ProviderSpec, modelId: string): string {
   return `${provider.opencodeModelPrefix}/${modelId}`;
 }

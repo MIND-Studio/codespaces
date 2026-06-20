@@ -1,15 +1,12 @@
-import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
+import { NextResponse } from "next/server";
+import { requireOwner } from "@/lib/auth/session";
+import { repoPath } from "@/lib/git/backend";
+import { jsonResponse } from "@/lib/http/json";
+import { assertCanDispatchRun, QuotaExceededError } from "@/lib/registry/quotas";
 import { getRepo } from "@/lib/registry/repos";
 import { listRunsForRepo } from "@/lib/registry/runs";
-import { repoPath } from "@/lib/git/backend";
 import { runWorkflow } from "@/lib/workflows/runner";
-import { requireOwner } from "@/lib/auth/session";
-import { jsonResponse } from "@/lib/http/json";
-import {
-  assertCanDispatchRun,
-  QuotaExceededError,
-} from "@/lib/registry/quotas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,8 +64,7 @@ export async function POST(req: Request, { params }: Params) {
   } catch {
     /* empty body is fine — default to repo's default branch */
   }
-  const requestedBranch =
-    (body as Record<string, unknown>)?.branch;
+  const requestedBranch = (body as Record<string, unknown>)?.branch;
   const branch =
     typeof requestedBranch === "string" && requestedBranch.length > 0
       ? requestedBranch
@@ -89,15 +85,10 @@ export async function POST(req: Request, { params }: Params) {
   // Fire-and-forget; surface the run id so the client can navigate to it.
   // We don't `await` the runner — manual triggers are explicitly async to
   // mirror the push-driven path.
-  const runPromise = runWorkflow({ repoId: repo.id, ref, branch }).catch(
-    (err) => {
-      console.error(
-        `[manual-run] failed for ${owner}/${name}@${branch}:`,
-        err,
-      );
-      return null;
-    },
-  );
+  const runPromise = runWorkflow({ repoId: repo.id, ref, branch }).catch((err) => {
+    console.error(`[manual-run] failed for ${owner}/${name}@${branch}:`, err);
+    return null;
+  });
 
   // We DO await briefly here so we can return the run id of the row the
   // runner just inserted. The runner inserts the row before doing any
@@ -132,8 +123,6 @@ function resolveRef(bareRepoPath: string, ref: string): Promise<string | null> {
     let stdout = "";
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString()));
     child.on("error", () => resolve(null));
-    child.on("close", (code) =>
-      resolve(code === 0 ? stdout.trim() : null),
-    );
+    child.on("close", (code) => resolve(code === 0 ? stdout.trim() : null));
   });
 }

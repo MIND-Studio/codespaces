@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
 import { requireOwner } from "@/lib/auth/session";
-import { deleteProposal } from "@/lib/solid/inbox";
+import { getRepo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { deleteProposal } from "@/lib/solid/inbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

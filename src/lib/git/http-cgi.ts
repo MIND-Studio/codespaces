@@ -1,5 +1,5 @@
 import "server-only";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { getGitDataDir } from "@/lib/git/backend";
 
@@ -43,10 +43,7 @@ const REQUEST_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes per Smart-HTTP request
  *     on the response stream (vs the previous code path, which produced
  *     a truncated success — a git client would see a partial success).
  */
-export async function runGitHttpBackend(
-  req: Request,
-  pathInfo: string,
-): Promise<Response> {
+export async function runGitHttpBackend(req: Request, pathInfo: string): Promise<Response> {
   installShutdownHook();
 
   const url = new URL(req.url);
@@ -191,9 +188,7 @@ export async function runGitHttpBackend(
       pendingClose = true;
       if (bodyController) bodyController.close();
       if (!headersParsed) {
-        rejectResponse(
-          new Error("git http-backend exited without emitting CGI headers"),
-        );
+        rejectResponse(new Error("git http-backend exited without emitting CGI headers"));
       }
     });
 
@@ -212,16 +207,12 @@ export async function runGitHttpBackend(
       liveChildren.delete(child);
       if (code !== 0) {
         if (!headersParsed) {
-          rejectResponse(
-            new Error(`git http-backend exited with code ${code} before any output`),
-          );
+          rejectResponse(new Error(`git http-backend exited with code ${code} before any output`));
         } else if (bodyController) {
           // Headers already emitted, then the CGI died mid-body. The
           // git client would otherwise see a truncated success and trust
           // the bytes — surface the failure as a stream error instead.
-          bodyController.error(
-            new Error(`git http-backend exited with code ${code} mid-body`),
-          );
+          bodyController.error(new Error(`git http-backend exited with code ${code} mid-body`));
         }
       }
     });

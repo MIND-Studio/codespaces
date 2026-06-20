@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getRepo, RegistryError } from "@/lib/registry/repos";
+import { requireOwner } from "@/lib/auth/session";
 import {
   getIssueByNumber,
-  listComments,
-  updateIssue,
   type IssuePriority,
   type IssueStatus,
+  listComments,
+  updateIssue,
 } from "@/lib/registry/issues";
+import { getRepo, RegistryError } from "@/lib/registry/repos";
 import { writeIssueToPod } from "@/lib/solid/issues";
-import { requireOwner } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,15 +63,17 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { status, priority, labels, title, body: issueBody } =
-    (body ?? {}) as Record<string, unknown>;
+  const {
+    status,
+    priority,
+    labels,
+    title,
+    body: issueBody,
+  } = (body ?? {}) as Record<string, unknown>;
 
   try {
     const updated = updateIssue(issue.id, {
-      status:
-        status === "open" || status === "closed"
-          ? (status as IssueStatus)
-          : undefined,
+      status: status === "open" || status === "closed" ? (status as IssueStatus) : undefined,
       priority:
         priority === "low" || priority === "normal" || priority === "high"
           ? (priority as IssuePriority)
@@ -82,10 +84,7 @@ export async function PATCH(req: Request, { params }: Params) {
     });
 
     writeIssueToPod(repo, updated).catch((err) => {
-      console.warn(
-        `[issues.PATCH] writeIssueToPod for ${owner}/${name}#${number} failed:`,
-        err,
-      );
+      console.warn(`[issues.PATCH] writeIssueToPod for ${owner}/${name}#${number} failed:`, err);
     });
 
     return NextResponse.json({ issue: updated });

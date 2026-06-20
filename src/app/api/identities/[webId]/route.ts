@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { clearSession, requireOwner } from "@/lib/auth/session";
 import { deleteIdentity, getIdentityByWebId } from "@/lib/registry/identities";
 import { clearCachedSession } from "@/lib/solid/oidc-server";
-import { requireOwner, clearSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,10 +34,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   // pod writes off a still-valid access token (MC-176).
   clearCachedSession(decoded);
   if (!ok) {
-    return NextResponse.json(
-      { error: "identity not found" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "identity not found" }, { status: 404 });
   }
   // Disconnecting the identity invalidates the session that was issued
   // off that OIDC flow, so drop the cookie too — the next request will

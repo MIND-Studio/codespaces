@@ -1,8 +1,8 @@
 import "server-only";
 import { getDb } from "@/lib/registry/db";
-import type { Tracker } from "@/lib/tracker/model";
-import { trackerContainerUrl } from "@/lib/solid/tracker-pod";
 import type { Repo } from "@/lib/registry/repos";
+import { trackerContainerUrl } from "@/lib/solid/tracker-pod";
+import type { Tracker } from "@/lib/tracker/model";
 
 /**
  * Project a repo's `.mind`-derived `flow:Tracker` (read from the pod) into the
@@ -21,10 +21,7 @@ import type { Repo } from "@/lib/registry/repos";
  * (`{container}state.ttl#{id}`), the canonical resource a pod-native reader
  * (mind-issues, the SolidOS issue-pane) would dereference.
  */
-export function projectTrackerToRegistry(
-  repo: Repo,
-  tracker: Tracker,
-): { upserted: number } {
+export function projectTrackerToRegistry(repo: Repo, tracker: Tracker): { upserted: number } {
   const stateDoc = `${trackerContainerUrl(repo)}state.ttl`;
   const db = getDb();
   const now = Date.now();

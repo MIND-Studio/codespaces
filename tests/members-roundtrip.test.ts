@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Parser, type Quad } from "n3";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * MC-157: pod-native repo membership (ADR-0002). Exercised against an
@@ -114,9 +114,7 @@ describe("renderMembersTurtle (MC-157)", () => {
       ),
     ).toHaveLength(1);
     expect(
-      quads.filter(
-        (q) => q.predicate.value === RDF_TYPE && q.object.value === `${SOLIDGIT}Member`,
-      ),
+      quads.filter((q) => q.predicate.value === RDF_TYPE && q.object.value === `${SOLIDGIT}Member`),
     ).toHaveLength(2);
     expect(objectsOf(quads, `${SOLIDGIT}agent`)).toEqual([BOB, CAROL]);
     expect(objectsOf(quads, `${SOLIDGIT}role`).sort()).toEqual(["reader", "writer"]);
@@ -182,9 +180,7 @@ describe("removeMember (MC-157)", () => {
     await addMember(privateRepo as never, BOB, "writer");
     await addMember(privateRepo as never, CAROL, "reader");
     await removeMember(privateRepo as never, BOB);
-    expect(await readMembers(privateRepo as never)).toEqual([
-      { webId: CAROL, role: "reader" },
-    ]);
+    expect(await readMembers(privateRepo as never)).toEqual([{ webId: CAROL, role: "reader" }]);
     const acl = pod.store.get(PULLS_ACL);
     expect(acl).toContain(CAROL);
     expect(acl).not.toContain(BOB); // revoked

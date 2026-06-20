@@ -1,8 +1,8 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { IStorage } from "@inrupt/solid-client-authn-core";
-import { getDb } from "@/lib/registry/db";
 import { getEnv } from "@/lib/env";
+import { getDb } from "@/lib/registry/db";
 
 export type Identity = {
   webId: string;
@@ -28,10 +28,7 @@ function encrypt(plaintext: string): string {
   const key = getEnv().identityEncryptionKey;
   const iv = randomBytes(12); // 96-bit IV for AES-GCM
   const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const enc = Buffer.concat([
-    cipher.update(plaintext, "utf-8"),
-    cipher.final(),
-  ]);
+  const enc = Buffer.concat([cipher.update(plaintext, "utf-8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return `${CIPHER_VERSION}:${iv.toString("base64")}:${tag.toString("base64")}:${enc.toString("base64")}`;
 }
@@ -49,11 +46,7 @@ function decrypt(stored: string): string | null {
     const iv = Buffer.from(parts[1], "base64");
     const tag = Buffer.from(parts[2], "base64");
     const data = Buffer.from(parts[3], "base64");
-    const decipher = createDecipheriv(
-      "aes-256-gcm",
-      getEnv().identityEncryptionKey,
-      iv,
-    );
+    const decipher = createDecipheriv("aes-256-gcm", getEnv().identityEncryptionKey, iv);
     decipher.setAuthTag(tag);
     const out = Buffer.concat([decipher.update(data), decipher.final()]);
     return out.toString("utf-8");
@@ -72,23 +65,17 @@ function decrypt(stored: string): string | null {
  */
 export function makeIdentityStorage(sessionId: string): IStorage {
   const db = getDb();
-  const getStmt = db.prepare(
-    "SELECT value FROM identity_storage WHERE session_id = ? AND key = ?",
-  );
+  const getStmt = db.prepare("SELECT value FROM identity_storage WHERE session_id = ? AND key = ?");
   const setStmt = db.prepare(
     `INSERT INTO identity_storage (session_id, key, value)
      VALUES (?, ?, ?)
      ON CONFLICT(session_id, key) DO UPDATE SET value = excluded.value`,
   );
-  const delStmt = db.prepare(
-    "DELETE FROM identity_storage WHERE session_id = ? AND key = ?",
-  );
+  const delStmt = db.prepare("DELETE FROM identity_storage WHERE session_id = ? AND key = ?");
 
   return {
     async get(key: string): Promise<string | undefined> {
-      const row = getStmt.get(sessionId, key) as
-        | { value: string }
-        | undefined;
+      const row = getStmt.get(sessionId, key) as { value: string } | undefined;
       if (!row) return undefined;
       const plain = decrypt(row.value);
       return plain ?? undefined;
@@ -103,9 +90,7 @@ export function makeIdentityStorage(sessionId: string): IStorage {
       // overwriting. Safe because the SDK never relies on field *removal*
       // via setForUser — explicit deletes go through `delete(key)`.
       if (key.startsWith("solidClientAuthenticationUser:")) {
-        const existing = getStmt.get(sessionId, key) as
-          | { value: string }
-          | undefined;
+        const existing = getStmt.get(sessionId, key) as { value: string } | undefined;
         if (existing) {
           const decrypted = decrypt(existing.value);
           if (decrypted) {
@@ -144,9 +129,7 @@ export function saveIdentity(input: {
     .prepare("SELECT session_id FROM identities WHERE web_id = ?")
     .get(input.webId) as { session_id: string } | undefined;
   if (existing && existing.session_id !== input.sessionId) {
-    db.prepare("DELETE FROM identity_storage WHERE session_id = ?").run(
-      existing.session_id,
-    );
+    db.prepare("DELETE FROM identity_storage WHERE session_id = ?").run(existing.session_id);
   }
   db.prepare(
     `INSERT INTO identities (web_id, session_id, oidc_issuer, connected_at)
@@ -206,9 +189,7 @@ export function deleteIdentity(webId: string): boolean {
   const db = getDb();
   const existing = getIdentityByWebId(webId);
   if (!existing) return false;
-  db.prepare("DELETE FROM identity_storage WHERE session_id = ?").run(
-    existing.sessionId,
-  );
+  db.prepare("DELETE FROM identity_storage WHERE session_id = ?").run(existing.sessionId);
   const info = db.prepare("DELETE FROM identities WHERE web_id = ?").run(webId);
   return info.changes > 0;
 }

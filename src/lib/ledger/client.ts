@@ -65,11 +65,7 @@ export type DebitResult =
  * the run has happened, so the caller logs and continues rather than failing
  * the user after the fact.
  */
-export async function debit(
-  webId: string,
-  amount: number,
-  memo: string,
-): Promise<DebitResult> {
+export async function debit(webId: string, amount: number, memo: string): Promise<DebitResult> {
   const cfg = ledgerConfig();
   if (!cfg) return { ok: false, status: 0, balance: null };
   try {

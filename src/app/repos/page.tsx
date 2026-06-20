@@ -1,11 +1,8 @@
 import Link from "next/link";
-import {
-  listRepos,
-  getPagesConfig,
-} from "@/lib/registry/repos";
-import { getLatestRunForRepo } from "@/lib/registry/runs";
-import { isOrg } from "@/lib/registry/owners";
 import { readSession } from "@/lib/auth/session";
+import { isOrg } from "@/lib/registry/owners";
+import { getPagesConfig, listRepos } from "@/lib/registry/repos";
+import { getLatestRunForRepo } from "@/lib/registry/runs";
 import { RepoList, type RepoRowData } from "./_components/repo-list";
 
 export const dynamic = "force-dynamic";
@@ -85,9 +82,8 @@ export default async function ReposPage() {
         )}
       </div>
       <p className="mt-4 max-w-2xl text-[color:var(--ink-soft)]">
-        Everything registered with this bridge. Each row is a real bare Git
-        repository on disk plus, optionally, a Mind Pages target on the
-        owner&apos;s Solid Pod.
+        Everything registered with this bridge. Each row is a real bare Git repository on disk plus,
+        optionally, a Mind Pages target on the owner&apos;s Solid Pod.
       </p>
 
       <hr className="hairline my-8" />

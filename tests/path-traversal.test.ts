@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Test 1 in §3.2 priority list: every user-supplied name flows through
 // validateName, and every filesystem path is resolved via repoPath. The
@@ -47,10 +47,7 @@ describe("validateName", () => {
       "x".repeat(65),
     ];
     for (const name of bad) {
-      expect(
-        () => validateName(name, "owner"),
-        `should reject ${JSON.stringify(name)}`,
-      ).toThrow();
+      expect(() => validateName(name, "owner"), `should reject ${JSON.stringify(name)}`).toThrow();
     }
   });
 });

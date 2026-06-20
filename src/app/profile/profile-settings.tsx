@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, useMindTheme } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useBrand } from "@/components/theme-shell";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
@@ -116,8 +116,8 @@ export function ProfileSettings() {
         </p>
         <h3 className="mt-1 text-base text-[color:var(--ink)]">Sign out</h3>
         <p className="mt-1 text-sm text-[color:var(--ink-soft)]">
-          Drops the bridge&apos;s session cookie. Your pod stays connected
-          for the OIDC client (revoke that from{" "}
+          Drops the bridge&apos;s session cookie. Your pod stays connected for the OIDC client
+          (revoke that from{" "}
           <a className="link" href="/identities">
             connected pods
           </a>

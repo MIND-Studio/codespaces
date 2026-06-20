@@ -1,11 +1,11 @@
 import "server-only";
-import type { Repo } from "@/lib/registry/repos";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
-import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
-import { readBlob, hasAnyCommits } from "@/lib/git/objects";
-import { parseTrackerTrio } from "@/lib/tracker/parse";
-import type { Tracker } from "@/lib/tracker/model";
+import { hasAnyCommits, readBlob } from "@/lib/git/objects";
 import { log } from "@/lib/log";
+import type { Repo } from "@/lib/registry/repos";
+import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
+import type { Tracker } from "@/lib/tracker/model";
+import { parseTrackerTrio } from "@/lib/tracker/parse";
 
 /**
  * Mirror a repo's `.mind`-derived `flow:Tracker` into the **owner's pod**, so
@@ -77,9 +77,7 @@ export async function publishTrackerToPod(
       body: outputs[key],
     });
     if (!res.ok && res.status !== 201 && res.status !== 205) {
-      throw new Error(
-        `failed to PUT tracker doc ${url}: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`failed to PUT tracker doc ${url}: ${res.status} ${res.statusText}`);
     }
     written.push(url);
   }
@@ -93,9 +91,7 @@ export async function publishTrackerToPod(
  * a missing `tracker.ttl`/`epics.ttl` degrades gracefully (parser tolerates
  * nulls).
  */
-export async function readPodTrackerOutputs(
-  repo: Repo,
-): Promise<TrackerOutputs | null> {
+export async function readPodTrackerOutputs(repo: Repo): Promise<TrackerOutputs | null> {
   const container = trackerContainerUrl(repo);
   const owner = await getOwnerFetch(repo.ownerWebId);
 
@@ -103,19 +99,14 @@ export async function readPodTrackerOutputs(
     const res = await owner.fetch(`${container}${name}`, { method: "GET" });
     if (res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(
-        `failed to GET tracker doc ${container}${name}: ${res.status}`,
-      );
+      throw new Error(`failed to GET tracker doc ${container}${name}: ${res.status}`);
     }
     return res.text();
   };
 
   const state = await get(DOC_NAMES.state);
   if (state === null) return null;
-  const [tracker, epics] = await Promise.all([
-    get(DOC_NAMES.tracker),
-    get(DOC_NAMES.epics),
-  ]);
+  const [tracker, epics] = await Promise.all([get(DOC_NAMES.tracker), get(DOC_NAMES.epics)]);
   return { tracker: tracker ?? "", epics: epics ?? "", state };
 }
 
@@ -160,10 +151,7 @@ export async function mirrorTrackerFromGit(
     };
     const state = await read(DOC_NAMES.state);
     if (state === null) return false; // no tracker in this push
-    const [tracker, epics] = await Promise.all([
-      read(DOC_NAMES.tracker),
-      read(DOC_NAMES.epics),
-    ]);
+    const [tracker, epics] = await Promise.all([read(DOC_NAMES.tracker), read(DOC_NAMES.epics)]);
     await publishTrackerToPod(repo, {
       tracker: tracker ?? "",
       epics: epics ?? "",

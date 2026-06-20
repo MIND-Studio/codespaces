@@ -3,23 +3,18 @@ import { createWriteStream, type WriteStream } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
-import { getRepoById, type PagesConfig, type Repo } from "@/lib/registry/repos";
-import {
-  getPullRequest,
-  updatePullPreview,
-  type PullRequest,
-} from "@/lib/registry/pulls";
-import { repoPath, readBranchHead } from "@/lib/git/backend";
+import { readBranchHead, repoPath } from "@/lib/git/backend";
 import { checkoutBranchToTempDir } from "@/lib/git/checkout";
-import { parseWorkflow } from "@/lib/workflows/parse";
-import { resolveRunnerMode, runShellBatch } from "@/lib/workflows/docker";
 import { publishDirectory } from "@/lib/pages/publisher";
+import { getPullRequest, type PullRequest, updatePullPreview } from "@/lib/registry/pulls";
+import { getRepoById, type PagesConfig, type Repo } from "@/lib/registry/repos";
 import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { resolveRunnerMode, runShellBatch } from "@/lib/workflows/docker";
+import { parseWorkflow } from "@/lib/workflows/parse";
 
 // Same location agent-run logs use (dispatch.ts owns the const, but importing
 // it here would create a cycle: dispatch.ts → preview.ts → dispatch.ts).
-const AGENT_LOGS_DIR =
-  process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
+const AGENT_LOGS_DIR = process.env.AGENT_LOGS_DIR ?? path.join(process.cwd(), ".agent-logs");
 
 /**
  * PR previews. A PR's source branch is built (if it ships a
@@ -41,9 +36,7 @@ const WORKFLOW_REL = ".mind/workflow.yml";
 
 /** Pod container a PR's preview is published to (under /public → public-read). */
 export function previewContainerFor(repo: Repo, pullNumber: number): string {
-  const base = repo.ownerPodRoot.endsWith("/")
-    ? repo.ownerPodRoot
-    : `${repo.ownerPodRoot}/`;
+  const base = repo.ownerPodRoot.endsWith("/") ? repo.ownerPodRoot : `${repo.ownerPodRoot}/`;
   return `${base}public/previews/${repo.name}/${pullNumber}/`;
 }
 
@@ -79,9 +72,8 @@ export async function buildAndPublishPreview(pull: PullRequest): Promise<void> {
   if (!repo) return;
 
   const liveSha =
-    (await readBranchHead(repo.owner, repo.name, pull.sourceBranch).catch(
-      () => null,
-    )) ?? pull.sourceSha;
+    (await readBranchHead(repo.owner, repo.name, pull.sourceBranch).catch(() => null)) ??
+    pull.sourceSha;
 
   // SHA-guard — don't rebuild an unchanged branch that's already live.
   // The POST route optimistically marks "building" before this runs, so
@@ -117,10 +109,7 @@ export async function buildAndPublishPreview(pull: PullRequest): Promise<void> {
 
     // Tier 2 (build) if a workflow exists; else Tier 1 (static, instant).
     let publishDir = tempDir;
-    const wfSource = await readFile(
-      path.join(tempDir, WORKFLOW_REL),
-      "utf-8",
-    ).catch(() => null);
+    const wfSource = await readFile(path.join(tempDir, WORKFLOW_REL), "utf-8").catch(() => null);
     if (wfSource !== null) {
       const wf = parseWorkflow(wfSource);
       const mode = await resolveRunnerMode();
@@ -167,8 +156,7 @@ export async function buildAndPublishPreview(pull: PullRequest): Promise<void> {
     );
   } catch (err) {
     const message =
-      err instanceof OwnerFetchUnavailableError &&
-      err.reason === "needs-reauthorization"
+      err instanceof OwnerFetchUnavailableError && err.reason === "needs-reauthorization"
         ? "preview failed: reconnect your pod at /connect"
         : err instanceof Error
           ? err.message
@@ -211,10 +199,7 @@ export async function deletePreview(pull: PullRequest): Promise<void> {
 }
 
 /** Build a preview for (repoId, prNumber) by id — convenience for triggers. */
-export async function buildPreviewForPull(
-  repoId: number,
-  prNumber: number,
-): Promise<void> {
+export async function buildPreviewForPull(repoId: number, prNumber: number): Promise<void> {
   const pull = getPullRequest(repoId, prNumber);
   if (pull) await buildAndPublishPreview(pull);
 }

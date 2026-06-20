@@ -1,14 +1,8 @@
 "use client";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@mind-studio/ui";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@mind-studio/ui";
 
 /**
  * Small `<select>` for switching the displayed branch on a tree/blob

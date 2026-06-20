@@ -1,9 +1,9 @@
 import "server-only";
-import type { Repo } from "@/lib/registry/repos";
-import type { PullRequest } from "@/lib/registry/pulls";
 import { getIssueById } from "@/lib/registry/issues";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
+import type { PullRequest } from "@/lib/registry/pulls";
+import type { Repo } from "@/lib/registry/repos";
 import { ensureContainer, setVisibilityAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { issueUrl } from "@/lib/solid/issues";
 import { readMembersWithFetch } from "@/lib/solid/members";
 import { NS } from "@/lib/vocab";
@@ -111,13 +111,7 @@ async function ensurePullContainers(
       repo.visibility === "private"
         ? (await readMembersWithFetch(fetcher, repo)).map((m) => m.webId)
         : [];
-    await setVisibilityAcl(
-      fetcher,
-      pullsUrl,
-      repo.ownerWebId,
-      repo.visibility,
-      memberWebIds,
-    );
+    await setVisibilityAcl(fetcher, pullsUrl, repo.ownerWebId, repo.visibility, memberWebIds);
   }
   await ensureContainer(fetcher, pullContainerUrl(repo, pullNumber));
 }

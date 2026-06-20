@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { listBranches, readBlob } from "@/lib/git/objects";
 import { Breadcrumbs } from "@/app/repos/[owner]/[repo]/tree/[[...path]]/page";
 import { BranchPicker } from "@/components/branch-picker";
+import { repoPath } from "@/lib/git/backend";
+import { listBranches, readBlob } from "@/lib/git/objects";
+import { getRepo } from "@/lib/registry/repos";
 import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +27,7 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
   // Accept either a known branch name or a hex commit SHA (7-40 chars);
   // readBlob/git itself validates the final ref via cat-file.
   const ref =
-    sp.ref &&
-    (branches.includes(sp.ref) || /^[0-9a-f]{7,40}$/i.test(sp.ref))
+    sp.ref && (branches.includes(sp.ref) || /^[0-9a-f]{7,40}$/i.test(sp.ref))
       ? sp.ref
       : repo.defaultBranch;
   const refQuery = ref === repo.defaultBranch ? null : ref;
@@ -45,10 +44,7 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
         </Link>
       </p>
 
-      <h1
-        className="display mt-3 text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         Source
       </h1>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
@@ -62,11 +58,7 @@ export default async function BlobPage({ params, searchParams }: PageProps) {
           {branches.length <= 1 ? ` · ${ref}` : ""}
         </p>
         {branches.length > 1 ? (
-          <BranchPicker
-            branches={branches}
-            current={ref}
-            defaultBranch={repo.defaultBranch}
-          />
+          <BranchPicker branches={branches} current={ref} defaultBranch={repo.defaultBranch} />
         ) : null}
       </div>
 

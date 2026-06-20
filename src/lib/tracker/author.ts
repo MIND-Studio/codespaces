@@ -1,8 +1,8 @@
 import "server-only";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { randomBytes } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { checkoutBranchToTempDir } from "@/lib/git/checkout";
 import { buildTrackerOutputs, TrackerBuildError } from "./build";
@@ -199,10 +199,7 @@ export async function createMindIssue(
   try {
     checkout = await checkoutBranchToTempDir(bareRepoPath, branch);
   } catch (e) {
-    throw new IssueAuthorError(
-      `could not check out "${branch}": ${(e as Error).message}`,
-      500,
-    );
+    throw new IssueAuthorError(`could not check out "${branch}": ${(e as Error).message}`, 500);
   }
   const { tempDir, cleanup } = checkout;
 
@@ -214,10 +211,7 @@ export async function createMindIssue(
       current = buildTrackerOutputs(tempDir);
     } catch (e) {
       if (e instanceof TrackerBuildError) {
-        throw new IssueAuthorError(
-          `this repo has no usable .mind tracker (${e.message})`,
-          409,
-        );
+        throw new IssueAuthorError(`this repo has no usable .mind tracker (${e.message})`, 409);
       }
       throw e;
     }
@@ -250,23 +244,19 @@ export async function createMindIssue(
     const typeId = category.label;
 
     const wantsEpic = input.epicSlug && input.epicSlug !== "general";
-    const epic = wantsEpic
-      ? tracker.epics.find((e) => e.slug === input.epicSlug)
-      : undefined;
+    const epic = wantsEpic ? tracker.epics.find((e) => e.slug === input.epicSlug) : undefined;
     if (wantsEpic && !epic) {
       throw new IssueAuthorError(`unknown epic "${input.epicSlug}"`);
     }
 
-    const nextNumber =
-      tracker.issues.reduce((max, i) => Math.max(max, i.number ?? 0), 0) + 1;
+    const nextNumber = tracker.issues.reduce((max, i) => Math.max(max, i.number ?? 0), 0) + 1;
     const id = mintIssueId(nextNumber);
     const slug = slugify(title);
 
     const now = new Date();
     const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
     const hhmm =
-      String(now.getUTCHours()).padStart(2, "0") +
-      String(now.getUTCMinutes()).padStart(2, "0");
+      String(now.getUTCHours()).padStart(2, "0") + String(now.getUTCMinutes()).padStart(2, "0");
     const tag = actorTag(input.authorWebId);
 
     const issuesDir = join(tempDir, ".mind", "issues");
@@ -414,17 +404,13 @@ export async function createMindEpic(
 ): Promise<CreateEpicResult> {
   const title = input.title.trim();
   if (!title) throw new IssueAuthorError("title is required");
-  const status =
-    input.status && EPIC_STATUSES.has(input.status) ? input.status : "planned";
+  const status = input.status && EPIC_STATUSES.has(input.status) ? input.status : "planned";
 
   let checkout: { tempDir: string; cleanup: () => Promise<void> };
   try {
     checkout = await checkoutBranchToTempDir(bareRepoPath, branch);
   } catch (e) {
-    throw new IssueAuthorError(
-      `could not check out "${branch}": ${(e as Error).message}`,
-      500,
-    );
+    throw new IssueAuthorError(`could not check out "${branch}": ${(e as Error).message}`, 500);
   }
   const { tempDir, cleanup } = checkout;
 
@@ -434,10 +420,7 @@ export async function createMindEpic(
       buildTrackerOutputs(tempDir);
     } catch (e) {
       if (e instanceof TrackerBuildError) {
-        throw new IssueAuthorError(
-          `this repo has no usable .mind tracker (${e.message})`,
-          409,
-        );
+        throw new IssueAuthorError(`this repo has no usable .mind tracker (${e.message})`, 409);
       }
       throw e;
     }

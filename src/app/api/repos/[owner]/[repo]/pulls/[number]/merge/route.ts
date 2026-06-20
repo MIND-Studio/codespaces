@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
-import {
-  getPullRequest,
-  markPullRequestMerged,
-} from "@/lib/registry/pulls";
-import { mergeBranches } from "@/lib/git/merge";
-import { repoPath } from "@/lib/git/backend";
-import { displayNameForWebId } from "@/lib/solid/web-id";
-import { getIssueById, updateIssue } from "@/lib/registry/issues";
-import { writeIssueToPod } from "@/lib/solid/issues";
 import { requireOwner } from "@/lib/auth/session";
+import { repoPath } from "@/lib/git/backend";
+import { mergeBranches } from "@/lib/git/merge";
 import { deletePreview } from "@/lib/pages/preview";
+import { getIssueById, updateIssue } from "@/lib/registry/issues";
+import { getPullRequest, markPullRequestMerged } from "@/lib/registry/pulls";
+import { getRepo } from "@/lib/registry/repos";
+import { writeIssueToPod } from "@/lib/solid/issues";
+import { displayNameForWebId } from "@/lib/solid/web-id";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,10 +33,7 @@ export async function POST(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "pull not found" }, { status: 404 });
   }
   if (pull.status !== "open") {
-    return NextResponse.json(
-      { error: `pull is ${pull.status}, cannot merge` },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: `pull is ${pull.status}, cannot merge` }, { status: 409 });
   }
 
   // Attribute the merge to the repo owner (the human in the loop).

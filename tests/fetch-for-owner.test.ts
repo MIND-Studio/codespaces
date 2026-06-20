@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * MC-173 contract: `getOwnerFetch` must convert a dead delegated identity
@@ -61,16 +61,12 @@ describe("getOwnerFetch — stale delegated identity", () => {
       "@/lib/solid/fetch-for-owner"
     );
     getEnv.mockReturnValue(devEnv()); // seeded fallback IS enabled
-    loadAuthedFetchForWebId.mockRejectedValue(
-      new MockOidcRefreshFailedError(WEBID),
-    );
+    loadAuthedFetchForWebId.mockRejectedValue(new MockOidcRefreshFailedError(WEBID));
 
     await expect(getOwnerFetch(WEBID)).rejects.toMatchObject({
       reason: "needs-reauthorization",
     });
-    await expect(getOwnerFetch(WEBID)).rejects.toBeInstanceOf(
-      OwnerFetchUnavailableError,
-    );
+    await expect(getOwnerFetch(WEBID)).rejects.toBeInstanceOf(OwnerFetchUnavailableError);
     // The connected-but-dead identity must never use the operator account.
     expect(getCssAuthedFetch).not.toHaveBeenCalled();
   });

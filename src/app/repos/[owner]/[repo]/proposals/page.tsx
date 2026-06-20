@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { readSession } from "@/lib/auth/session";
-import { readGitTracker } from "@/lib/tracker/read";
-import { listProposals, type Proposal } from "@/lib/solid/inbox";
-import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
 import { RelativeTime } from "@/components/relative-time";
+import { readSession } from "@/lib/auth/session";
+import { repoPath } from "@/lib/git/backend";
+import { getRepo } from "@/lib/registry/repos";
+import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
+import { listProposals, type Proposal } from "@/lib/solid/inbox";
+import { readGitTracker } from "@/lib/tracker/read";
 import { RepoTabs } from "../repo-tabs";
 import { ProposalActions } from "./proposal-actions";
 
@@ -53,27 +53,22 @@ export default async function ProposalsPage({ params }: PageProps) {
           ← {owner}/{name}
         </Link>
       </p>
-      <h1
-        className="mt-3 display text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="mt-3 display text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         Proposals
       </h1>
       <p className="mt-2 text-sm text-[color:var(--ink-soft)]">
-        Issue proposals submitted to this repo&apos;s pod inbox. Accept one to
-        mint a <code className="kbd">.mind</code> issue at{" "}
-        <code className="kbd">todo</code>, or dismiss it.
+        Issue proposals submitted to this repo&apos;s pod inbox. Accept one to mint a{" "}
+        <code className="kbd">.mind</code> issue at <code className="kbd">todo</code>, or dismiss
+        it.
       </p>
 
       <RepoTabs owner={owner} name={name} active="proposals" />
 
       {!hasTracker ? (
         <section className="card mt-6 text-sm text-[color:var(--ink-soft)]">
-          No <code className="kbd">.mind</code> tracker in this repo yet —
-          proposals can be reviewed and dismissed, but{" "}
-          <strong>Accept</strong> needs{" "}
-          <code className="kbd">.mind/issues/tracker.config.md</code> on the
-          default branch.
+          No <code className="kbd">.mind</code> tracker in this repo yet — proposals can be reviewed
+          and dismissed, but <strong>Accept</strong> needs{" "}
+          <code className="kbd">.mind/issues/tracker.config.md</code> on the default branch.
         </section>
       ) : null}
 
@@ -83,10 +78,7 @@ export default async function ProposalsPage({ params }: PageProps) {
         </section>
       ) : proposals.length === 0 ? (
         <section className="card mt-6 text-sm text-[color:var(--ink-soft)]">
-          <p
-            className="display text-xl"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <p className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
             Inbox empty.
           </p>
           <p className="mt-2">

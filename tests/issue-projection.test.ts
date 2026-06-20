@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 
 /**
  * MC-160 C5: "the Registry index is rebuildable from the pod tracker
@@ -37,12 +37,8 @@ function trackerWith(issues: Array<Record<string, unknown>>) {
 describe("projectTrackerToRegistry (MC-160)", () => {
   it("projects tracker issues into the registry index by number, idempotently", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
-    const { projectTrackerToRegistry } = await import(
-      "@/lib/registry/issue-projection"
-    );
-    const { listIssues, getIssueByNumber } = await import(
-      "@/lib/registry/issues"
-    );
+    const { projectTrackerToRegistry } = await import("@/lib/registry/issue-projection");
+    const { listIssues, getIssueByNumber } = await import("@/lib/registry/issues");
 
     const repo = createRepo({
       owner: "alice",
@@ -103,12 +99,8 @@ describe("projectTrackerToRegistry (MC-160)", () => {
 
   it("leaves a coexisting flat issue.ttl row untouched (back-compat)", async () => {
     const { createRepo } = await import("@/lib/registry/repos");
-    const { createIssue, getIssueByNumber } = await import(
-      "@/lib/registry/issues"
-    );
-    const { projectTrackerToRegistry } = await import(
-      "@/lib/registry/issue-projection"
-    );
+    const { createIssue, getIssueByNumber } = await import("@/lib/registry/issues");
+    const { projectTrackerToRegistry } = await import("@/lib/registry/issue-projection");
 
     const repo = createRepo({
       owner: "alice",

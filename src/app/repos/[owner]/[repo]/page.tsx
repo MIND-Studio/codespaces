@@ -1,29 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo, getPagesConfig } from "@/lib/registry/repos";
-import { listPushTokens } from "@/lib/registry/tokens";
-import {
-  listRunsForRepo,
-  type WorkflowRun,
-} from "@/lib/registry/runs";
-import { isOrg } from "@/lib/registry/owners";
+import { CopyButton } from "@/components/copy-button";
+import { RelativeTime } from "@/components/relative-time";
+import { formatDuration } from "@/lib/format";
 import { repoPath } from "@/lib/git/backend";
 import {
+  type CommitSummary,
   findReadme,
   hasAnyCommits,
   listBranches,
   listRecentCommits,
   listTree,
-  type CommitSummary,
   type TreeEntry,
 } from "@/lib/git/objects";
 import { renderMarkdown } from "@/lib/markdown";
-import { RelativeTime } from "@/components/relative-time";
-import { CopyButton } from "@/components/copy-button";
-import { formatDuration } from "@/lib/format";
-import { TokenManager } from "./token-manager";
-import { RerunButton } from "./rerun-button";
+import { isOrg } from "@/lib/registry/owners";
+import { getPagesConfig, getRepo } from "@/lib/registry/repos";
+import { listRunsForRepo, type WorkflowRun } from "@/lib/registry/runs";
+import { listPushTokens } from "@/lib/registry/tokens";
 import { RepoTabs } from "./repo-tabs";
+import { RerunButton } from "./rerun-button";
+import { TokenManager } from "./token-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -54,13 +51,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
   // Fetch 7 so we can show the latest commit in the file-listing "ribbon"
   // AND still have up-to-6 distinct entries in the Recent commits section
   // below.
-  const recentCommits = hasCommits
-    ? await listRecentCommits(bare, repo.defaultBranch, 7)
-    : [];
+  const recentCommits = hasCommits ? await listRecentCommits(bare, repo.defaultBranch, 7) : [];
   const earlierCommits = recentCommits.slice(1);
-  const rootEntries = hasCommits
-    ? await listTree(bare, repo.defaultBranch, "")
-    : [];
+  const rootEntries = hasCommits ? await listTree(bare, repo.defaultBranch, "") : [];
   const latestCommit = recentCommits[0] ?? null;
 
   // Pull the 5 most recent runs: index 0 is the "latest build" panel,
@@ -148,16 +141,10 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
           <SidebarSection title="Owner">
             <SidebarFact label="WebID">
-              <SidebarUrl
-                href={repo.ownerWebId}
-                display={compact(repo.ownerWebId)}
-              />
+              <SidebarUrl href={repo.ownerWebId} display={compact(repo.ownerWebId)} />
             </SidebarFact>
             <SidebarFact label="Pod root">
-              <SidebarUrl
-                href={repo.ownerPodRoot}
-                display={compact(repo.ownerPodRoot)}
-              />
+              <SidebarUrl href={repo.ownerPodRoot} display={compact(repo.ownerPodRoot)} />
             </SidebarFact>
             <SidebarFact label="Metadata">
               <SidebarUrl
@@ -196,9 +183,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
                   className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]"
                   style={{ fontFamily: "var(--font-mono-src)" }}
                 >
-                  {pages?.enabled && pages.targetContainer
-                    ? "not published"
-                    : "off"}
+                  {pages?.enabled && pages.targetContainer ? "not published" : "off"}
                 </span>
               )
             }
@@ -218,18 +203,17 @@ export default async function RepoDetailPage({ params }: PageProps) {
                 </SidebarFact>
                 <SidebarFact label="Published">
                   <span className="text-[12px]">
-                    {pages.lastPublishedAt ? (
-                      <RelativeTime ts={pages.lastPublishedAt} />
-                    ) : (
-                      "never"
-                    )}
+                    {pages.lastPublishedAt ? <RelativeTime ts={pages.lastPublishedAt} /> : "never"}
                   </span>
                 </SidebarFact>
               </>
             ) : (
               <p className="text-[11px] text-[color:var(--ink-soft)]">
                 Not enabled. Configure with{" "}
-                <code className="kbd">PUT /api/repos/{repo.owner}/{repo.name}/pages</code>.
+                <code className="kbd">
+                  PUT /api/repos/{repo.owner}/{repo.name}/pages
+                </code>
+                .
               </p>
             )}
           </SidebarSection>
@@ -263,11 +247,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
                 </span>
               </summary>
               <div className="mt-3">
-                <TokenManager
-                  owner={repo.owner}
-                  repo={repo.name}
-                  initial={tokens}
-                />
+                <TokenManager owner={repo.owner} repo={repo.name} initial={tokens} />
               </div>
             </details>
           </SidebarSection>
@@ -277,11 +257,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
   );
 }
 
-function PublishStatusBanner({
-  pages,
-}: {
-  pages: ReturnType<typeof getPagesConfig> | null;
-}) {
+function PublishStatusBanner({ pages }: { pages: ReturnType<typeof getPagesConfig> | null }) {
   if (!pages || !pages.enabled) return null;
   if (pages.lastPublishStatus !== "failed" && pages.lastPublishStatus !== "needs-reauth") {
     return null;
@@ -306,12 +282,18 @@ function PublishStatusBanner({
         {action}
       </p>
       {pages.lastPublishError ? (
-        <p className="mt-1 break-all text-[color:var(--ink-soft)]" style={{ fontFamily: "var(--font-mono-src)" }}>
+        <p
+          className="mt-1 break-all text-[color:var(--ink-soft)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
           {pages.lastPublishError}
         </p>
       ) : null}
       {pages.lastPublishAttempt ? (
-        <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]" style={{ fontFamily: "var(--font-mono-src)" }}>
+        <p
+          className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
+          style={{ fontFamily: "var(--font-mono-src)" }}
+        >
           attempt · <RelativeTime ts={pages.lastPublishAttempt} />
         </p>
       ) : null}
@@ -409,7 +391,8 @@ function renderBuildStatus(run: WorkflowRun, owner: string, name: string) {
       : run.status === "running" || run.status === "queued"
         ? undefined
         : "bad";
-  const symbol = run.status === "success" ? "✓" : run.status === "failed" || run.status === "error" ? "✗" : "·";
+  const symbol =
+    run.status === "success" ? "✓" : run.status === "failed" || run.status === "error" ? "✗" : "·";
   const trailing =
     run.status === "success"
       ? formatDuration(run.startedAt, run.finishedAt)
@@ -436,16 +419,10 @@ function renderPagesStatus(
   publishedUrl: string | null,
 ) {
   if (!pages?.enabled || !pages.targetContainer) {
-    return (
-      <span className="text-[color:var(--ink-faint)]">pages off</span>
-    );
+    return <span className="text-[color:var(--ink-faint)]">pages off</span>;
   }
   if (!publishedUrl) {
-    return (
-      <span className="text-[color:var(--ink-faint)]">
-        pages on · not published
-      </span>
-    );
+    return <span className="text-[color:var(--ink-faint)]">pages on · not published</span>;
   }
   return (
     <>
@@ -459,22 +436,14 @@ function renderPagesStatus(
           rel="noreferrer"
           className="text-[color:var(--ink-faint)] hover:text-[color:var(--accent)]"
         >
-          {pages.lastPublishedAt ? (
-            <RelativeTime ts={pages.lastPublishedAt} />
-          ) : (
-            "open ↗"
-          )}
+          {pages.lastPublishedAt ? <RelativeTime ts={pages.lastPublishedAt} /> : "open ↗"}
         </a>
       ) : null}
     </>
   );
 }
 
-function renderRunsCount(
-  count: number,
-  owner: string,
-  name: string,
-) {
+function renderRunsCount(count: number, owner: string, name: string) {
   if (count === 0) return null;
   const display = count >= 50 ? "50+" : count.toString();
   return (
@@ -545,24 +514,18 @@ function EmptyReadme({
   if (hasCommits) {
     return (
       <section className="card text-sm text-[color:var(--ink-soft)]">
-        <p
-          className="display text-xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <p className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
           No README yet.
         </p>
         <p className="mt-2">
-          Add a <code className="kbd">README.md</code> to the default branch
-          and it&apos;ll render here.
+          Add a <code className="kbd">README.md</code> to the default branch and it&apos;ll render
+          here.
         </p>
       </section>
     );
   }
 
-  const tokenizedCloneUrl = cloneUrl.replace(
-    /^(https?:\/\/)/,
-    "$1USER:<TOKEN>@",
-  );
+  const tokenizedCloneUrl = cloneUrl.replace(/^(https?:\/\/)/, "$1USER:<TOKEN>@");
 
   const newRepo = `echo "# ${name}" >> README.md
 git init
@@ -579,10 +542,7 @@ git push -u origin ${defaultBranch}`;
   return (
     <section className="card space-y-6 text-sm text-[color:var(--ink-soft)]">
       <header>
-        <p
-          className="display text-xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <p className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
           Nothing pushed yet.
         </p>
         <ol className="mt-3 space-y-1 list-decimal list-inside">
@@ -591,37 +551,27 @@ git push -u origin ${defaultBranch}`;
             <em className="text-[color:var(--ink)]">Push tokens · Mint first token</em>.
           </li>
           <li>
-            Copy the token, then paste it where{" "}
-            <code className="kbd">&lt;TOKEN&gt;</code> appears below.
+            Copy the token, then paste it where <code className="kbd">&lt;TOKEN&gt;</code> appears
+            below.
           </li>
           <li>Run the commands in your terminal.</li>
         </ol>
         <p className="mt-3 text-xs text-[color:var(--ink-faint)]">
-          The token goes into your local <code className="kbd">.git/config</code>,
-          which is convenient and easy to revoke later (sidebar → Push tokens). If
-          you prefer your OS keychain instead, drop the{" "}
-          <code className="kbd">USER:&lt;TOKEN&gt;@</code> prefix and let git
-          prompt — but make sure your credential helper isn&apos;t holding a stale
-          credential for this host.
+          The token goes into your local <code className="kbd">.git/config</code>, which is
+          convenient and easy to revoke later (sidebar → Push tokens). If you prefer your OS
+          keychain instead, drop the <code className="kbd">USER:&lt;TOKEN&gt;@</code> prefix and let
+          git prompt — but make sure your credential helper isn&apos;t holding a stale credential
+          for this host.
         </p>
       </header>
 
       <FirstStepsBlock title="Create a new repository" snippet={newRepo} />
-      <FirstStepsBlock
-        title="Push an existing repository"
-        snippet={existingRepo}
-      />
+      <FirstStepsBlock title="Push an existing repository" snippet={existingRepo} />
     </section>
   );
 }
 
-function FirstStepsBlock({
-  title,
-  snippet,
-}: {
-  title: string;
-  snippet: string;
-}) {
+function FirstStepsBlock({ title, snippet }: { title: string; snippet: string }) {
   return (
     <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
       <div className="flex items-center justify-between gap-2 border-b border-[color:var(--ink-trace)] bg-[color:var(--paper-soft)] px-3 py-1.5">
@@ -698,11 +648,7 @@ function FileListing({
         <ul className="divide-y divide-[color:var(--ink-trace)]">
           {entries.map((entry) => (
             <li key={entry.sha + entry.name}>
-              <FileRow
-                owner={owner}
-                repoName={repoName}
-                entry={entry}
-              />
+              <FileRow owner={owner} repoName={repoName} entry={entry} />
             </li>
           ))}
         </ul>
@@ -834,9 +780,7 @@ function CommitRow({
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
       <span className="min-w-0 flex-1 truncate text-[color:var(--ink)]">
-        {commit.subject || (
-          <em className="text-[color:var(--ink-faint)]">(no subject)</em>
-        )}
+        {commit.subject || <em className="text-[color:var(--ink-faint)]">(no subject)</em>}
       </span>
       <span
         className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]"
@@ -945,10 +889,7 @@ function LatestBuildSection({
   return (
     <section>
       <div className="flex items-baseline justify-between gap-3">
-        <h2
-          className="display text-xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h2 className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
           Latest build
         </h2>
         <Link
@@ -960,11 +901,7 @@ function LatestBuildSection({
         </Link>
       </div>
       <div className="mt-3">
-        <LatestBuild
-          run={latestRun}
-          owner={owner}
-          repoName={repoName}
-        />
+        <LatestBuild run={latestRun} owner={owner} repoName={repoName} />
       </div>
       {previousRuns.length > 0 ? (
         <>
@@ -1015,14 +952,11 @@ function PreviousRunRow({
           {run.status}
         </span>
         {isBad && run.exitCode !== null ? (
-          <span className="text-[color:var(--ink-faint)]">
-            exit {run.exitCode}
-          </span>
+          <span className="text-[color:var(--ink-faint)]">exit {run.exitCode}</span>
         ) : null}
       </span>
       <span className="text-[color:var(--ink-faint)]">
-        <RelativeTime ts={run.startedAt} /> ·{" "}
-        {formatDuration(run.startedAt, run.finishedAt)}
+        <RelativeTime ts={run.startedAt} /> · {formatDuration(run.startedAt, run.finishedAt)}
       </span>
     </Link>
   );
@@ -1033,17 +967,13 @@ function NoBuildsHint() {
     <section>
       <hr className="hairline" />
       <p className="section-mark mt-6">// workflows</p>
-      <p
-        className="display mt-2 text-xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <p className="display mt-2 text-xl" style={{ fontFamily: "var(--font-display)" }}>
         Run code before you publish.
       </p>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[color:var(--ink-soft)]">
-        Add a <code className="kbd">.mind/workflow.yml</code> to the default
-        branch. On push, the bridge checks out your repo into a sandboxed{" "}
-        <code className="kbd">node:22-alpine</code> container, runs your{" "}
-        <code className="kbd">run:</code> steps, then publishes the result. See{" "}
+        Add a <code className="kbd">.mind/workflow.yml</code> to the default branch. On push, the
+        bridge checks out your repo into a sandboxed <code className="kbd">node:22-alpine</code>{" "}
+        container, runs your <code className="kbd">run:</code> steps, then publishes the result. See{" "}
         <Link href="/how-it-works" className="link">
           how it works
         </Link>{" "}
@@ -1103,9 +1033,7 @@ function LatestBuild({
         {run.errorMessage ? (
           <>
             <dt className="text-[color:var(--ink-faint)]">Error</dt>
-            <dd className="text-[color:var(--status-bad)]">
-              {run.errorMessage}
-            </dd>
+            <dd className="text-[color:var(--status-bad)]">{run.errorMessage}</dd>
           </>
         ) : null}
       </dl>
@@ -1158,13 +1086,7 @@ function SidebarSection({
   );
 }
 
-function SidebarFact({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function SidebarFact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-2.5 last:mb-0">
       <p
@@ -1178,13 +1100,7 @@ function SidebarFact({
   );
 }
 
-function SidebarUrl({
-  href,
-  display,
-}: {
-  href: string;
-  display?: string;
-}) {
+function SidebarUrl({ href, display }: { href: string; display?: string }) {
   const text = display ?? href;
   return (
     <a

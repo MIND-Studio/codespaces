@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
+import { CopyButton } from "@/components/copy-button";
+import { RelativeTime } from "@/components/relative-time";
+import { readSession } from "@/lib/auth/session";
+import { formatBytes } from "@/lib/format";
 import {
-  listPackages,
   isDigestRef,
+  listPackages,
   type PackageRecord,
   type PackageType,
 } from "@/lib/packages/store";
-import { readSession } from "@/lib/auth/session";
-import { RelativeTime } from "@/components/relative-time";
-import { CopyButton } from "@/components/copy-button";
-import { formatBytes } from "@/lib/format";
+import { getRepo } from "@/lib/registry/repos";
 import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -60,10 +60,7 @@ export default async function PackagesPage({ params }: PageProps) {
           ← {owner}/{name}
         </Link>
       </p>
-      <h1
-        className="display mt-3 text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         <em>Packages</em>
       </h1>
       {!locked && groups.length > 0 ? (
@@ -71,8 +68,7 @@ export default async function PackagesPage({ params }: PageProps) {
           className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          {groups.length} {groups.length === 1 ? "package" : "packages"} · bytes
-          live in the pod
+          {groups.length} {groups.length === 1 ? "package" : "packages"} · bytes live in the pod
         </p>
       ) : null}
 
@@ -90,12 +86,7 @@ export default async function PackagesPage({ params }: PageProps) {
               <ul className="mt-4 flex flex-col gap-2.5">
                 {section.items.map((g) => (
                   <li key={`${g.type}:${g.name}`}>
-                    <PackageCard
-                      group={g}
-                      owner={owner}
-                      name={name}
-                      bridgeBase={bridgeBase}
-                    />
+                    <PackageCard group={g} owner={owner} name={name} bridgeBase={bridgeBase} />
                   </li>
                 ))}
               </ul>
@@ -260,9 +251,9 @@ function PackagesEmptyState({ owner, name }: { owner: string; name: string }) {
         Nothing <em>published</em> yet.
       </h2>
       <p className="mt-4 max-w-xl leading-relaxed text-[color:var(--ink-soft)]">
-        Publish npm packages, container images, or generic files to this repo
-        and they show up here — the bytes are stored in the owner&apos;s pod,
-        addressed by digest. Auth reuses this repo&apos;s{" "}
+        Publish npm packages, container images, or generic files to this repo and they show up here
+        — the bytes are stored in the owner&apos;s pod, addressed by digest. Auth reuses this
+        repo&apos;s{" "}
         <Link href={`/repos/${owner}/${name}/settings#tokens`} className="link">
           push tokens
         </Link>

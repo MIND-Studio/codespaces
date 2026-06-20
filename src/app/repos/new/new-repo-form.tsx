@@ -1,17 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { authedFetch } from "@/lib/auth/csrf-client";
 import {
   Button,
   Input,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@mind-studio/ui";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { authedFetch } from "@/lib/auth/csrf-client";
 
 type Props = {
   owner: string;
@@ -65,10 +65,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
         >
           Owner
         </p>
-        <p
-          className="mt-1 text-[color:var(--ink)]"
-          style={{ fontFamily: "var(--font-mono-src)" }}
-        >
+        <p className="mt-1 text-[color:var(--ink)]" style={{ fontFamily: "var(--font-mono-src)" }}>
           {owner}
         </p>
         <p
@@ -120,8 +117,8 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           className="text-[11px] text-[color:var(--ink-faint)]"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          Letters, digits, <code>.</code> <code>_</code> <code>-</code> · must start
-          with a letter or digit · max 64 chars
+          Letters, digits, <code>.</code> <code>_</code> <code>-</code> · must start with a letter
+          or digit · max 64 chars
         </span>
       </label>
 
@@ -135,9 +132,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           </span>
           <Select
             value={visibility}
-            onValueChange={(value) =>
-              setVisibility(value as "public" | "private")
-            }
+            onValueChange={(value) => setVisibility(value as "public" | "private")}
             disabled={submitting}
           >
             <SelectTrigger style={{ fontFamily: "var(--font-mono-src)" }}>
@@ -145,9 +140,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
             </SelectTrigger>
             <SelectContent style={{ fontFamily: "var(--font-mono-src)" }}>
               <SelectItem value="public">public</SelectItem>
-              <SelectItem value="private">
-                private (push token also required to clone)
-              </SelectItem>
+              <SelectItem value="private">private (push token also required to clone)</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -178,8 +171,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
           style={{
             borderColor: "var(--status-bad)",
             color: "var(--status-bad)",
-            background:
-              "color-mix(in srgb, var(--status-bad) 8%, transparent)",
+            background: "color-mix(in srgb, var(--status-bad) 8%, transparent)",
           }}
         >
           {error}
@@ -187,10 +179,7 @@ export function NewRepoForm({ owner, ownerWebId, ownerPodRoot }: Props) {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-4 pt-1">
-        <Button
-          type="submit"
-          disabled={submitting || name.trim().length === 0}
-        >
+        <Button type="submit" disabled={submitting || name.trim().length === 0}>
           {submitting ? "Creating…" : "Create repo"}
         </Button>
         <p

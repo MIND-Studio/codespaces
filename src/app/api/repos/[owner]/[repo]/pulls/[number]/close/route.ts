@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getRepo, RegistryError } from "@/lib/registry/repos";
-import { getPullRequest, closePullRequest } from "@/lib/registry/pulls";
 import { requireOwner } from "@/lib/auth/session";
 import { deletePreview } from "@/lib/pages/preview";
+import { closePullRequest, getPullRequest } from "@/lib/registry/pulls";
+import { getRepo, RegistryError } from "@/lib/registry/repos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

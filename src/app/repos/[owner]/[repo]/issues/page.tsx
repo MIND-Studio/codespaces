@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RelativeTime } from "@/components/relative-time";
 import { getRepo } from "@/lib/registry/repos";
+import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
 import { groupByEpic } from "@/lib/tracker/read";
 import { readRepoTracker } from "@/lib/tracker/source";
-import type { Tracker, TrackerIssue } from "@/lib/tracker/read";
-import { RelativeTime } from "@/components/relative-time";
 import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +17,7 @@ type PageProps = {
   searchParams: Promise<{ status?: string }>;
 };
 
-export default async function IssuesListPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function IssuesListPage({ params, searchParams }: PageProps) {
   const { owner, repo: name } = await params;
   const { status: statusParam } = await searchParams;
   const repo = getRepo(owner, name);
@@ -39,16 +36,11 @@ export default async function IssuesListPage({
         </Link>
       </p>
       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-4">
-        <h1
-          className="display text-3xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h1 className="display text-3xl" style={{ fontFamily: "var(--font-display)" }}>
           Issues
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          {repo.proposalsEnabled ? (
-            <ProposeLink owner={owner} repo={name} />
-          ) : null}
+          {repo.proposalsEnabled ? <ProposeLink owner={owner} repo={name} /> : null}
           {tracker !== null ? <NewIssueLink owner={owner} repo={name} /> : null}
         </div>
       </div>
@@ -124,8 +116,7 @@ function TrackerBoard({
       ) : (
         <div className="mt-6 space-y-6">
           {groups.map((group) => {
-            const key =
-              group.kind === "epic" ? `epic:${group.epic.slug}` : "general";
+            const key = group.kind === "epic" ? `epic:${group.epic.slug}` : "general";
             return (
               <details key={key} className="group" open>
                 <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
@@ -155,11 +146,7 @@ function TrackerBoard({
                     {group.issues.map((issue, i) => (
                       <li
                         key={issue.id}
-                        className={
-                          i > 0
-                            ? "border-t border-[color:var(--ink-trace)]"
-                            : undefined
-                        }
+                        className={i > 0 ? "border-t border-[color:var(--ink-trace)]" : undefined}
                       >
                         <IssueRow owner={owner} repo={repo} issue={issue} />
                       </li>
@@ -188,20 +175,14 @@ function EpicHeader({
 }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h2
-        className="display text-xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-xl" style={{ fontFamily: "var(--font-display)" }}>
         {number !== undefined ? (
           <span className="text-[color:var(--ink-faint)]">Epic {number} · </span>
         ) : null}
         {title}
       </h2>
       {epicStatus ? (
-        <span
-          className="stamp"
-          data-tone={epicStatus === "done" ? "ok" : undefined}
-        >
+        <span className="stamp" data-tone={epicStatus === "done" ? "ok" : undefined}>
           {epicStatus}
         </span>
       ) : null}
@@ -273,32 +254,20 @@ function FilterBar({
   );
 }
 
-function IssueRow({
-  owner,
-  repo,
-  issue,
-}: {
-  owner: string;
-  repo: string;
-  issue: TrackerIssue;
-}) {
+function IssueRow({ owner, repo, issue }: { owner: string; repo: string; issue: TrackerIssue }) {
   const isBlocked = issue.stateId === "Blocked" || issue.blockedBy.length > 0;
   const excerpt = makeExcerpt(issue.description ?? "");
   const modifiedTs = issue.modified ? Date.parse(issue.modified) : NaN;
   // The fold emits day-resolution xsd:date values; rendering those as a
   // relative time reads as "21h ago" for an issue minted a minute ago.
   const modifiedDateOnly =
-    issue.modified && /^\d{4}-\d{2}-\d{2}$/.test(issue.modified)
-      ? issue.modified
-      : null;
+    issue.modified && /^\d{4}-\d{2}-\d{2}$/.test(issue.modified) ? issue.modified : null;
   return (
     <Link
       href={`/repos/${owner}/${repo}/issues/${issue.number}`}
       className="block px-3 py-4 hover:bg-[color:var(--paper-soft)]"
       style={{
-        borderLeft: isBlocked
-          ? "2px solid var(--accent)"
-          : "2px solid transparent",
+        borderLeft: isBlocked ? "2px solid var(--accent)" : "2px solid transparent",
       }}
     >
       <div className="flex items-start gap-4">
@@ -328,9 +297,7 @@ function IssueRow({
                 updated <RelativeTime ts={modifiedTs} />
               </span>
             ) : null}
-            {issue.blocks.length > 0 ? (
-              <span>blocks {issue.blocks.length}</span>
-            ) : null}
+            {issue.blocks.length > 0 ? <span>blocks {issue.blocks.length}</span> : null}
             {issue.blockedBy.length > 0 ? (
               <span style={{ color: "var(--accent-deep)" }}>
                 blocked by {issue.blockedBy.length}
@@ -340,8 +307,7 @@ function IssueRow({
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-medium leading-snug text-[color:var(--ink)]">
-            <span className="text-[color:var(--ink-faint)]">#{issue.number}</span>{" "}
-            {issue.title}
+            <span className="text-[color:var(--ink-faint)]">#{issue.number}</span> {issue.title}
           </h3>
           {excerpt ? (
             <p
@@ -420,12 +386,12 @@ function NoTrackerState() {
         No <code className="kbd">.mind</code> tracker in this repo.
       </p>
       <p className="mt-2">
-        This dashboard renders the repo&apos;s <code className="kbd">.mind</code>{" "}
-        tracker straight from the pushed git history. Author issues as markdown
-        folders under <code className="kbd">.mind/issues/</code>, run{" "}
+        This dashboard renders the repo&apos;s <code className="kbd">.mind</code> tracker straight
+        from the pushed git history. Author issues as markdown folders under{" "}
+        <code className="kbd">.mind/issues/</code>, run{" "}
         <code className="kbd">npm run tracker:build</code>, and push{" "}
-        <code className="kbd">.mind/build/&#123;tracker,epics,state&#125;.ttl</code>{" "}
-        — they&apos;ll appear here, grouped by epic.
+        <code className="kbd">.mind/build/&#123;tracker,epics,state&#125;.ttl</code> — they&apos;ll
+        appear here, grouped by epic.
       </p>
     </section>
   );

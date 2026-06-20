@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
-import {
-  upsertPackageVersion,
-  getPackageVersion,
-  validatePackageName,
-  validateVersion,
-  PackageError,
-} from "@/lib/packages/store";
+import { requireOwner } from "@/lib/auth/session";
 import { authenticatePackagePush } from "@/lib/packages/auth";
 import { getRepoContentStore } from "@/lib/packages/repo-store";
-import { assertCanStorePackage, QuotaExceededError } from "@/lib/registry/quotas";
-import { requireOwner } from "@/lib/auth/session";
-import { mimeForPath } from "@/lib/pages/mime";
 import {
-  OwnerFetchUnavailableError,
-} from "@/lib/solid/fetch-for-owner";
+  getPackageVersion,
+  PackageError,
+  upsertPackageVersion,
+  validatePackageName,
+  validateVersion,
+} from "@/lib/packages/store";
+import { mimeForPath } from "@/lib/pages/mime";
+import { assertCanStorePackage, QuotaExceededError } from "@/lib/registry/quotas";
+import { getRepo } from "@/lib/registry/repos";
+import { OwnerFetchUnavailableError } from "@/lib/solid/fetch-for-owner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,10 +76,7 @@ export async function PUT(req: Request, { params }: Params) {
     storeHandle = await getRepoContentStore(repo, "write");
   } catch (e) {
     if (e instanceof OwnerFetchUnavailableError) {
-      return NextResponse.json(
-        { error: e.message, code: "OWNER_UNAVAILABLE" },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: e.message, code: "OWNER_UNAVAILABLE" }, { status: 503 });
     }
     throw e;
   }
@@ -89,8 +84,7 @@ export async function PUT(req: Request, { params }: Params) {
   try {
     const blob = await store.save(bytes);
     const contentType =
-      req.headers.get("content-type")?.split(";")[0]?.trim() ||
-      mimeForPath(filename);
+      req.headers.get("content-type")?.split(";")[0]?.trim() || mimeForPath(filename);
     upsertPackageVersion({
       repoId: repo.id,
       type: "file",
@@ -107,10 +101,7 @@ export async function PUT(req: Request, { params }: Params) {
     );
   } catch (e) {
     if (e instanceof OwnerFetchUnavailableError) {
-      return NextResponse.json(
-        { error: e.message, code: "OWNER_UNAVAILABLE" },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: e.message, code: "OWNER_UNAVAILABLE" }, { status: 503 });
     }
     throw e;
   } finally {
@@ -162,16 +153,13 @@ export async function GET(req: Request, { params }: Params) {
 }
 
 function unauthorized(owner: string, name: string): NextResponse {
-  return new NextResponse(
-    JSON.stringify({ error: "missing or invalid push token" }),
-    {
-      status: 401,
-      headers: {
-        "Content-Type": "application/json",
-        "WWW-Authenticate": `Basic realm="${owner}/${name}"`,
-      },
+  return new NextResponse(JSON.stringify({ error: "missing or invalid push token" }), {
+    status: 401,
+    headers: {
+      "Content-Type": "application/json",
+      "WWW-Authenticate": `Basic realm="${owner}/${name}"`,
     },
-  );
+  });
 }
 
 function quota(e: QuotaExceededError): NextResponse {

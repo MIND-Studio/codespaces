@@ -1,7 +1,7 @@
 import "server-only";
+import { PodContentStore } from "@/lib/packages/content-store";
 import type { Repo } from "@/lib/registry/repos";
 import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
-import { PodContentStore } from "@/lib/packages/content-store";
 
 /**
  * Build a `PodContentStore` for a repo's owner.

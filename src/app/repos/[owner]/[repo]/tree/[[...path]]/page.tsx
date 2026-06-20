@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import {
-  hasAnyCommits,
-  listBranches,
-  listTree,
-  type TreeEntry,
-} from "@/lib/git/objects";
 import { BranchPicker } from "@/components/branch-picker";
+import { repoPath } from "@/lib/git/backend";
+import { hasAnyCommits, listBranches, listTree, type TreeEntry } from "@/lib/git/objects";
+import { getRepo } from "@/lib/registry/repos";
 import { RepoTabs } from "../../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -45,8 +40,8 @@ export default async function TreePage({ params, searchParams }: PageProps) {
       >
         <div className="card">
           <p>
-            This repo has no commits yet. Push something to{" "}
-            <code className="kbd">{ref}</code> and refresh.
+            This repo has no commits yet. Push something to <code className="kbd">{ref}</code> and
+            refresh.
           </p>
         </div>
       </PageShell>
@@ -136,9 +131,7 @@ function TreeListing({
               className="text-[color:var(--ink-faint)] text-[11px]"
               style={{ fontFamily: "var(--font-mono-src)" }}
             >
-              {entry.type === "blob" && entry.size !== null
-                ? formatBytes(entry.size)
-                : ""}
+              {entry.type === "blob" && entry.size !== null ? formatBytes(entry.size) : ""}
             </span>
           </Link>
         </li>
@@ -174,19 +167,12 @@ function PageShell({
         </Link>
       </p>
 
-      <h1
-        className="display mt-3 text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         Source
       </h1>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         {branches.length > 1 ? (
-          <BranchPicker
-            branches={branches}
-            current={branch}
-            defaultBranch={defaultBranch}
-          />
+          <BranchPicker branches={branches} current={branch} defaultBranch={defaultBranch} />
         ) : (
           <p
             className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]"
@@ -267,11 +253,7 @@ export function Breadcrumbs({
  * case git itself will validate it via ls-tree. Anything else falls back
  * to the default branch so a stale URL doesn't 404 the whole page.
  */
-function pickRef(
-  requested: string | undefined,
-  branches: string[],
-  defaultBranch: string,
-): string {
+function pickRef(requested: string | undefined, branches: string[], defaultBranch: string): string {
   if (!requested) return defaultBranch;
   if (branches.includes(requested)) return requested;
   if (/^[0-9a-f]{7,40}$/i.test(requested)) return requested;

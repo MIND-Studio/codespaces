@@ -29,10 +29,9 @@ export function AgentRunCard({ run: initial }: { run: AgentRun }) {
 
     async function tick() {
       try {
-        const res = await fetch(
-          `/api/agent-runs/${run.id}/log?since=${sinceRef.current}`,
-          { cache: "no-store" },
-        );
+        const res = await fetch(`/api/agent-runs/${run.id}/log?since=${sinceRef.current}`, {
+          cache: "no-store",
+        });
         if (!res.ok) return;
         const body = (await res.json()) as {
           content: string;
@@ -75,12 +74,7 @@ export function AgentRunCard({ run: initial }: { run: AgentRun }) {
     }
   }, [log]);
 
-  const tone =
-    run.status === "ok"
-      ? "ok"
-      : run.status === "running"
-        ? undefined
-        : "bad";
+  const tone = run.status === "ok" ? "ok" : run.status === "running" ? undefined : "bad";
 
   return (
     <div className="overflow-hidden rounded border border-[color:var(--ink-trace)]">
@@ -105,12 +99,7 @@ export function AgentRunCard({ run: initial }: { run: AgentRun }) {
       </div>
       <div className="bg-[color:var(--paper)] px-5 py-4">
         {run.status === "running" ? (
-          <LiveLog
-            log={log}
-            logAvailable={logAvailable}
-            logSize={logSize}
-            refEl={logRef}
-          />
+          <LiveLog log={log} logAvailable={logAvailable} logSize={logSize} refEl={logRef} />
         ) : run.errorMessage ? (
           <p className="text-sm text-[color:var(--status-bad)]">
             <strong>error:</strong> {run.errorMessage}
@@ -180,7 +169,12 @@ function LiveLog({
               boxShadow: "0 0 8px color-mix(in srgb, var(--accent) 80%, transparent)",
             }}
           />
-          <span style={{ color: "var(--accent)", textShadow: "0 0 6px color-mix(in srgb, var(--accent) 55%, transparent)" }}>
+          <span
+            style={{
+              color: "var(--accent)",
+              textShadow: "0 0 6px color-mix(in srgb, var(--accent) 55%, transparent)",
+            }}
+          >
             coder
           </span>
         </span>
@@ -190,7 +184,8 @@ function LiveLog({
               className="mc-term-live-dot inline-block h-1.5 w-1.5 rounded-full"
               style={{
                 background: "var(--accent)",
-                boxShadow: "0 0 8px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent)",
+                boxShadow:
+                  "0 0 8px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent)",
               }}
             />
             <span style={{ color: "var(--accent)" }}>live</span>
@@ -198,9 +193,7 @@ function LiveLog({
           <span style={{ color: "rgba(255, 255, 255, 0.18)" }}>·</span>
           <span title={`${lineCount} lines`}>{lineCount.toLocaleString()} ln</span>
           <span style={{ color: "rgba(255, 255, 255, 0.18)" }}>·</span>
-          <span title={`${logSize.toLocaleString()} bytes`}>
-            {formatBytes(logSize)}
-          </span>
+          <span title={`${logSize.toLocaleString()} bytes`}>{formatBytes(logSize)}</span>
         </span>
       </div>
       <pre
@@ -229,8 +222,7 @@ function LiveLog({
         aria-hidden
         className="mc-term-progress absolute bottom-0 left-0 h-[1px]"
         style={{
-          background:
-            "linear-gradient(90deg, transparent, var(--accent), transparent)",
+          background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
           boxShadow: "0 0 6px var(--accent)",
         }}
       />
@@ -340,9 +332,7 @@ function CompletedSummary({ summary }: { summary: string }) {
   return (
     <div className="space-y-3 text-sm">
       {parsed.headline ? (
-        <p className="text-[color:var(--ink)] leading-relaxed">
-          {parsed.headline}
-        </p>
+        <p className="text-[color:var(--ink)] leading-relaxed">{parsed.headline}</p>
       ) : null}
 
       {parsed.files.length > 0 ? (
@@ -372,7 +362,9 @@ function CompletedSummary({ summary }: { summary: string }) {
             style={{ fontFamily: "var(--font-mono-src)" }}
           >
             <span className="flex items-center gap-2">
-              <span aria-hidden className="inline-block transition-transform group-open:rotate-90">›</span>
+              <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
+                ›
+              </span>
               opencode output
             </span>
             <span className="text-[color:var(--ink-faint)]">
@@ -383,8 +375,7 @@ function CompletedSummary({ summary }: { summary: string }) {
             className="mc-terminal relative border-t border-[color:var(--ink-trace)]"
             style={{
               background: "#06080a",
-              boxShadow:
-                "0 0 18px color-mix(in srgb, var(--accent) 10%, transparent) inset",
+              boxShadow: "0 0 18px color-mix(in srgb, var(--accent) 10%, transparent) inset",
             }}
           >
             <pre

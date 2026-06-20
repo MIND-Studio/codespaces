@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listIdentities, type Identity } from "@/lib/registry/identities";
+import { type Identity, listIdentities } from "@/lib/registry/identities";
 import { listRepos, type Repo } from "@/lib/registry/repos";
 import { IdentityRow } from "./identity-row";
 
@@ -38,9 +38,8 @@ export default function IdentitiesPage() {
         ) : null}
       </div>
       <p className="mt-4 text-[color:var(--ink-soft)]">
-        WebIDs that have authorized this bridge. Their refresh tokens live
-        in <code className="kbd">.registry-data/</code> — disconnect to
-        revoke.
+        WebIDs that have authorized this bridge. Their refresh tokens live in{" "}
+        <code className="kbd">.registry-data/</code> — disconnect to revoke.
       </p>
 
       <hr className="hairline my-8" />
@@ -77,17 +76,13 @@ function EmptyState() {
       >
         // no identities connected
       </p>
-      <p
-        className="display mt-3 text-2xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <p className="display mt-3 text-2xl" style={{ fontFamily: "var(--font-display)" }}>
         Running on <em>seeded credentials</em>.
       </p>
       <p className="mt-3 text-[color:var(--ink-soft)]">
-        The publisher is signing writes with a shared dev account
-        (<code className="kbd">alice@mind.local</code>). Authorize
-        a real pod to swap in a delegated refresh token — repos owned by
-        that WebID will publish under your own identity.
+        The publisher is signing writes with a shared dev account (
+        <code className="kbd">alice@mind.local</code>). Authorize a real pod to swap in a delegated
+        refresh token — repos owned by that WebID will publish under your own identity.
       </p>
       <div className="mt-5">
         <Link

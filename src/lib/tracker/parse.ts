@@ -1,8 +1,8 @@
 import { Parser, type Quad, type Term } from "n3";
 import {
-  localName,
   type IssueCategory,
   type IssueState,
+  localName,
   type Tracker,
   type TrackerEpic,
   type TrackerIssue,
@@ -192,12 +192,8 @@ export function parseTrackerTrio(
   idx.add(parseDoc(ttl.state, baseRoot + "state.ttl"));
 
   const trackerIri = idx.subjects().find((s) => idx.hasType(s, FLOW_TRACKER));
-  const issueClassIri = trackerIri
-    ? idx.iri(trackerIri, FLOW_ISSUE_CLASS)
-    : undefined;
-  const categoryClassIri = trackerIri
-    ? idx.iri(trackerIri, FLOW_ISSUE_CATEGORY)
-    : undefined;
+  const issueClassIri = trackerIri ? idx.iri(trackerIri, FLOW_ISSUE_CLASS) : undefined;
+  const categoryClassIri = trackerIri ? idx.iri(trackerIri, FLOW_ISSUE_CATEGORY) : undefined;
 
   const states = parseStates(idx, issueClassIri);
   const categories = parseCategories(idx, categoryClassIri);
@@ -246,31 +242,33 @@ function parseCategories(idx: Index, categoryClassIri?: string): IssueCategory[]
   return idx
     .subjects()
     .filter(
-      (s) =>
-        s !== categoryClassIri &&
-        idx.iris(s, RDFS_SUBCLASSOF).includes(categoryClassIri),
+      (s) => s !== categoryClassIri && idx.iris(s, RDFS_SUBCLASSOF).includes(categoryClassIri),
     )
-    .map((s): IssueCategory => ({
-      id: localName(s),
-      classIri: s,
-      label: idx.str(s, RDFS_LABEL) ?? localName(s),
-    }));
+    .map(
+      (s): IssueCategory => ({
+        id: localName(s),
+        classIri: s,
+        label: idx.str(s, RDFS_LABEL) ?? localName(s),
+      }),
+    );
 }
 
 function parseEpics(idx: Index, mc: McVocab): TrackerEpic[] {
   return idx
     .subjects()
     .filter((s) => idx.hasType(s, mc.epicClass))
-    .map((s): TrackerEpic => ({
-      slug: localName(s),
-      iri: s,
-      number: idx.int(s, mc.number),
-      title: idx.strAny(s, DCT_TITLE, RDFS_LABEL) ?? localName(s),
-      status: idx.str(s, mc.status),
-      issueCount: idx.int(s, mc.issueCount),
-      description: idx.str(s, DCT_DESCRIPTION),
-      created: idx.str(s, DCT_CREATED),
-    }))
+    .map(
+      (s): TrackerEpic => ({
+        slug: localName(s),
+        iri: s,
+        number: idx.int(s, mc.number),
+        title: idx.strAny(s, DCT_TITLE, RDFS_LABEL) ?? localName(s),
+        status: idx.str(s, mc.status),
+        issueCount: idx.int(s, mc.issueCount),
+        description: idx.str(s, DCT_DESCRIPTION),
+        created: idx.str(s, DCT_CREATED),
+      }),
+    )
     .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
 }
 
@@ -286,9 +284,7 @@ function parseIssues(
   // "has a known state type" for trackers that omit the back-link.
   let subjects = idx.subjects().filter((s) => idx.iri(s, WF_TRACKER));
   if (subjects.length === 0) {
-    subjects = idx
-      .subjects()
-      .filter((s) => idx.iris(s, RDF_TYPE).some((t) => stateIris.has(t)));
+    subjects = idx.subjects().filter((s) => idx.iris(s, RDF_TYPE).some((t) => stateIris.has(t)));
   }
   return subjects
     .map((s): TrackerIssue => {

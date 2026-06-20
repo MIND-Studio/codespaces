@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
 import { repoPath } from "@/lib/git/backend";
+import { getRepo } from "@/lib/registry/repos";
 import { readGitTracker } from "@/lib/tracker/read";
 import { RepoTabs } from "../../repo-tabs";
 import { NewIssueForm } from "./new-issue-form";
@@ -32,22 +32,14 @@ export default async function NewIssuePage({ params }: PageProps) {
           ← issues
         </Link>
       </p>
-      <h1
-        className="mt-3 display text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="mt-3 display text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         New issue
       </h1>
 
       <RepoTabs owner={owner} name={name} active="issues" />
 
       <div className="mt-6">
-        <NewIssueForm
-          owner={owner}
-          repo={name}
-          categories={categories}
-          epics={epics}
-        />
+        <NewIssueForm owner={owner} repo={name} categories={categories} epics={epics} />
       </div>
     </div>
   );

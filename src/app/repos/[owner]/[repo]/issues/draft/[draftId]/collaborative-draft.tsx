@@ -1,39 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Markdown } from "tiptap-markdown";
 import {
   Button,
   Input,
-  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Tabs,
   TabsList,
   TabsTrigger,
+  Textarea,
   ToggleGroup,
   ToggleGroupItem,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
 } from "@mind-studio/ui";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import Placeholder from "@tiptap/extension-placeholder";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import { type Editor, EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Markdown } from "tiptap-markdown";
 import { authedFetch } from "@/lib/auth/csrf-client";
+import { colorForClient, draftRoomName } from "@/lib/collab/config";
 import {
   createDraftDoc,
-  readDraftMeta,
   type DraftDoc,
   type DraftMeta,
+  readDraftMeta,
 } from "@/lib/collab/draft-doc";
-import { colorForClient, draftRoomName } from "@/lib/collab/config";
 import { suggestKind } from "@/lib/collab/suggest-kind";
 
 export type CategoryOption = { id: string; label: string };
@@ -60,10 +60,7 @@ const PRIORITIES = ["urgent", "high", "normal", "low"];
  */
 export function CollaborativeDraft(props: CollaborativeDraftProps) {
   const { owner, repo, draftId, collab } = props;
-  const roomName = useMemo(
-    () => draftRoomName(owner, repo, draftId),
-    [owner, repo, draftId],
-  );
+  const roomName = useMemo(() => draftRoomName(owner, repo, draftId), [owner, repo, draftId]);
   const [draft, setDraft] = useState<DraftDoc | null>(null);
 
   useEffect(() => {
@@ -231,8 +228,7 @@ function DraftEditor({
     setSubmitting(true);
     const current = readDraftMeta(draft.meta);
     const title = current.title.trim();
-    const body =
-      view === "markdown" ? mdDraft : editor.storage.markdown.getMarkdown();
+    const body = view === "markdown" ? mdDraft : editor.storage.markdown.getMarkdown();
     try {
       let dest: string;
       if (current.kind === "epic") {
@@ -276,8 +272,7 @@ function DraftEditor({
     }
   }
 
-  const labelClass =
-    "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
+  const labelClass = "text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]";
   const mono = { fontFamily: "var(--font-mono-src)" };
   const isEpic = meta.kind === "epic";
   const canCreate = isOwner && meta.title.trim().length > 0 && !submitting;
@@ -450,8 +445,8 @@ function DraftEditor({
         </div>
       ) : (
         <p className="text-xs text-[color:var(--ink-soft)]">
-          An epic is a goal that groups issues — it just needs a title and a goal
-          narrative below. Add issues to it afterwards.
+          An epic is a goal that groups issues — it just needs a title and a goal narrative below.
+          Add issues to it afterwards.
         </p>
       )}
 
@@ -511,11 +506,7 @@ function DraftEditor({
 
       <div className="flex flex-wrap items-center gap-4 pt-1">
         <Button type="button" onClick={onCreate} disabled={!canCreate}>
-          {submitting
-            ? "Creating…"
-            : isEpic
-              ? "Create epic"
-              : "Create issue"}
+          {submitting ? "Creating…" : isEpic ? "Create epic" : "Create issue"}
         </Button>
         {!isOwner ? (
           <p className={labelClass} style={mono}>
@@ -523,13 +514,11 @@ function DraftEditor({
           </p>
         ) : (
           <p className={labelClass} style={mono}>
-            commits a <code>.mind</code> {isEpic ? "epic" : "issue"} · folded &amp; pushed to the repo
+            commits a <code>.mind</code> {isEpic ? "epic" : "issue"} · folded &amp; pushed to the
+            repo
           </p>
         )}
-        <Link
-          href={`/repos/${owner}/${repo}/issues`}
-          className="link text-sm"
-        >
+        <Link href={`/repos/${owner}/${repo}/issues`} className="link text-sm">
           cancel
         </Link>
       </div>
@@ -565,9 +554,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
       style={{
         fontFamily: "var(--font-mono-src)",
         color: active ? "var(--accent-deep)" : "var(--ink-soft)",
-        background: active
-          ? "color-mix(in srgb, var(--accent) 16%, transparent)"
-          : "transparent",
+        background: active ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "transparent",
         ...style,
       }}
     >
@@ -575,9 +562,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
     </button>
   );
 
-  const Sep = () => (
-    <span aria-hidden className="mx-1 h-4 w-px bg-[color:var(--ink-trace)]" />
-  );
+  const Sep = () => <span aria-hidden className="mx-1 h-4 w-px bg-[color:var(--ink-trace)]" />;
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-[color:var(--ink-trace)] px-2 py-1.5">

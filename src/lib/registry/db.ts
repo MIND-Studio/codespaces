@@ -1,16 +1,12 @@
 import "server-only";
-import Database from "better-sqlite3";
-import { readdirSync, readFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import Database from "better-sqlite3";
 
-const DATA_DIR =
-  process.env.REGISTRY_DATA_DIR ?? join(process.cwd(), ".registry-data");
+const DATA_DIR = process.env.REGISTRY_DATA_DIR ?? join(process.cwd(), ".registry-data");
 const DB_PATH = join(DATA_DIR, "registry.db");
-const MIGRATIONS_DIR = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "migrations",
-);
+const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "migrations");
 
 const GLOBAL_KEY = "__mc_registry_db__";
 
@@ -73,9 +69,7 @@ function runMigrations(db: Database.Database) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf-8");
     const tx = db.transaction(() => {
       db.exec(sql);
-      db.prepare(
-        "INSERT INTO _migration (name, applied_at) VALUES (?, ?)",
-      ).run(file, Date.now());
+      db.prepare("INSERT INTO _migration (name, applied_at) VALUES (?, ?)").run(file, Date.now());
     });
     tx();
     console.log(`[registry] applied migration ${file}`);

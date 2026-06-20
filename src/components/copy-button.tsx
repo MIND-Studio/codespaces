@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@mind-studio/ui";
+import { useState } from "react";
 
 /**
  * One-shot clipboard copy with a short success indicator. Falls back

@@ -1,8 +1,8 @@
 "use client";
 
+import { Button, Input } from "@mind-studio/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Input } from "@mind-studio/ui";
 import { authedFetch } from "@/lib/auth/csrf-client";
 
 // -----------------------------------------------------------------------
@@ -69,10 +69,7 @@ export function GeneralForm({
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="flex max-w-2xl flex-col gap-5 text-sm"
-    >
+    <form onSubmit={submit} className="flex max-w-2xl flex-col gap-5 text-sm">
       <Field
         label="Visibility"
         hint="Private repos require a token to clone. Public repos still require a token to push."
@@ -152,13 +149,7 @@ export function GeneralForm({
         </label>
       </Field>
 
-      <FormFooter
-        busy={busy}
-        dirty={dirty}
-        saved={saved}
-        error={error}
-        label="Save general"
-      />
+      <FormFooter busy={busy} dirty={dirty} saved={saved} error={error} label="Save general" />
     </form>
   );
 }
@@ -248,10 +239,7 @@ export function PagesForm({
         </label>
       </Field>
 
-      <Field
-        label="Source branch"
-        hint="Pushes to other branches are stored but not published."
-      >
+      <Field label="Source branch" hint="Pushes to other branches are stored but not published.">
         <Input
           type="text"
           value={sourceBranch}
@@ -292,13 +280,7 @@ export function PagesForm({
         />
       </Field>
 
-      <FormFooter
-        busy={busy}
-        dirty={dirty}
-        saved={saved}
-        error={error}
-        label="Save pages config"
-      />
+      <FormFooter busy={busy} dirty={dirty} saved={saved} error={error} label="Save pages config" />
     </form>
   );
 }
@@ -352,10 +334,9 @@ export function DangerZone({ owner, name }: { owner: string; name: string }) {
         Delete this repository
       </h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[color:var(--ink-soft)]">
-        Drops the registry rows (repo, pages config, tokens, runs, issues,
-        pulls, agent runs) and removes the bare git repo from disk. The
-        published site already on the pod is <strong>not</strong> deleted —
-        you own that container. Cannot be undone.
+        Drops the registry rows (repo, pages config, tokens, runs, issues, pulls, agent runs) and
+        removes the bare git repo from disk. The published site already on the pod is{" "}
+        <strong>not</strong> deleted — you own that container. Cannot be undone.
       </p>
       <p className="mt-4 text-sm text-[color:var(--ink-soft)]">
         Type <code className="kbd">{expected}</code> to confirm:
@@ -382,9 +363,7 @@ export function DangerZone({ owner, name }: { owner: string; name: string }) {
           <span>{busy ? "dropping…" : "Delete repository"}</span>
         </Button>
       </div>
-      {error ? (
-        <p className="mt-3 text-[color:var(--status-bad)]">{error}</p>
-      ) : null}
+      {error ? <p className="mt-3 text-[color:var(--status-bad)]">{error}</p> : null}
     </div>
   );
 }
@@ -412,9 +391,7 @@ function Field({
       </p>
       {children}
       {hint ? (
-        <p className="text-[11px] leading-relaxed text-[color:var(--ink-soft)]">
-          {hint}
-        </p>
+        <p className="text-[11px] leading-relaxed text-[color:var(--ink-soft)]">{hint}</p>
       ) : null}
     </div>
   );
@@ -453,9 +430,7 @@ function FormFooter({
           {saved ? "✓ saved" : "no changes"}
         </span>
       ) : null}
-      {error ? (
-        <span className="text-[color:var(--status-bad)] text-sm">{error}</span>
-      ) : null}
+      {error ? <span className="text-[color:var(--status-bad)] text-sm">{error}</span> : null}
     </div>
   );
 }

@@ -12,11 +12,8 @@ import { FeedbackWidget } from "@mind-studio/core/feedback";
  * build-time inlined via `NEXT_PUBLIC_FEEDBACK_INBOX`.
  */
 const feedbackInbox =
-  process.env.NEXT_PUBLIC_FEEDBACK_INBOX ??
-  "http://localhost:3011/alice/codespaces-feedback/";
+  process.env.NEXT_PUBLIC_FEEDBACK_INBOX ?? "http://localhost:3011/alice/codespaces-feedback/";
 
 export function FeedbackLauncher() {
-  return (
-    <FeedbackWidget appKey="codespaces" inbox={feedbackInbox} variant="floating" />
-  );
+  return <FeedbackWidget appKey="codespaces" inbox={feedbackInbox} variant="floating" />;
 }

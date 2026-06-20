@@ -1,34 +1,29 @@
 import "server-only";
-import { spawn, type ChildProcess } from "node:child_process";
-import * as fs from "node:fs/promises";
+import { type ChildProcess, spawn } from "node:child_process";
 import { createWriteStream, type WriteStream } from "node:fs";
+import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { AGENT_LOGS_DIR } from "@/lib/agents/dispatch";
 import type { AgentEvent, Driver } from "@/lib/agents/types";
-import { getRepo, type Repo } from "@/lib/registry/repos";
+import { formatOpencodeModel, getProvider, PROVIDERS } from "@/lib/ai-providers/providers";
+import { resolveCoderConfig } from "@/lib/ai-providers/store";
+import { debit, getBalance, ledgerEnabled, llmPrice } from "@/lib/ledger/client";
+import { gateEnvFallback } from "@/lib/ledger/policy";
 import {
   addComment,
   getIssueByNumber,
-  listComments,
-  setCommentPodUrl,
   type Issue,
   type IssueComment,
+  listComments,
+  setCommentPodUrl,
 } from "@/lib/registry/issues";
+import { upsertPullRequest } from "@/lib/registry/pulls";
+import { getRepo, type Repo, validateName } from "@/lib/registry/repos";
+import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
+import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
 import { commentUrl, writeCommentToPod } from "@/lib/solid/issues";
 import { writePullToPod } from "@/lib/solid/pulls";
-import { upsertPullRequest } from "@/lib/registry/pulls";
-import { validateName } from "@/lib/registry/repos";
-import { getOwnerFetch } from "@/lib/solid/fetch-for-owner";
-import { ensureContainer, setPublicReadAcl } from "@/lib/solid/containers";
-import { resolveCoderConfig } from "@/lib/ai-providers/store";
-import { ledgerEnabled, getBalance, debit, llmPrice } from "@/lib/ledger/client";
-import { gateEnvFallback } from "@/lib/ledger/policy";
-import { AGENT_LOGS_DIR } from "@/lib/agents/dispatch";
-import {
-  PROVIDERS,
-  getProvider,
-  formatOpencodeModel,
-} from "@/lib/ai-providers/providers";
 
 /**
  * Coder driver. Spawns opencode in a docker container against a clone
@@ -77,8 +72,7 @@ import {
 
 const DEFAULT_IMAGE = "mind-codespaces/coder:latest";
 const DEFAULT_TIMEOUT_S = 600;
-const GIT_DATA_DIR =
-  process.env.GIT_DATA_DIR ?? path.join(process.cwd(), ".git-data/repos");
+const GIT_DATA_DIR = process.env.GIT_DATA_DIR ?? path.join(process.cwd(), ".git-data/repos");
 const WORK_ROOT = process.env.MIND_CODER_WORKROOT ?? os.tmpdir();
 const AGENT_COMMENT_REL = ".mind/agent-comment.md";
 const AGENT_SCREENSHOTS_REL = ".mind/screenshots";
@@ -228,11 +222,7 @@ export const coderDriver: Driver = {
     const chargeRun = async () => {
       if (!meterRun || charged) return;
       charged = true;
-      const res = await debit(
-        repo.ownerWebId,
-        llmPrice(),
-        `builder:coder#${issueNumber}`,
-      );
+      const res = await debit(repo.ownerWebId, llmPrice(), `builder:coder#${issueNumber}`);
       if (res.ok) log(`[coder] metered ${llmPrice()} MIND (balance ${res.balance})`);
       else log(`[coder] meter debit failed (status ${res.status}) — not charging`);
     };
@@ -282,11 +272,9 @@ export const coderDriver: Driver = {
       ]);
       const branchExists = branchProbe.exit === 0;
       if (branchExists) {
-        const co = await sh(
-          "git",
-          ["-C", workDir, "checkout", "-B", branch, `origin/${branch}`],
-          { logStream },
-        );
+        const co = await sh("git", ["-C", workDir, "checkout", "-B", branch, `origin/${branch}`], {
+          logStream,
+        });
         if (co.exit !== 0) {
           return errorResult(
             `checkout of existing ${branch} failed (exit ${co.exit})`,
@@ -335,14 +323,7 @@ export const coderDriver: Driver = {
       // bridge's process env at exec time, so the key never appears in
       // `ps auxe`. We also forward MIND_AI_PROVIDER so the entrypoint
       // knows which provider block to leave enabled in auth.json.
-      const dockerArgs = [
-        "run",
-        "--rm",
-        "-v",
-        `${workDir}:/work`,
-        "--env",
-        "MIND_AI_PROVIDER",
-      ];
+      const dockerArgs = ["run", "--rm", "-v", `${workDir}:/work`, "--env", "MIND_AI_PROVIDER"];
       for (const envName of providerSpec.containerEnvNames) {
         dockerArgs.push("--env", envName);
       }
@@ -455,9 +436,7 @@ export const coderDriver: Driver = {
       log(
         `[coder] changed files (${changed.length}): ${changed.join(", ")}` +
           (wantsComment ? " [+agent-comment.md]" : "") +
-          (wantsScreenshots
-            ? ` [+${screenshotFiles.length} screenshot(s)]`
-            : ""),
+          (wantsScreenshots ? ` [+${screenshotFiles.length} screenshot(s)]` : ""),
       );
 
       // Mirror screenshots to host storage FIRST so a pod upload failure
@@ -556,9 +535,7 @@ export const coderDriver: Driver = {
       await fs
         .rm(path.join(workDir, AGENT_SCREENSHOTS_REL), { recursive: true, force: true })
         .catch(() => {});
-      await fs
-        .rm(path.join(workDir, AGENT_COMMENT_REL), { force: true })
-        .catch(() => {});
+      await fs.rm(path.join(workDir, AGENT_COMMENT_REL), { force: true }).catch(() => {});
 
       // `branch` and `branchExists` were declared up-front (before the
       // opencode run) so we could resume on top of a prior attempt. The
@@ -591,16 +568,12 @@ export const coderDriver: Driver = {
       for (const [label, args] of steps) {
         const r = await sh("git", args, { logStream });
         if (r.exit !== 0) {
-          return errorResult(
-            `git ${label} failed (exit ${r.exit})`,
-            r.stderr.slice(-800),
-          );
+          return errorResult(`git ${label} failed (exit ${r.exit})`, r.stderr.slice(-800));
         }
       }
       log(`[coder] pushed branch ${branch} to ${repoOwner}/${repoName}`);
 
-      const sourceSha = (await sh("git", ["-C", workDir, "rev-parse", "HEAD"]))
-        .stdout.trim();
+      const sourceSha = (await sh("git", ["-C", workDir, "rev-parse", "HEAD"])).stdout.trim();
       const prBody = [
         `Generated by the coder via opencode (model \`${orModel}\`).`,
         "",
@@ -708,13 +681,8 @@ function renderTaskPrompt(input: {
           "",
           `--- Conversation so far (${input.comments.length} comment(s)) ---`,
           ...input.comments.map((c, i) => {
-            const who =
-              c.agentRunId !== null ? "coder (you, earlier)" : c.authorWebId;
-            return [
-              `[${i + 1}] ${who}:`,
-              c.body.trim(),
-              "",
-            ].join("\n");
+            const who = c.agentRunId !== null ? "coder (you, earlier)" : c.authorWebId;
+            return [`[${i + 1}] ${who}:`, c.body.trim(), ""].join("\n");
           }),
           "--- End of conversation ---",
           "",
@@ -786,7 +754,7 @@ function renderTaskPrompt(input: {
     "If you do take screenshots:",
     "  - Take 1–3 that show the result of your change. Use",
     "    `browser_take_screenshot` with",
-    "    `filename: \"/work/.mind/screenshots/<descriptive-name>.png\"`.",
+    '    `filename: "/work/.mind/screenshots/<descriptive-name>.png"`.',
     "  - Stop after 3 screenshots — do not keep iterating in the browser.",
     "",
     "Screenshots in `.mind/screenshots/` are uploaded to the pod and",
@@ -891,8 +859,7 @@ async function uploadScreenshots(input: {
   const root = input.repo.ownerPodRoot.endsWith("/")
     ? input.repo.ownerPodRoot
     : `${input.repo.ownerPodRoot}/`;
-  const runSeg =
-    input.runId !== null ? `run-${input.runId}` : `run-${Date.now()}`;
+  const runSeg = input.runId !== null ? `run-${input.runId}` : `run-${Date.now()}`;
   const containers = [
     `${root}codespaces/`,
     `${root}codespaces/${input.repo.name}/`,
@@ -928,9 +895,7 @@ async function uploadScreenshots(input: {
         body: bytes,
       });
       if (!res.ok) {
-        input.log(
-          `[coder] screenshot PUT ${name} failed: ${res.status} ${res.statusText}`,
-        );
+        input.log(`[coder] screenshot PUT ${name} failed: ${res.status} ${res.statusText}`);
         continue;
       }
       uploaded.push({ name, url });
@@ -950,11 +915,7 @@ async function uploadScreenshots(input: {
  *  empty string when there are none so callers can `.filter(Boolean)`. */
 function renderScreenshotsSection(uploaded: UploadedShot[]): string {
   if (uploaded.length === 0) return "";
-  return [
-    "### Screenshots",
-    "",
-    ...uploaded.map((s) => `![${s.name}](${s.url})`),
-  ].join("\n");
+  return ["### Screenshots", "", ...uploaded.map((s) => `![${s.name}](${s.url})`)].join("\n");
 }
 
 function guessImageMime(name: string): string {
@@ -1060,9 +1021,7 @@ function unquotePath(p: string): string {
   return p;
 }
 
-async function openLogStream(
-  logPath: string | null,
-): Promise<WriteStream | null> {
+async function openLogStream(logPath: string | null): Promise<WriteStream | null> {
   if (!logPath) return null;
   await fs.mkdir(path.dirname(logPath), { recursive: true });
   return createWriteStream(logPath, { flags: "a" });
@@ -1102,7 +1061,7 @@ function sh(
     child.on("error", reject);
     child.on("close", (code) => {
       resolve({
-        exit: killed ? 124 : code ?? 0,
+        exit: killed ? 124 : (code ?? 0),
         stdout,
         stderr,
       });

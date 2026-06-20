@@ -73,11 +73,8 @@ async function reqJson(
   });
   // The Fetch API exposes Set-Cookie via getSetCookie() in Node 20+.
   const setCookies =
-    typeof (res.headers as unknown as { getSetCookie?: () => string[] })
-      .getSetCookie === "function"
-      ? (
-          res.headers as unknown as { getSetCookie: () => string[] }
-        ).getSetCookie()
+    typeof (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie === "function"
+      ? (res.headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
       : [];
   mergeSetCookies(jar, setCookies);
   const location = res.headers.get("location");
@@ -104,11 +101,8 @@ async function reqRaw(
     redirect: "manual",
   });
   const setCookies =
-    typeof (res.headers as unknown as { getSetCookie?: () => string[] })
-      .getSetCookie === "function"
-      ? (
-          res.headers as unknown as { getSetCookie: () => string[] }
-        ).getSetCookie()
+    typeof (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie === "function"
+      ? (res.headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
       : [];
   mergeSetCookies(jar, setCookies);
   return {
@@ -141,16 +135,9 @@ export async function runPasswordLoginOidcFlow(input: {
   const issuer = new URL(input.oidcRedirectUrl).origin;
   const accountIndex = await reqJson(`${issuer}/.account/`, jar);
   if (accountIndex.status !== 200 || !accountIndex.body) {
-    throw new HttpError(
-      "could not read CSS account controls",
-      accountIndex.status,
-    );
+    throw new HttpError("could not read CSS account controls", accountIndex.status);
   }
-  const passwordLogin = pickStringPath(accountIndex.body, [
-    "controls",
-    "password",
-    "login",
-  ]);
+  const passwordLogin = pickStringPath(accountIndex.body, ["controls", "password", "login"]);
   if (!passwordLogin) {
     throw new HttpError("CSS account did not advertise password login", 500);
   }
@@ -173,24 +160,13 @@ export async function runPasswordLoginOidcFlow(input: {
   // Expect a 303 to /.account/ — that's CSS asking the client to drive
   // the pick-webid / consent prompts via the account API.
   if (oidc.status !== 303 || !oidc.location) {
-    throw new HttpError(
-      `unexpected OIDC start response (HTTP ${oidc.status})`,
-      oidc.status,
-    );
+    throw new HttpError(`unexpected OIDC start response (HTTP ${oidc.status})`, oidc.status);
   }
 
   // Step 4: refresh account view — now the `oidc.*` controls exist.
   const accountMid = await reqJson(`${issuer}/.account/`, jar);
-  const pickWebIdUrl = pickStringPath(accountMid.body ?? {}, [
-    "controls",
-    "oidc",
-    "webId",
-  ]);
-  const consentUrl = pickStringPath(accountMid.body ?? {}, [
-    "controls",
-    "oidc",
-    "consent",
-  ]);
+  const pickWebIdUrl = pickStringPath(accountMid.body ?? {}, ["controls", "oidc", "webId"]);
+  const consentUrl = pickStringPath(accountMid.body ?? {}, ["controls", "oidc", "consent"]);
   if (!pickWebIdUrl || !consentUrl) {
     throw new HttpError(
       "CSS account did not advertise OIDC controls — is an interaction active?",
@@ -199,24 +175,15 @@ export async function runPasswordLoginOidcFlow(input: {
   }
 
   // Find a WebID linked to this account.
-  const accountWebIdsUrl = pickStringPath(accountMid.body ?? {}, [
-    "controls",
-    "account",
-    "webId",
-  ]);
+  const accountWebIdsUrl = pickStringPath(accountMid.body ?? {}, ["controls", "account", "webId"]);
   if (!accountWebIdsUrl) {
     throw new HttpError("CSS did not expose account.webId control", 500);
   }
   const webIds = await reqJson(accountWebIdsUrl, jar);
-  const links = webIds.body?.["webIdLinks"] as
-    | Record<string, string>
-    | undefined;
+  const links = webIds.body?.["webIdLinks"] as Record<string, string> | undefined;
   const candidate = links ? Object.keys(links) : [];
   if (candidate.length === 0) {
-    throw new HttpError(
-      "no WebID linked to this account — register a pod first",
-      400,
-    );
+    throw new HttpError("no WebID linked to this account — register a pod first", 400);
   }
   // For the single-WebID-per-account case (the common path on CSS)
   // we just pick it. Multi-WebID accounts could surface a UI later.
@@ -228,13 +195,9 @@ export async function runPasswordLoginOidcFlow(input: {
     body: { webId },
   });
   if (pick.status >= 400) {
-    throw new HttpError(
-      stringField(pick.body, "message") ?? "pick-webid failed",
-      pick.status,
-    );
+    throw new HttpError(stringField(pick.body, "message") ?? "pick-webid failed", pick.status);
   }
-  const resumeAfterPick =
-    stringField(pick.body, "location") ?? `${issuer}/.account/`;
+  const resumeAfterPick = stringField(pick.body, "location") ?? `${issuer}/.account/`;
 
   // Step 6: resume the OIDC flow once — moves prompt from "login" to
   // "consent". We follow the redirect manually so we capture cookies.
@@ -275,10 +238,7 @@ export async function runPasswordLoginOidcFlow(input: {
   }
   const resumeAfterConsent = stringField(consent.body, "location");
   if (!resumeAfterConsent) {
-    throw new HttpError(
-      "OIDC consent did not return a resume URL",
-      500,
-    );
+    throw new HttpError("OIDC consent did not return a resume URL", 500);
   }
 
   // Step 8: follow the final resume — CSS now 303s to the bridge's
@@ -286,18 +246,12 @@ export async function runPasswordLoginOidcFlow(input: {
   // `completeAuthFlow` expects.
   const final = await reqRaw(resumeAfterConsent, jar);
   if (final.status !== 303 || !final.location) {
-    throw new HttpError(
-      `OIDC final resume did not redirect (HTTP ${final.status})`,
-      final.status,
-    );
+    throw new HttpError(`OIDC final resume did not redirect (HTTP ${final.status})`, final.status);
   }
   return { callbackUrl: final.location };
 }
 
-function pickStringPath(
-  obj: unknown,
-  path: string[],
-): string | undefined {
+function pickStringPath(obj: unknown, path: string[]): string | undefined {
   let cur: unknown = obj;
   for (const k of path) {
     if (!cur || typeof cur !== "object") return undefined;
@@ -306,10 +260,7 @@ function pickStringPath(
   return typeof cur === "string" ? cur : undefined;
 }
 
-function stringField(
-  obj: Record<string, unknown> | null,
-  key: string,
-): string | undefined {
+function stringField(obj: Record<string, unknown> | null, key: string): string | undefined {
   if (!obj) return undefined;
   const v = obj[key];
   return typeof v === "string" ? v : undefined;

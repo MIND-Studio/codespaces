@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepo } from "@/lib/registry/repos";
-import {
-  countPullRequestsByStatus,
-  listPullRequests,
-  type PullStatus,
-} from "@/lib/registry/pulls";
 import { RelativeTime } from "@/components/relative-time";
+import { countPullRequestsByStatus, listPullRequests, type PullStatus } from "@/lib/registry/pulls";
+import { getRepo } from "@/lib/registry/repos";
 import { RepoTabs } from "../repo-tabs";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +21,7 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
   if (!repo) notFound();
 
   const filter = (
-    VALID_FILTERS.includes(sp.status as (typeof VALID_FILTERS)[number])
-      ? sp.status
-      : "open"
+    VALID_FILTERS.includes(sp.status as (typeof VALID_FILTERS)[number]) ? sp.status : "open"
   ) as PullStatus | "all";
 
   const pulls = listPullRequests(repo.id, filter);
@@ -41,10 +35,7 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
         </Link>
       </p>
 
-      <h1
-        className="display mt-3 text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h1 className="display mt-3 text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         Pull requests
       </h1>
 
@@ -65,11 +56,7 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
             {pulls.map((p, i) => {
               const isOpen = p.status === "open";
               const tone =
-                p.status === "merged"
-                  ? "ok"
-                  : p.status === "closed"
-                    ? undefined
-                    : undefined;
+                p.status === "merged" ? "ok" : p.status === "closed" ? undefined : undefined;
               const stampStyle =
                 p.status === "closed"
                   ? {
@@ -82,34 +69,22 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
               return (
                 <li
                   key={p.id}
-                  className={
-                    i > 0
-                      ? "border-t border-[color:var(--ink-trace)]"
-                      : undefined
-                  }
+                  className={i > 0 ? "border-t border-[color:var(--ink-trace)]" : undefined}
                 >
                   <Link
                     href={`/repos/${owner}/${name}/pulls/${p.number}`}
                     className="block px-3 py-4 hover:bg-[color:var(--paper-soft)]"
                     style={{
-                      borderLeft: isOpen
-                        ? "2px solid var(--accent)"
-                        : "2px solid transparent",
+                      borderLeft: isOpen ? "2px solid var(--accent)" : "2px solid transparent",
                     }}
                   >
                     <div className="flex items-start gap-3">
-                      <span
-                        className="stamp shrink-0"
-                        data-tone={tone}
-                        style={stampStyle}
-                      >
+                      <span className="stamp shrink-0" data-tone={tone} style={stampStyle}>
                         {p.status}
                       </span>
                       <div className="min-w-0 flex-1">
                         <h2 className="text-base font-medium leading-snug text-[color:var(--ink)]">
-                          <span className="text-[color:var(--ink-faint)]">
-                            #{p.number}
-                          </span>{" "}
+                          <span className="text-[color:var(--ink-faint)]">#{p.number}</span>{" "}
                           {p.title}
                         </h2>
                         {excerpt ? (
@@ -130,23 +105,15 @@ export default async function PullsPage({ params, searchParams }: PageProps) {
                           style={{ fontFamily: "var(--font-mono-src)" }}
                         >
                           <span>
-                            <span style={{ color: "var(--ink-soft)" }}>
-                              {p.sourceBranch}
-                            </span>{" "}
-                            →{" "}
-                            <span style={{ color: "var(--ink-soft)" }}>
-                              {p.targetBranch}
-                            </span>
+                            <span style={{ color: "var(--ink-soft)" }}>{p.sourceBranch}</span> →{" "}
+                            <span style={{ color: "var(--ink-soft)" }}>{p.targetBranch}</span>
                           </span>
                           <span>
                             opened <RelativeTime ts={p.createdAt} />
                           </span>
                         </div>
                       </div>
-                      <span
-                        aria-hidden
-                        className="self-center text-[color:var(--ink-faint)]"
-                      >
+                      <span aria-hidden className="self-center text-[color:var(--ink-faint)]">
                         →
                       </span>
                     </div>
@@ -208,17 +175,13 @@ function FilterBar({
               background: isCurrent
                 ? "color-mix(in srgb, var(--accent) 14%, transparent)"
                 : "transparent",
-              color: isCurrent
-                ? "var(--accent-deep)"
-                : "var(--ink-soft)",
+              color: isCurrent ? "var(--accent-deep)" : "var(--ink-soft)",
             }}
           >
             {item.label}{" "}
             <span
               style={{
-                color: isCurrent
-                  ? "var(--accent-deep)"
-                  : "var(--ink-faint)",
+                color: isCurrent ? "var(--accent-deep)" : "var(--ink-faint)",
               }}
             >
               {item.count}
@@ -254,8 +217,7 @@ function EmptyState({
           Nothing {filter === "all" ? "here yet" : `${filter}`}.
         </p>
         <p className="mt-2">
-          When a pull request is {filter === "all" ? "opened" : filter}, it
-          will show up here.
+          When a pull request is {filter === "all" ? "opened" : filter}, it will show up here.
         </p>
       </section>
     );
@@ -269,14 +231,12 @@ function EmptyState({
         No open pull requests.
       </p>
       <p className="mt-3 leading-relaxed">
-        The <span style={{ color: "var(--ink)" }}>coder</span> agent opens
-        a draft pull request automatically when it pushes a branch in
-        response to an issue — the PR then targets{" "}
+        The <span style={{ color: "var(--ink)" }}>coder</span> agent opens a draft pull request
+        automatically when it pushes a branch in response to an issue — the PR then targets{" "}
         <code className="kbd">{defaultBranch}</code>.
       </p>
       <p className="mt-3 leading-relaxed">
-        You can also push your own branch to this bridge from the command
-        line; see{" "}
+        You can also push your own branch to this bridge from the command line; see{" "}
         <Link href={`/repos/${owner}/${repo}`} className="link">
           the repo page
         </Link>{" "}
@@ -287,16 +247,15 @@ function EmptyState({
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
         <li>
-          <span style={{ color: "var(--ink-soft)" }}>open</span> —
-          unmerged, source branch still alive
+          <span style={{ color: "var(--ink-soft)" }}>open</span> — unmerged, source branch still
+          alive
         </li>
         <li>
-          <span style={{ color: "var(--ink-soft)" }}>merged</span> —
-          fast-forwarded onto {defaultBranch}
+          <span style={{ color: "var(--ink-soft)" }}>merged</span> — fast-forwarded onto{" "}
+          {defaultBranch}
         </li>
         <li>
-          <span style={{ color: "var(--ink-soft)" }}>closed</span> —
-          rejected without merging
+          <span style={{ color: "var(--ink-soft)" }}>closed</span> — rejected without merging
         </li>
       </ul>
     </section>

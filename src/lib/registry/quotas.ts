@@ -37,10 +37,7 @@ export const QUOTAS = {
   maxReposPerOwner: envInt("MAX_REPOS_PER_OWNER", 50),
   maxTokensPerRepo: envInt("MAX_TOKENS_PER_REPO", 10),
   maxRunsPerOwnerPerDay: envInt("MAX_RUNS_PER_OWNER_PER_DAY", 500),
-  maxDiskPerRepoBytes: envInt(
-    "MAX_DISK_PER_REPO_BYTES",
-    1024 * 1024 * 1024,
-  ),
+  maxDiskPerRepoBytes: envInt("MAX_DISK_PER_REPO_BYTES", 1024 * 1024 * 1024),
   // Mind Packages (docs/PACKAGES-PLAN.md). Package blobs live in the pod, so
   // these guard the bridge's own ingest path, not local disk:
   //   • a single artifact larger than this is refused outright (default
@@ -49,10 +46,7 @@ export const QUOTAS = {
   //   • the sum of a repo's published blob sizes is capped separately from
   //     git disk so a few large images can't fill the pod (default 2 GiB)
   maxPackageBlobBytes: envInt("MAX_PACKAGE_BLOB_BYTES", 100 * 1024 * 1024),
-  maxPackageBytesPerRepo: envInt(
-    "MAX_PACKAGE_BYTES_PER_REPO",
-    2 * 1024 * 1024 * 1024,
-  ),
+  maxPackageBytesPerRepo: envInt("MAX_PACKAGE_BYTES_PER_REPO", 2 * 1024 * 1024 * 1024),
 };
 
 export class QuotaExceededError extends Error {
@@ -61,27 +55,21 @@ export class QuotaExceededError extends Error {
     public readonly limit: number,
     public readonly observed: number,
   ) {
-    super(
-      `quota exceeded: ${quota} (observed ${observed} >= limit ${limit})`,
-    );
+    super(`quota exceeded: ${quota} (observed ${observed} >= limit ${limit})`);
   }
 }
 
 export function countReposForOwner(owner: string): number {
-  const row = getDb()
-    .prepare("SELECT COUNT(*) AS c FROM repos WHERE owner = ?")
-    .get(owner) as { c: number };
+  const row = getDb().prepare("SELECT COUNT(*) AS c FROM repos WHERE owner = ?").get(owner) as {
+    c: number;
+  };
   return row.c;
 }
 
 export function assertCanCreateRepo(owner: string): void {
   const observed = countReposForOwner(owner);
   if (observed >= QUOTAS.maxReposPerOwner) {
-    throw new QuotaExceededError(
-      "maxReposPerOwner",
-      QUOTAS.maxReposPerOwner,
-      observed,
-    );
+    throw new QuotaExceededError("maxReposPerOwner", QUOTAS.maxReposPerOwner, observed);
   }
 }
 
@@ -95,11 +83,7 @@ export function countTokensForRepo(repoId: number): number {
 export function assertCanMintToken(repoId: number): void {
   const observed = countTokensForRepo(repoId);
   if (observed >= QUOTAS.maxTokensPerRepo) {
-    throw new QuotaExceededError(
-      "maxTokensPerRepo",
-      QUOTAS.maxTokensPerRepo,
-      observed,
-    );
+    throw new QuotaExceededError("maxTokensPerRepo", QUOTAS.maxTokensPerRepo, observed);
   }
 }
 
@@ -130,11 +114,7 @@ export function countRunsForOwnerPast24h(owner: string): number {
 export function assertCanDispatchRun(owner: string): void {
   const observed = countRunsForOwnerPast24h(owner);
   if (observed >= QUOTAS.maxRunsPerOwnerPerDay) {
-    throw new QuotaExceededError(
-      "maxRunsPerOwnerPerDay",
-      QUOTAS.maxRunsPerOwnerPerDay,
-      observed,
-    );
+    throw new QuotaExceededError("maxRunsPerOwnerPerDay", QUOTAS.maxRunsPerOwnerPerDay, observed);
   }
 }
 
@@ -155,11 +135,7 @@ export function sumPackageBytesForRepo(repoId: number): number {
  */
 export function assertCanStorePackage(repoId: number, addBytes: number): void {
   if (addBytes > QUOTAS.maxPackageBlobBytes) {
-    throw new QuotaExceededError(
-      "maxPackageBlobBytes",
-      QUOTAS.maxPackageBlobBytes,
-      addBytes,
-    );
+    throw new QuotaExceededError("maxPackageBlobBytes", QUOTAS.maxPackageBlobBytes, addBytes);
   }
   const observed = sumPackageBytesForRepo(repoId);
   if (observed + addBytes > QUOTAS.maxPackageBytesPerRepo) {

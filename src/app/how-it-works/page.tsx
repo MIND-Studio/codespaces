@@ -16,23 +16,20 @@ export default function HowItWorksPage() {
         className="mt-4 text-[11px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]"
         style={{ fontFamily: "var(--font-mono-src)" }}
       >
-        Your code · <span style={{ color: "var(--accent)" }}>your context</span>{" "}
-        · your pod.
+        Your code · <span style={{ color: "var(--accent)" }}>your context</span> · your pod.
       </p>
       <p className="mt-6 text-lg leading-relaxed text-[color:var(--ink-soft)]">
-        Mind Codespaces gives you Git collaboration where{" "}
-        <em>everything that matters</em> — your code, your issues, your AI
-        memory, your published sites — lives inside your own Solid Pod. The
-        bridge in the middle just translates protocols; it doesn&apos;t own
-        your project.
+        Mind Codespaces gives you Git collaboration where <em>everything that matters</em> — your
+        code, your issues, your AI memory, your published sites — lives inside your own Solid Pod.
+        The bridge in the middle just translates protocols; it doesn&apos;t own your project.
       </p>
 
       <hr className="hairline my-14" />
 
       <Section title="What lives in your pod">
         <p className="mb-8 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          A pod is a small piece of storage you own. With Mind Codespaces, four
-          kinds of things go inside it — and nothing else needs to leave.
+          A pod is a small piece of storage you own. With Mind Codespaces, four kinds of things go
+          inside it — and nothing else needs to leave.
         </p>
         <PodCapsule />
       </Section>
@@ -41,20 +38,15 @@ export default function HowItWorksPage() {
 
       <Section title="What happens when you push">
         <p className="mb-8 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          The flow has three beats. There&apos;s some plumbing — a small bridge
-          translates Git Smart HTTP into pod writes — but you only ever talk to
-          two things: your terminal and your pod.
+          The flow has three beats. There&apos;s some plumbing — a small bridge translates Git Smart
+          HTTP into pod writes — but you only ever talk to two things: your terminal and your pod.
         </p>
         <PushFlow />
         <ol
           className="mt-8 grid gap-3 sm:grid-cols-3 text-sm"
           style={{ fontFamily: "var(--font-mono-src)" }}
         >
-          <FlowStep
-            n={1}
-            title="You push"
-            body="git push, like any other remote."
-          />
+          <FlowStep n={1} title="You push" body="git push, like any other remote." />
           <FlowStep
             n={2}
             title="The bridge translates"
@@ -72,29 +64,25 @@ export default function HowItWorksPage() {
 
       <Section title="AI that asks before it reads">
         <p className="text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          The coder agent runs against the same pod the user owns, with the
-          permissions the user granted. It reads what you let it read, writes
-          where you let it write, and the conversation history — the thing AI
-          tools usually keep in their own database — lands back in the pod
-          alongside the code. If you revoke access, the agent stops. If you
-          move pods, the memory comes with you.
+          The coder agent runs against the same pod the user owns, with the permissions the user
+          granted. It reads what you let it read, writes where you let it write, and the
+          conversation history — the thing AI tools usually keep in their own database — lands back
+          in the pod alongside the code. If you revoke access, the agent stops. If you move pods,
+          the memory comes with you.
         </p>
         <ul className="mt-6 grid gap-2 sm:grid-cols-2 text-sm">
           <AiPoint label="Reads">
-            issue body, recent commits, files the prompt names — nothing else
-            until you say so.
+            issue body, recent commits, files the prompt names — nothing else until you say so.
           </AiPoint>
           <AiPoint label="Writes">
-            a branch in <em>your</em> repo, a pull request, screenshots and
-            comments in <em>your</em> pod.
+            a branch in <em>your</em> repo, a pull request, screenshots and comments in{" "}
+            <em>your</em> pod.
           </AiPoint>
           <AiPoint label="Remembers">
-            the conversation, but the memory lives in the pod, not in an
-            opaque vendor database.
+            the conversation, but the memory lives in the pod, not in an opaque vendor database.
           </AiPoint>
           <AiPoint label="Stops">
-            the moment you revoke its permission — the bridge is a delegate,
-            not an owner.
+            the moment you revoke its permission — the bridge is a delegate, not an owner.
           </AiPoint>
         </ul>
       </Section>
@@ -103,8 +91,8 @@ export default function HowItWorksPage() {
 
       <Section title="Why it&rsquo;s portable">
         <p className="mb-6 text-sm leading-relaxed text-[color:var(--ink-soft)]">
-          The bridge can be replaced and your work survives, because nothing
-          irreplaceable lives in the bridge.
+          The bridge can be replaced and your work survives, because nothing irreplaceable lives in
+          the bridge.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <ScenarioCard
@@ -153,19 +141,10 @@ export default function HowItWorksPage() {
 /* Layout helpers                                                       */
 /* -------------------------------------------------------------------- */
 
-function Section({
-  title,
-  children,
-}: {
-  title: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <section>
-      <h2
-        className="display text-2xl sm:text-3xl"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <h2 className="display text-2xl sm:text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <div className="mt-5">{children}</div>
@@ -203,8 +182,7 @@ function PodCapsule() {
         className="relative rounded-[2rem] border p-8 sm:p-10"
         style={{
           borderColor: "var(--accent)",
-          background:
-            "color-mix(in srgb, var(--accent) 6%, var(--paper-soft))",
+          background: "color-mix(in srgb, var(--accent) 6%, var(--paper-soft))",
           boxShadow:
             "0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 20px 60px -30px color-mix(in srgb, var(--accent) 40%, transparent)",
         }}
@@ -240,17 +218,13 @@ function PodCapsule() {
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-lg"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--accent) 14%, transparent)",
+                  background: "color-mix(in srgb, var(--accent) 14%, transparent)",
                   color: "var(--accent)",
                 }}
               >
                 {it.icon}
               </div>
-              <p
-                className="mt-3 text-sm"
-                style={{ color: "var(--ink)", fontWeight: 500 }}
-              >
+              <p className="mt-3 text-sm" style={{ color: "var(--ink)", fontWeight: 500 }}>
                 {it.label}
               </p>
               <p
@@ -275,7 +249,16 @@ function PodCapsule() {
 
 function CodeGlyph() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="8 6 3 12 8 18" />
       <polyline points="16 6 21 12 16 18" />
     </svg>
@@ -284,7 +267,16 @@ function CodeGlyph() {
 
 function IssueGlyph() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="9" />
       <line x1="12" y1="8" x2="12" y2="13" />
       <circle cx="12" cy="16.5" r="0.8" fill="currentColor" stroke="none" />
@@ -294,7 +286,16 @@ function IssueGlyph() {
 
 function BrainGlyph() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 5 a3 3 0 0 0 -3 3 v3 a3 3 0 0 0 0 6 v1 a3 3 0 0 0 3 3" />
       <path d="M15 5 a3 3 0 0 1 3 3 v3 a3 3 0 0 1 0 6 v1 a3 3 0 0 1 -3 3" />
       <path d="M12 5 v14" />
@@ -306,7 +307,16 @@ function BrainGlyph() {
 
 function PagesGlyph() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <line x1="3" y1="9" x2="21" y2="9" />
       <circle cx="6" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
@@ -344,10 +354,7 @@ function PushFlow() {
           >
             <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)" />
           </marker>
-          <path
-            id="hi-flowPath"
-            d="M140 110 L 580 110"
-          />
+          <path id="hi-flowPath" d="M140 110 L 580 110" />
         </defs>
 
         {/* Laptop node */}
@@ -493,15 +500,7 @@ function PushFlow() {
   );
 }
 
-function FlowStep({
-  n,
-  title,
-  body,
-}: {
-  n: number;
-  title: string;
-  body: string;
-}) {
+function FlowStep({ n, title, body }: { n: number; title: string; body: string }) {
   return (
     <li
       className="rounded border p-4"
@@ -510,16 +509,10 @@ function FlowStep({
         background: "var(--paper-soft)",
       }}
     >
-      <p
-        className="text-[10px] uppercase tracking-[0.22em]"
-        style={{ color: "var(--accent)" }}
-      >
+      <p className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "var(--accent)" }}>
         0{n}
       </p>
-      <p
-        className="mt-2 text-sm"
-        style={{ color: "var(--ink)", fontWeight: 500 }}
-      >
+      <p className="mt-2 text-sm" style={{ color: "var(--ink)", fontWeight: 500 }}>
         {title}
       </p>
       <p
@@ -536,13 +529,7 @@ function FlowStep({
 /* "AI" section                                                         */
 /* -------------------------------------------------------------------- */
 
-function AiPoint({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function AiPoint({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <li
       className="flex items-baseline gap-3 rounded border px-3 py-3"
@@ -595,33 +582,19 @@ function ScenarioCard({
       >
         Scenario
       </p>
-      <h3
-        className="mt-1 text-lg"
-        style={{ color: "var(--ink)", fontWeight: 500 }}
-      >
+      <h3 className="mt-1 text-lg" style={{ color: "var(--ink)", fontWeight: 500 }}>
         {heading}
       </h3>
-      <p className="mt-2 text-sm italic text-[color:var(--ink-soft)]">
-        {outcome}
-      </p>
-      <ul
-        className="mt-4 space-y-1.5 text-xs"
-        style={{ fontFamily: "var(--font-mono-src)" }}
-      >
+      <p className="mt-2 text-sm italic text-[color:var(--ink-soft)]">{outcome}</p>
+      <ul className="mt-4 space-y-1.5 text-xs" style={{ fontFamily: "var(--font-mono-src)" }}>
         {kept.map((item) => (
-          <li
-            key={item}
-            className="flex items-baseline gap-2 text-[color:var(--ink)]"
-          >
+          <li key={item} className="flex items-baseline gap-2 text-[color:var(--ink)]">
             <span style={{ color: "var(--accent)" }}>kept</span>
             <span>{item}</span>
           </li>
         ))}
         {lost.map((item) => (
-          <li
-            key={item}
-            className="flex items-baseline gap-2 text-[color:var(--ink-faint)]"
-          >
+          <li key={item} className="flex items-baseline gap-2 text-[color:var(--ink-faint)]">
             <span>lost</span>
             <span className="line-through">{item}</span>
           </li>

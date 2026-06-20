@@ -76,9 +76,7 @@ export function getDriver(name: string): Driver | undefined {
  * `issue.labeled` trigger).
  */
 export function rolesForEvent(event: AgentEvent): Role[] {
-  return listRoles().filter((role) =>
-    role.triggers.some((t) => triggerMatches(t, event)),
-  );
+  return listRoles().filter((role) => role.triggers.some((t) => triggerMatches(t, event)));
 }
 
 function triggerMatches(trigger: Trigger, event: AgentEvent): boolean {

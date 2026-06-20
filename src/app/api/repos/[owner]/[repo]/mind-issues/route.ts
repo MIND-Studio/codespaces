@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getRepo } from "@/lib/registry/repos";
-import { repoPath } from "@/lib/git/backend";
-import { createMindIssue, IssueAuthorError } from "@/lib/tracker/author";
 import { requireOwner } from "@/lib/auth/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { repoPath } from "@/lib/git/backend";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { getRepo } from "@/lib/registry/repos";
+import { createMindIssue, IssueAuthorError } from "@/lib/tracker/author";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,13 +35,7 @@ export async function POST(req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const {
-    title,
-    type,
-    epic,
-    priority,
-    body: issueBody,
-  } = (body ?? {}) as Record<string, unknown>;
+  const { title, type, epic, priority, body: issueBody } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
@@ -51,19 +45,14 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   try {
-    const result = await createMindIssue(
-      repoPath(repo.owner, repo.name),
-      owner,
-      name,
-      {
-        title,
-        type,
-        epicSlug: typeof epic === "string" ? epic : null,
-        priority: typeof priority === "string" ? priority : undefined,
-        body: typeof issueBody === "string" ? issueBody : undefined,
-        authorWebId: auth.webId,
-      },
-    );
+    const result = await createMindIssue(repoPath(repo.owner, repo.name), owner, name, {
+      title,
+      type,
+      epicSlug: typeof epic === "string" ? epic : null,
+      priority: typeof priority === "string" ? priority : undefined,
+      body: typeof issueBody === "string" ? issueBody : undefined,
+      authorWebId: auth.webId,
+    });
     return NextResponse.json({ issue: result }, { status: 201 });
   } catch (e) {
     if (e instanceof IssueAuthorError) {

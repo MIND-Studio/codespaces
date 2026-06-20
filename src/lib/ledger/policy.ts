@@ -6,9 +6,7 @@
  * unmetered).
  */
 
-export type FallbackGate =
-  | { kind: "allow"; meter: boolean }
-  | { kind: "blocked"; balance: number };
+export type FallbackGate = { kind: "allow"; meter: boolean } | { kind: "blocked"; balance: number };
 
 /**
  * Decide whether an env-fallback (company-key) coder run may proceed, and

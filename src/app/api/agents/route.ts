@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureAgentsBootstrap } from "@/lib/agents/bootstrap";
-import {
-  getDefaultDriverName,
-  listDrivers,
-  listRoles,
-} from "@/lib/agents/registry";
+import { getDefaultDriverName, listDrivers, listRoles } from "@/lib/agents/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

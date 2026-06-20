@@ -12,9 +12,7 @@ const CollaborativeDraft = dynamic(
   () => import("./collaborative-draft").then((m) => m.CollaborativeDraft),
   {
     ssr: false,
-    loading: () => (
-      <p className="text-sm text-[color:var(--ink-faint)]">Loading the composer…</p>
-    ),
+    loading: () => <p className="text-sm text-[color:var(--ink-faint)]">Loading the composer…</p>,
   },
 );
 
