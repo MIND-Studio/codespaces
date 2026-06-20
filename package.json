@@ -15,8 +15,13 @@
     "tracker:check": "tsx scripts/tracker-build.ts --check",
     "calendar:build": "tsx scripts/calendar-build.ts",
     "calendar:check": "tsx scripts/calendar-build.ts --check",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "prepare": "husky",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:tracker": "tsx scripts/seed-tracker-demo.ts",
     "seed:profiles": "tsx scripts/seed-profiles.ts",
@@ -55,17 +60,23 @@
     "yjs": "^13.6.20"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.5.13",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5",
-    "vitest": "^4.1.7",
+    "vitest": "^4.1.9",
     "ws": "^8.18.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc}": "biome check --write --no-errors-on-unmatched"
   },
   "overrides": {
     "postcss": "^8.5.10"
