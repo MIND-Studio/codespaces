@@ -22,7 +22,14 @@ import { randomBytes } from "node:crypto";
  *     MIND_RUNNER env var.
  */
 
-const DEFAULT_IMAGE = "node:22-alpine";
+// Runner image for `npm install`/`vite build`. Defaults to a glibc image
+// (Debian bookworm), NOT alpine/musl: native build deps like lightningcss
+// (pulled in by Vite/Tailwind v4) only reliably resolve their prebuilt
+// binary on glibc — on musl, npm's optional-deps-with-lockfile bug skips
+// `lightningcss.linux-x64-musl.node` and the build dies. Override with
+// MIND_WORKFLOW_IMAGE if a project needs a different toolchain.
+const DEFAULT_IMAGE =
+  process.env.MIND_WORKFLOW_IMAGE?.trim() || "node:22-bookworm-slim";
 const DOCKER_PROBE_TIMEOUT_MS = 3000;
 
 // Network isolation for the workflow container (§3.4):
