@@ -194,14 +194,75 @@ export type CoderConfig = {
 };
 
 /**
+ * Per-provider default model for the bridge-default (company-free) path,
+ * used when `MIND_AGENT_MODEL` is unset. Gemini's free tier is the house
+ * default; OpenRouter stays on the free coder-tuned Qwen.
+ */
+const ENV_FALLBACK_DEFAULT_MODEL: Record<ProviderName, string> = {
+  google: "gemini-2.0-flash",
+  openrouter: "qwen/qwen3-coder:free",
+  anthropic: "claude-haiku-4-5",
+  openai: "gpt-4o-mini",
+};
+
+/** Provider preference order for the env-fallback when none is pinned. */
+const ENV_FALLBACK_ORDER: ProviderName[] = [
+  "google",
+  "openrouter",
+  "anthropic",
+  "openai",
+];
+
+/** First non-empty container env var holding `provider`'s key, or null. */
+function envKeyForProvider(provider: ProviderName): string | null {
+  const spec = getProvider(provider);
+  if (!spec) return null;
+  for (const name of spec.containerEnvNames) {
+    const v = process.env[name]?.trim();
+    if (v) return v;
+  }
+  return null;
+}
+
+/**
+ * The bridge-default ("env-fallback") provider — the company-free path
+ * shared by everyone who hasn't brought their own key. Prefers Gemini
+ * (its key configured as a Secret) so Builder's free runs use the same
+ * metered Gemini path as Slides; falls back to whichever provider key is
+ * present. Pin explicitly with `MIND_DEFAULT_PROVIDER`. The single
+ * `MIND_AGENT_MODEL` override should match the chosen provider; unset =
+ * the per-provider default above.
+ */
+function resolveEnvFallback(): {
+  provider: ProviderName;
+  model: string;
+  apiKey: string;
+} | null {
+  const pinned = process.env.MIND_DEFAULT_PROVIDER?.trim();
+  const order = isProviderName(pinned) ? [pinned] : ENV_FALLBACK_ORDER;
+  for (const provider of order) {
+    const apiKey = envKeyForProvider(provider);
+    if (apiKey) {
+      const model =
+        process.env.MIND_AGENT_MODEL?.trim() ||
+        ENV_FALLBACK_DEFAULT_MODEL[provider];
+      return { provider, model, apiKey };
+    }
+  }
+  return null;
+}
+
+/**
  * Resolve which (provider, model, apiKey) the coder should use when
  * acting on behalf of `webId`.
  *
  * Priority:
- *   1. The user's pref + their stored key for that provider.
- *   2. The bridge-wide OPENROUTER_API_KEY + MIND_AGENT_MODEL fallback
- *      (preserves the demo behavior — anyone can push a repo and have
- *      the agents work without configuring anything personally).
+ *   1. The user's pref + their stored key for that provider (BYOK — the
+ *      optional in-app custom provider; runs unmetered).
+ *   2. The bridge-default provider (`resolveEnvFallback` — Gemini by
+ *      default), so anyone can push a repo and have the agents work
+ *      without configuring anything; metered against the free MIND
+ *      allotment.
  *   3. null — caller surfaces the configuration error to the user.
  */
 export function resolveCoderConfig(webId: string): CoderConfig | null {
@@ -218,18 +279,13 @@ export function resolveCoderConfig(webId: string): CoderConfig | null {
     }
   }
 
-  // Fallback: env-configured OpenRouter setup. The MIND_AGENT_MODEL var
-  // includes a provider slash (e.g. "qwen/qwen3-coder:free") and is
-  // consumed as the bare model id by OpenRouter, so we forward it
-  // as-is. Default is a free model so a deployment with no per-user
-  // BYOK keys still completes a run end-to-end.
-  const envKey = process.env.OPENROUTER_API_KEY;
-  if (envKey) {
+  const fb = resolveEnvFallback();
+  if (fb) {
     return {
       source: "env-fallback",
-      provider: "openrouter",
-      model: process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free",
-      apiKey: envKey,
+      provider: fb.provider,
+      model: fb.model,
+      apiKey: fb.apiKey,
     };
   }
   return null;
@@ -246,7 +302,7 @@ export type CoderConfigSummary =
     }
   | {
       source: "env-fallback";
-      provider: "openrouter";
+      provider: ProviderName;
       providerLabel: string;
       model: string;
     }
@@ -266,12 +322,14 @@ export function resolveCoderConfigSummary(webId: string): CoderConfigSummary {
       };
     }
   }
-  if (process.env.OPENROUTER_API_KEY) {
+  const fb = resolveEnvFallback();
+  if (fb) {
+    const spec = getProvider(fb.provider);
     return {
       source: "env-fallback",
-      provider: "openrouter",
-      providerLabel: "OpenRouter (bridge-default)",
-      model: process.env.MIND_AGENT_MODEL ?? "qwen/qwen3-coder:free",
+      provider: fb.provider,
+      providerLabel: `${spec?.label ?? fb.provider} (bridge-default)`,
+      model: fb.model,
     };
   }
   return { source: "none" };
