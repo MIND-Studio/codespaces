@@ -18,7 +18,6 @@ export function ConnectForm({
     <MindLoginCard
       appName="Codespaces"
       defaultIssuer={defaultIssuer}
-      accent="#10b981"
       onLogin={async ({ issuer }) => {
         const res = await fetch("/api/auth/start", {
           method: "POST",

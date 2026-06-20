@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { JetBrains_Mono, Familjen_Grotesk } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeShell } from "@/components/theme-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,21 +21,23 @@ import { DEFAULT_APPS } from "@mind-studio/core/apps";
  */
 const THEME_INIT = `(function(){try{var b=localStorage.getItem("mc:brand");if(b!=="neo"&&b!=="mind")b="mind";document.documentElement.setAttribute("data-mind-theme",b);var m=localStorage.getItem("mc:mode");var dark=m?m==="dark":true;document.documentElement.classList.toggle("dark",dark);document.documentElement.classList.toggle("light",!dark);}catch(e){document.documentElement.setAttribute("data-mind-theme","mind");document.documentElement.classList.add("dark");}})();`;
 
-const fontMono = JetBrains_Mono({
-  variable: "--font-mono-src",
+// Fleet webfont trio (mirrors the shared Mind scheme): Fraunces for editorial
+// display headings, Hanken Grotesk for body, JetBrains Mono for code/marks.
+// globals.css binds --font-display/--font-body/--mind-font-mono to these vars.
+const display = Fraunces({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  variable: "--font-fraunces",
+  display: "swap",
 });
-
-// Headline display face. Codespaces overrides only --font-display (see
-// globals.css) with an expressive grotesk so the editorial "title-block"
-// headings — and the .display em italic emphasis — read as designed rather
-// than in the shared brand's system sans. Body text is unaffected.
-const fontDisplay = Familjen_Grotesk({
-  variable: "--font-display-grotesk",
+const body = Hanken_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  variable: "--font-hanken",
+  display: "swap",
+});
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jb",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -52,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontMono.variable} ${fontDisplay.variable}`}
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
       <head>

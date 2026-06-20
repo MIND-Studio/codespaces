@@ -50,19 +50,22 @@
   --radius-chip: 999px;
   --hairline: 1px;
 
-  /* Fonts. The default Mind brand drops the old Fraunces/DM Sans editorial
-     stack for Mind's clean system sans; the masthead still loads JetBrains
-     Mono (as --font-mono-src) for code, the neo terminal, and section marks.
-     The old --font-display / --font-body names alias to Mind sans so the
-     app's many inline `style={{fontFamily:"var(--font-display)"}}` refs keep
-     working. */
-  --mind-font-mono: var(--font-mono-src, ui-monospace, SFMono-Regular, Menlo, monospace);
-  /* Headlines ride an expressive grotesk (Familjen Grotesk, loaded in layout
-     as --font-display-grotesk) so the editorial title-block headings carry
-     real character — with the shared Mind sans as the fallback. Body stays on
-     --mind-font-sans below, so only display headings change. */
-  --font-display: var(--font-display-grotesk, var(--mind-font-sans));
-  --font-body: var(--mind-font-sans);
+  /* Fonts — the shared fleet webfont trio, loaded in layout: Fraunces
+     (--font-fraunces) for editorial display headings, Hanken Grotesk
+     (--font-hanken) for body, JetBrains Mono (--font-jb) for code, the neo
+     terminal, and section marks. The old --font-display / --font-body names
+     are kept so the app's many inline `style={{fontFamily:"var(--font-display)"}}`
+     refs keep working; each falls back to the shared Mind face if the webfont
+     hasn't loaded. */
+  --mind-font-mono: var(--font-jb, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --font-display: var(--font-fraunces, var(--mind-font-sans));
+  --font-body: var(--font-hanken, var(--mind-font-sans));
+  /* Back-compat alias: the app (and the neo brand) reference the mono face by
+     its historical name `--font-mono-src` in ~250 inline styles. The layout no
+     longer emits that variable (it now emits --font-jb), so alias it here so
+     every existing `var(--font-mono-src)` keeps resolving to the JetBrains
+     webfont without touching call sites or the neo brand. */
+  --font-mono-src: var(--font-jb, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 /* MindThemeProvider injects the ui package's theme blocks as a runtime
