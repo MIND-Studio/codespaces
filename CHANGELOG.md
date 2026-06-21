@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/MIND-Studio/codespaces/compare/v0.4.0...v0.5.0) (2026-06-21)
+
+
+### Features
+
+* adopt brand logo lockup (ui[#29](https://github.com/MIND-Studio/codespaces/issues/29) wave 2) ([#25](https://github.com/MIND-Studio/codespaces/issues/25)) ([4e3ff9e](https://github.com/MIND-Studio/codespaces/commit/4e3ff9e44ced6aa3558cfb47eab8b86c110dd538))
+
 ## [0.4.0](https://github.com/MIND-Studio/codespaces/compare/v0.3.0...v0.4.0) (2026-06-21)
 
 
