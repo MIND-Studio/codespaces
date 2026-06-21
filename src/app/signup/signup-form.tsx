@@ -79,7 +79,7 @@ export function SignupForm() {
         />
       </label>
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       )}
