@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/MIND-Studio/codespaces/compare/v0.3.0...v0.4.0) (2026-06-21)
+
+
+### Features
+
+* **coder:** Gemini as bridge-default provider ([#21](https://github.com/MIND-Studio/codespaces/issues/21)) ([cc11c1c](https://github.com/MIND-Studio/codespaces/commit/cc11c1cc271c22240681da1abc76d19a877f63c0))
+
+
+### Bug Fixes
+
+* **color:** use the destructive token for the signup error text ([#23](https://github.com/MIND-Studio/codespaces/issues/23)) ([6a3c417](https://github.com/MIND-Studio/codespaces/commit/6a3c417f1d2cf37a0c062bb96c64911e19125c48))
+
 ## [0.3.0](https://github.com/MIND-Studio/codespaces/compare/v0.2.0...v0.3.0) (2026-06-20)
 
 
