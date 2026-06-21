@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { DEFAULT_APPS } from "@mind-studio/core/apps";
 import { MindAppLauncher } from "@mind-studio/core/launcher";
+import { Logo } from "@mind-studio/ui";
 import { AuthCtaServer } from "@/components/auth-cta-server";
 import { FeedbackLauncher } from "@/components/feedback-launcher";
 import { MainNav } from "@/components/main-nav";
@@ -79,10 +80,8 @@ async function Masthead() {
   return (
     <header className="border-b border-border bg-card">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-3 sm:gap-8 sm:px-10 sm:py-5">
-        <Link href="/" className="flex min-w-0 items-baseline gap-3">
-          <span className="display truncate text-base tracking-tight sm:text-2xl">
-            Mind <em>Codespaces</em>
-          </span>
+        <Link href="/" className="flex min-w-0 items-center gap-3">
+          <Logo label="Codespaces" />
           <span className="hidden whitespace-nowrap text-[10px] uppercase tracking-[0.22em] text-muted-foreground lg:inline">
             <span className="text-primary">●</span> solid git bridge
           </span>
@@ -109,9 +108,7 @@ function Colophon() {
     <footer className="mt-16 border-t border-border bg-card">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-start sm:justify-between sm:px-10 sm:py-10">
         <div className="max-w-md">
-          <p className="display text-2xl">
-            Mind <em>Codespaces</em>
-          </p>
+          <Logo label="Codespaces" />
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             A prototype bridge between Git and Solid Pods. Git stays Git; the pod owns identity,
             metadata, and the published site.
